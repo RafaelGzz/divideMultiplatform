@@ -104,12 +104,6 @@ class UserRepositoryImpl(
         }
     }
 
-    suspend fun signInWithGoogle(result: Result<FirebaseUser?>){
-        if (result.isSuccess){
-
-        }
-    }
-
     override suspend fun signOut() {
         auth.signOut()
     }

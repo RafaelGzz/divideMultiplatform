@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">DivideMultiplatform</string>
+    <string name="notification_title">Gasto: %1$s</string>
+    <string name="notification_body">Recuerda pagar!</string>
+</resources>

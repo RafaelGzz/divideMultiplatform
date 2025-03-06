@@ -129,4 +129,7 @@
     <string name="sign_out_confirmation">¿Quieres cerrar sesión?</string>
     <string name="update_payment">Actualizar pago</string>
     <string name="who_will_you_pay">¿A quién vas a pagar?</string>
+    <string name="back">Atrás</string>
+    <string name="notification_title">Gasto: %1$s</string>
+    <string name="notification_body">Recuerda pagar!</string>
 </resources>

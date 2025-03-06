@@ -23,8 +23,7 @@ class LogInViewModel: ViewModel() {
         if(!password.contains(' ')) this.password = password
     }
     fun isFieldsValid(): Boolean {
-        return true
-    //return validateEmail().and(validatePassword())
+        return validateEmail().and(validatePassword())
     }
     private fun validateEmail(): Boolean {
         val emailPattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+"

@@ -129,4 +129,7 @@
     <string name="sign_out_confirmation">Do you want to sign out?</string>
     <string name="update_payment">Update payment</string>
     <string name="who_will_you_pay">Who will you pay?</string>
+    <string name="back">Back</string>
+    <string name="notification_title">Expense: %1$s</string>
+    <string name="notification_body">Remember to pay!</string>
 </resources>

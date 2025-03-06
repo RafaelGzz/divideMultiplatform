@@ -1,5 +1,8 @@
 package com.ragl.divide.data.models
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class GroupUser(
     val id: String = "",
     val debts: Map<String, Double> = emptyMap(),

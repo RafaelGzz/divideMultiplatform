@@ -1,5 +1,6 @@
 package com.ragl.divide.ui.screens.signIn
 
+import ContentWithMessageBar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -44,40 +46,38 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import com.mmk.kmpauth.firebase.google.GoogleButtonUiContainerFirebase
 import com.mmk.kmpauth.uihelper.google.GoogleSignInButton
 import com.ragl.divide.ui.screens.UserViewModel
+import com.ragl.divide.ui.screens.home.HomeScreen
 import com.ragl.divide.ui.utils.DivideTextField
 import dev.gitlive.firebase.auth.FirebaseUser
 import dividemultiplatform.composeapp.generated.resources.*
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
+import rememberMessageBarState
 
-class SignInScreen
-//    val onGoogleButtonClick: () -> Unit,
-//    val onLoginButtonClick: (email: String, password: String) -> Unit,
-//    val onSignUpButtonClick: (email: String, password: String, username: String) -> Unit,
-//    var isLoading: Boolean
-: Screen {
+class SignInScreen : Screen {
 
     @Composable
     override fun Content() {
         var selectedTabIndex by remember { mutableIntStateOf(0) }
-        val tabs = listOf("Sign In", "Sign Up")
+        val tabs = listOf(Res.string.log_in, Res.string.sign_up)
         val pagerState = rememberPagerState { tabs.size }
         val scope = rememberCoroutineScope()
         LaunchedEffect(pagerState.currentPage) {
             selectedTabIndex = pagerState.currentPage
         }
-
         val userViewModel = koinScreenModel<UserViewModel>()
         val state by userViewModel.state.collectAsState()
-
-        val navigator = LocalNavigator.current
-
-        Scaffold { pv ->
-            Box(modifier = Modifier.fillMaxSize().padding(pv)) {
-                Column {
+        val navigator = LocalNavigator.currentOrThrow
+        Scaffold(
+            backgroundColor = MaterialTheme.colorScheme.background,
+            modifier = Modifier.systemBarsPadding()
+        ) { pv ->
+            Box {
+                Column(Modifier.fillMaxSize().padding(pv)) {
                     Spacer(modifier = Modifier.height(40.dp))
                     Text(
                         text = stringResource(resource = Res.string.app_name),
@@ -104,7 +104,7 @@ class SignInScreen
                                 },
                                 text = {
                                     Text(
-                                        text = title,
+                                        text = stringResource(title),
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                 },
@@ -114,52 +114,71 @@ class SignInScreen
                             )
                         }
                     }
-                    HorizontalPager(state = pagerState, userScrollEnabled = false) { pagerIndex ->
+                    HorizontalPager(
+                        state = pagerState,
+                        userScrollEnabled = false
+                    ) { pagerIndex ->
                         when (pagerIndex) {
                             0 -> Login(
-                                Modifier
+                                modifier = Modifier
                                     .padding(horizontal = 16.dp, vertical = 20.dp)
                                     .verticalScroll(rememberScrollState())
                                     .fillMaxHeight(),
-                                { email, password ->
-                                    userViewModel.signInWithEmailAndPassword(email, password, {})
+                                onLoginButtonClick = { email, password ->
+                                    userViewModel.signInWithEmailAndPassword(
+                                        email,
+                                        password,
+                                        { navigator.replace(HomeScreen()) },
+                                        { userViewModel.handleError(it) })
                                 },
-                                { result ->
-                                    userViewModel.signInWithGoogle(result)
+                                onGoogleSignIn = { result ->
+                                    userViewModel.signInWithGoogle(
+                                        result,
+                                        { navigator.replace(HomeScreen()) },
+                                        { userViewModel.handleError(it) })
                                 }
                             )
 
                             1 -> SignUp(
-                                Modifier
+                                modifier = Modifier
                                     .padding(horizontal = 16.dp, vertical = 20.dp)
                                     .verticalScroll(rememberScrollState())
                                     .fillMaxHeight(),
-                                { email, password, username ->
-                                    userViewModel.signUpWithEmailAndPassword(email, password, username, {})
+                                onSignUpButtonClick = { email, password, username ->
+                                    userViewModel.signUpWithEmailAndPassword(
+                                        email,
+                                        password,
+                                        username,
+                                        { navigator.replace(HomeScreen()) },
+                                        { userViewModel.handleError(it) })
                                 },
-                                { result ->
-                                    userViewModel.signInWithGoogle(result)
+                                onGoogleSignIn = { result ->
+                                    userViewModel.signInWithGoogle(
+                                        result,
+                                        { navigator.replace(HomeScreen()) },
+                                        { userViewModel.handleError(it) })
                                 }
                             )
                         }
                     }
-                    if (state.isLoading) {
-                        Box(
+                }
+                if (state.isLoading) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.7f))
+                    ) {
+                        CircularProgressIndicator(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.5f))
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier
-                                    .height(64.dp)
-                                    .width(64.dp)
-                                    .align(Alignment.Center),
-                                color = MaterialTheme.colorScheme.secondary
-                            )
-                        }
+                                .height(64.dp)
+                                .width(64.dp)
+                                .align(Alignment.Center),
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             }
+
         }
     }
 
@@ -174,20 +193,9 @@ class SignInScreen
             Spacer(modifier = Modifier.height(20.dp))
             Text(
                 text = stringResource(Res.string.connect_with_social_media),
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.onSurface)
             )
             Spacer(modifier = Modifier.height(20.dp))
-//        Icon(
-//            painter = painterResource(resource = Res.drawable.ic_google),
-//            contentDescription = stringResource(Res.string.connect_with_google),
-//            tint = MaterialTheme.colorScheme.primary,
-//            modifier = Modifier
-//                .size(36.dp)
-//                .clip(ShapeDefaults.ExtraLarge)
-//                .clickable {
-//                    onGoogleButtonClick()
-//                }
-//        )
             GoogleButtonUiContainerFirebase(
                 linkAccount = false,
                 onResult = { result ->

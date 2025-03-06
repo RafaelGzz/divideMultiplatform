@@ -49,7 +49,7 @@ fun DivideTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography(),
+        typography = DivideFontFamily(),
         content = content
     )
 }

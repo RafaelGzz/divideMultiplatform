@@ -1,6 +1,9 @@
 package com.ragl.divide.data.models
 
 import kotlinx.datetime.Clock
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class GroupExpense(
     override val id: String = "",
     override val title: String = "",
