@@ -11,7 +11,7 @@ data class GroupExpense(
     override val amount: Double = 0.0,
     override val notes: String = "",
     override val addedDate: Long = Clock.System.now().toEpochMilliseconds(),
-    val splitMethod: Method,
+    val splitMethod: SplitMethod = SplitMethod.EQUALLY,
     val paidBy: Map<String, Double> = emptyMap(),
     val debtors: Map<String, Double> = emptyMap(),
     val amountPaid: Map<String, Double> = emptyMap(),

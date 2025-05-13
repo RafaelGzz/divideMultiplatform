@@ -3,7 +3,7 @@ package com.ragl.divide.data.repositories
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.GroupExpense
 import com.ragl.divide.data.models.GroupUser
-import com.ragl.divide.data.models.Method
+import com.ragl.divide.data.models.SplitMethod
 import com.ragl.divide.data.models.User
 import com.ragl.divide.ui.utils.toTwoDecimals
 import dev.gitlive.firebase.database.FirebaseDatabase
@@ -263,7 +263,7 @@ class GroupRepositoryImpl(
         expense: GroupExpense,
         amount: Double
     ) = when (expense.splitMethod) {
-        Method.EQUALLY, Method.CUSTOM -> amount
-        Method.PERCENTAGES -> (amount * expense.amount) / 100
+        SplitMethod.EQUALLY, SplitMethod.CUSTOM -> amount
+        SplitMethod.PERCENTAGES -> (amount * expense.amount) / 100
     }
 }

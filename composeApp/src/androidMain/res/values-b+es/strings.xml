@@ -1,5 +1,9 @@
 <resources>
     <string name="app_name">DivideMultiplatform</string>
-    <string name="notification_title">Gasto: %1$s</string>
-    <string name="notification_body">Recuerda pagar!</string>
+    <string name="notification_title">%1$s</string>
+    <string name="notification_body">Recuerda pagar y mantener un registro de tus gastos!</string>
+    <string name="two_people_must_be_selected">Al menos dos personas debe ser seleccionadas</string>
+    <string name="two_people_must_pay">Al menos dos personas deben pagar</string>
+    <string name="percentages_sum_must_be_100">Suma de porcentajes debe ser 100%</string>
+    <string name="quantities_sum_must_be_amount">Suma de cantidades debe ser igual a %1$s</string>
 </resources>

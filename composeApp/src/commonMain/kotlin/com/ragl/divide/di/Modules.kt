@@ -1,6 +1,5 @@
 package com.ragl.divide.di
 
-import com.ragl.divide.createDataStore
 import com.ragl.divide.data.repositories.FriendsRepository
 import com.ragl.divide.data.repositories.FriendsRepositoryImpl
 import com.ragl.divide.data.repositories.GroupRepository
@@ -8,9 +7,14 @@ import com.ragl.divide.data.repositories.GroupRepositoryImpl
 import com.ragl.divide.data.repositories.PreferencesRepository
 import com.ragl.divide.data.repositories.UserRepository
 import com.ragl.divide.data.repositories.UserRepositoryImpl
+import com.ragl.divide.data.services.GroupExpenseService
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.expense.ExpenseViewModel
 import com.ragl.divide.ui.screens.expenseProperties.ExpensePropertiesViewModel
+import com.ragl.divide.ui.screens.group.GroupViewModel
+import com.ragl.divide.ui.screens.groupExpense.GroupExpenseViewModel
+import com.ragl.divide.ui.screens.groupExpenseProperties.GroupExpensePropertiesViewModel
+import com.ragl.divide.ui.screens.groupProperties.GroupPropertiesViewModel
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.FirebaseAuth
 import dev.gitlive.firebase.auth.auth
@@ -36,6 +40,12 @@ val sharedModule = module {
     singleOf(::UserViewModel)
     factoryOf(::ExpensePropertiesViewModel)
     factoryOf(::ExpenseViewModel)
+    factoryOf(::GroupViewModel)
+    factoryOf(::GroupPropertiesViewModel)
+    factoryOf(::GroupExpensePropertiesViewModel)
+    factoryOf(::GroupExpenseViewModel)
+
+    singleOf(::GroupExpenseService)
 
     // FIREBASE DEPENDENCIES
     single {

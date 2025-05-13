@@ -112,8 +112,8 @@
     <string name="quantities_sum_must_be_amount">Suma de cantidades debe ser igual a %1$s</string>
     <string name="paid_x">pagó %1$s</string>
     <string name="owes_x">debe %1$s</string>
-    <string name="owed_in_general">"Te deben en general: "</string>
-    <string name="owe_in_general">"Debes en general: "</string>
+    <string name="owed_in_general">Te deben en general: </string>
+    <string name="owe_in_general">Debes en general: </string>
     <string name="select_image_source">Selecciona origen de imagen</string>
     <string name="select_image_from_gallery">De la galería</string>
     <string name="take_photo">Tomar foto</string>

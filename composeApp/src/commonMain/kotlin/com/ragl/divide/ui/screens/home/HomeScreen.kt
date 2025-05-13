@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -74,7 +73,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.koin.koinScreenModel
+import cafe.adriel.voyager.koin.koinNavigatorScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ragl.divide.data.models.Expense
@@ -85,10 +84,12 @@ import com.ragl.divide.ui.components.TitleRow
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.expense.ExpenseScreen
 import com.ragl.divide.ui.screens.expenseProperties.ExpensePropertiesScreen
+import com.ragl.divide.ui.screens.group.GroupScreen
+import com.ragl.divide.ui.screens.groupProperties.GroupPropertiesScreen
 import com.ragl.divide.ui.screens.signIn.SignInScreen
 import com.ragl.divide.ui.utils.FriendItem
-import com.ragl.divide.ui.utils.ProfileImage
 import com.ragl.divide.ui.utils.formatCurrency
+import com.ragl.divide.ui.utils.logMessage
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil3.CoilImage
 import compose.icons.FontAwesomeIcons
@@ -98,7 +99,28 @@ import compose.icons.fontawesomeicons.solid.Moon
 import compose.icons.fontawesomeicons.solid.User
 import compose.icons.fontawesomeicons.solid.UserPlus
 import compose.icons.fontawesomeicons.solid.Users
-import dividemultiplatform.composeapp.generated.resources.*
+import dividemultiplatform.composeapp.generated.resources.Res
+import dividemultiplatform.composeapp.generated.resources.activated
+import dividemultiplatform.composeapp.generated.resources.add
+import dividemultiplatform.composeapp.generated.resources.add_friends
+import dividemultiplatform.composeapp.generated.resources.allow_notifications
+import dividemultiplatform.composeapp.generated.resources.app_name
+import dividemultiplatform.composeapp.generated.resources.bar_item_friends_text
+import dividemultiplatform.composeapp.generated.resources.bar_item_home_text
+import dividemultiplatform.composeapp.generated.resources.bar_item_profile_text
+import dividemultiplatform.composeapp.generated.resources.compose_multiplatform
+import dividemultiplatform.composeapp.generated.resources.dark_mode
+import dividemultiplatform.composeapp.generated.resources.deactivated
+import dividemultiplatform.composeapp.generated.resources.no
+import dividemultiplatform.composeapp.generated.resources.sign_out
+import dividemultiplatform.composeapp.generated.resources.sign_out_confirmation
+import dividemultiplatform.composeapp.generated.resources.system_default
+import dividemultiplatform.composeapp.generated.resources.yes
+import dividemultiplatform.composeapp.generated.resources.you_have_no_expenses
+import dividemultiplatform.composeapp.generated.resources.you_have_no_friends
+import dividemultiplatform.composeapp.generated.resources.you_have_no_groups
+import dividemultiplatform.composeapp.generated.resources.your_expenses
+import dividemultiplatform.composeapp.generated.resources.your_groups
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -109,7 +131,7 @@ class HomeScreen : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val userViewModel = koinScreenModel<UserViewModel>()
+        val userViewModel = navigator.koinNavigatorScreenModel<UserViewModel>()
         val state by userViewModel.state.collectAsState()
 
         // Use remember with state.friends as key to prevent unnecessary recompositions
@@ -193,7 +215,7 @@ class HomeScreen : Screen {
                             isRefreshing = pullLoading,
                             state = pullToRefreshState,
                             onRefresh =
-                            userViewModel::getUserData,
+                                userViewModel::getUserData,
                             indicator = {
                                 PullToRefreshDefaults.Indicator(
                                     modifier = Modifier.align(Alignment.TopCenter),
@@ -217,13 +239,13 @@ class HomeScreen : Screen {
                                             navigator.push(ExpensePropertiesScreen())
                                         },
                                         onAddGroupClick = {
-                                            //navigator.push(AddGroupScreen(userViewModel))
+                                            navigator.push(GroupPropertiesScreen())
                                         },
                                         onExpenseClick = {
-                                            navigator.push(ExpenseScreen(state.user.expenses[it] ?: Expense()))
+                                            navigator.push(ExpenseScreen(it))
                                         },
                                         onGroupClick = {
-                                            //navigator.push(GroupDetailScreen(userViewModel, it))
+                                            navigator.push(GroupScreen(it))
                                         }
                                     )
                                 }
@@ -273,7 +295,10 @@ class HomeScreen : Screen {
                 AlertDialog(
                     onDismissRequest = { isSignOutDialogVisible = false },
                     confirmButton = {
-                        TextButton(onClick = onSignOut) {
+                        TextButton(onClick = {
+                            isSignOutDialogVisible = false
+                            onSignOut()
+                        }) {
                             Text(stringResource(Res.string.yes))
                         }
                     },
@@ -307,10 +332,13 @@ class HomeScreen : Screen {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    if (user.photoUrl.isNotBlank()) {
-                        ProfileImage(
-                            photoUrl = user.photoUrl,
-                            modifier = Modifier.size(52.dp)
+                    if (user.photoUrl.isNotEmpty()) {
+                        logMessage("HomeScreen", user.photoUrl)
+                        CoilImage(
+                            imageModel = { user.photoUrl },
+                            imageOptions = ImageOptions(
+                                contentScale = ContentScale.Crop
+                            )
                         )
                     } else {
                         Icon(
@@ -593,7 +621,7 @@ class HomeScreen : Screen {
                             },
                             failure = {
                                 Image(
-                                    painter = painterResource(resource = Res.drawable.ic_launcher_foreground),
+                                    painter = painterResource(resource = Res.drawable.compose_multiplatform),
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier.Companion
@@ -613,7 +641,7 @@ class HomeScreen : Screen {
                         )
                     } else {
                         Image(
-                            painter = painterResource(resource = Res.drawable.ic_launcher_foreground),
+                            painter = painterResource(resource = Res.drawable.compose_multiplatform),
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.Companion

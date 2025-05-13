@@ -12,17 +12,15 @@ import com.ragl.divide.data.models.Expense
 import com.ragl.divide.data.models.Frequency
 import com.ragl.divide.data.repositories.UserRepository
 import com.ragl.divide.data.services.ScheduleNotificationService
-import com.ragl.divide.ui.utils.NotificationStrings
+import com.ragl.divide.ui.utils.Strings
 import com.ragl.divide.ui.utils.logMessage
-import dividemultiplatform.composeapp.generated.resources.Res
-import dividemultiplatform.composeapp.generated.resources.notification_title
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
 class ExpensePropertiesViewModel(
     private val userRepository: UserRepository,
     private val scheduleNotificationService: ScheduleNotificationService,
-    private val notificationStrings: NotificationStrings
+    private val strings: Strings
 ) : ScreenModel {
     private var id = ""
     var amountPaid by mutableDoubleStateOf(0.0)
@@ -54,6 +52,8 @@ class ExpensePropertiesViewModel(
         private set
 
     fun handleReminderPermissionCheck(checked: Boolean) {
+        updateIsRemindersEnabled(false)
+        return
         when (checked) {
             true -> {
                 if (scheduleNotificationService.canScheduleExactAlarms()) {
@@ -184,12 +184,12 @@ class ExpensePropertiesViewModel(
                             startingDate = startingDate
                         )
                     )
-                    scheduleNotificationService.cancelNotification(savedExpense.id.removePrefix("id").toInt())
+                    scheduleNotificationService.cancelNotification(savedExpense.id.takeLast(5).toInt())
                     if (isRemindersEnabled) {
                         scheduleNotificationService.scheduleNotification(
-                            id = savedExpense.id.removePrefix("id").toInt(),
-                            title = notificationStrings.getNotificationTitleString(title),
-                            message = notificationStrings.getNotificationBodyString(),
+                            id = savedExpense.id.takeLast(5).toInt(),
+                            title = strings.getNotificationTitleString(title),
+                            message = strings.getNotificationBodyString(),
                             startingDateMillis = startingDate,
                             frequency = frequency
                         )

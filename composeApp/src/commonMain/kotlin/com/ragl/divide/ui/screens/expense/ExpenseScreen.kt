@@ -13,15 +13,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Card
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -31,7 +28,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -48,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.koin.koinNavigatorScreenModel
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -60,7 +57,6 @@ import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.expenseProperties.ExpensePropertiesScreen
 import com.ragl.divide.ui.utils.formatCurrency
 import com.ragl.divide.ui.utils.formatDate
-import com.ragl.divide.ui.utils.logMessage
 import com.ragl.divide.ui.utils.toTwoDecimals
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.added_on
@@ -74,22 +70,21 @@ import dividemultiplatform.composeapp.generated.resources.paid
 import dividemultiplatform.composeapp.generated.resources.remaining_balance
 import dividemultiplatform.composeapp.generated.resources.total
 import org.jetbrains.compose.resources.stringResource
-import kotlin.math.exp
 
-class ExpenseScreen(private val expense: Expense) : Screen {
+class ExpenseScreen(private val expenseId: String) : Screen {
 
     @Composable
     override fun Content() {
+        val navigator = LocalNavigator.currentOrThrow
         val expenseViewModel = koinScreenModel<ExpenseViewModel>()
-        val userViewModel = koinScreenModel<UserViewModel>()
+        val userViewModel = navigator.koinNavigatorScreenModel<UserViewModel>()
+
         // Set the expense in the ViewModel
         LaunchedEffect(Unit) {
-            expenseViewModel.setExpense(expense)
-            logMessage("ExpenseViewmodel", "$expense")
+            expenseViewModel.setExpense(userViewModel.getExpenseById(expenseId))
         }
         val expense by expenseViewModel.expense.collectAsState()
         val isLoading by expenseViewModel.isLoading.collectAsState()
-        val navigator = LocalNavigator.currentOrThrow
 
         var showDeleteDialog by remember { mutableStateOf(false) }
         var showAddPaymentDialog by remember { mutableStateOf(false) }
@@ -123,8 +118,9 @@ class ExpenseScreen(private val expense: Expense) : Screen {
                 onConfirm = { amount ->
                     expenseViewModel.addPayment(
                         amount = amount,
-                        onSuccess = { _ ->
+                        onSuccess = { savedPayment ->
                             showAddPaymentDialog = false
+                            userViewModel.savePayment(expense.id, savedPayment)
                         },
                         onFailure = { error ->
                             userViewModel.handleError(Exception(error))
@@ -154,6 +150,7 @@ class ExpenseScreen(private val expense: Expense) : Screen {
                             onSuccess = {
                                 showDeletePaymentDialog = false
                                 selectedPayment = null
+                                userViewModel.deletePayment(expense.id, payment.id)
                             },
                             onFailure = { error ->
                                 userViewModel.handleError(Exception(error))
@@ -168,7 +165,7 @@ class ExpenseScreen(private val expense: Expense) : Screen {
             expense = expense,
             isLoading = isLoading,
             onBackClick = { navigator.pop() },
-            onEditClick = { navigator.push(ExpensePropertiesScreen(expense)) },
+            onEditClick = { navigator.push(ExpensePropertiesScreen(expense.id)) },
             onDeleteClick = { showDeleteDialog = true },
             onAddPaymentClick = { showAddPaymentDialog = true },
             onDeletePaymentClick = { payment ->

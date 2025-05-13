@@ -1,6 +1,5 @@
 package com.ragl.divide.ui.screens.signIn
 
-import ContentWithMessageBar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,12 +42,15 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.core.model.rememberNavigatorScreenModel
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.koin.koinNavigatorScreenModel
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.mmk.kmpauth.firebase.google.GoogleButtonUiContainerFirebase
 import com.mmk.kmpauth.uihelper.google.GoogleSignInButton
+import com.ragl.divide.data.models.User
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.home.HomeScreen
 import com.ragl.divide.ui.utils.DivideTextField
@@ -56,7 +58,6 @@ import dev.gitlive.firebase.auth.FirebaseUser
 import dividemultiplatform.composeapp.generated.resources.*
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
-import rememberMessageBarState
 
 class SignInScreen : Screen {
 
@@ -69,9 +70,9 @@ class SignInScreen : Screen {
         LaunchedEffect(pagerState.currentPage) {
             selectedTabIndex = pagerState.currentPage
         }
-        val userViewModel = koinScreenModel<UserViewModel>()
-        val state by userViewModel.state.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
+        val userViewModel = navigator.koinNavigatorScreenModel<UserViewModel>()
+        val state by userViewModel.state.collectAsState()
         Scaffold(
             backgroundColor = MaterialTheme.colorScheme.background,
             modifier = Modifier.systemBarsPadding()

@@ -111,8 +111,8 @@
     <string name="quantities_sum_must_be_amount">Quantities sum must be %1$s</string>
     <string name="paid_x">paid %1$s</string>
     <string name="owes_x">owes %1$s</string>
-    <string name="owed_in_general">"You're owed in general: "</string>
-    <string name="owe_in_general">"You owe in general: "</string>
+    <string name="owed_in_general">You're owed in general: </string>
+    <string name="owe_in_general">You owe in general: </string>
     <string name="two_people_must_pay">At least two people must pay</string>
     <string name="select_image_source">Select image source</string>
     <string name="select_image_from_gallery">From gallery</string>

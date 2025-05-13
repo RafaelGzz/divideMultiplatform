@@ -1,13 +1,11 @@
 package com.ragl.divide.ui.utils
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -20,7 +18,6 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -42,14 +39,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil3.CoilImage
 import compose.icons.FontAwesomeIcons
 import compose.icons.fontawesomeicons.Solid
@@ -63,13 +58,29 @@ expect fun formatCurrency(value: Double, local: String): String
 
 expect fun formatDate(epochMilliseconds: Long, pattern: String = "dd/MM/yyyy hh:mm a"): String
 
-expect class NotificationStrings{
+expect class Strings{
     fun getNotificationTitleString(title: String): String
     fun getNotificationBodyString(): String
+    fun getTwoSelected(): String
+    fun getPercentagesSum(): String
+    fun getTwoMustPay(): String
+    fun getSumMustBe(amount: String): String
 }
 
 fun Double.toTwoDecimals(): Double {
     return round(this * 100) / 100
+}
+
+fun validateQuantity(input: String, updateInput: (String) -> Unit) {
+    if (input.isEmpty()) updateInput("") else if(!input.contains(',')){
+        val parsed = input.toDoubleOrNull()
+        parsed?.let {
+            val decimalPart = input.substringAfter(".", "")
+            if (decimalPart.length <= 2 && parsed <= 999999999.99) {
+                updateInput(input)
+            }
+        }
+    }
 }
 
 @Composable
@@ -303,7 +314,6 @@ fun ProfileImage(
             enabled = enabled,
             supporting = supporting
         )
-        return
     }
     
     // Usamos un Box para mostrar un indicador de carga mientras se carga la imagen
@@ -315,33 +325,6 @@ fun ProfileImage(
     ) {
         CoilImage(
             imageModel = { photoUrl },
-            imageOptions = ImageOptions(
-                contentScale = ContentScale.Crop
-            ),
-            success = { _, painter ->
-                logMessage("ProfileImage", "Imagen cargada con éxito: $photoUrl")
-                Image(
-                    painter = painter,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize()
-                )
-            },
-            loading = {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(size.dp / 2),
-                    color = MaterialTheme.colorScheme.primary
-                )
-            },
-            failure = { error ->
-                logMessage("ProfileImage", "Error al cargar imagen: $photoUrl - Error: ${error.reason ?: "Desconocido"}")
-                DefaultProfileIcon(
-                    modifier = Modifier.fillMaxSize(),
-                    size = size,
-                    icon = icon,
-                    enabled = enabled,
-                    supporting = supporting
-                )
-            }
         )
     }
 }

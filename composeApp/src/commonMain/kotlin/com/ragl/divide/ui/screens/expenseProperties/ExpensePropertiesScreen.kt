@@ -1,6 +1,5 @@
 package com.ragl.divide.ui.screens.expenseProperties
 
-import ContentWithMessageBar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,9 +21,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDefaults
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -39,9 +35,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.TimePickerState
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -57,11 +50,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.koin.koinNavigatorScreenModel
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ragl.divide.data.models.Category
-import com.ragl.divide.data.models.Expense
 import com.ragl.divide.data.models.Frequency
 import com.ragl.divide.ui.components.DateTimePickerDialog
 import com.ragl.divide.ui.screens.UserViewModel
@@ -88,23 +81,22 @@ import dividemultiplatform.composeapp.generated.resources.title
 import dividemultiplatform.composeapp.generated.resources.update
 import dividemultiplatform.composeapp.generated.resources.update_expense
 import kotlinx.datetime.Clock
-import kotlinx.datetime.LocalDateTime
 import org.jetbrains.compose.resources.stringResource
-import rememberMessageBarState
 
 class ExpensePropertiesScreen(
-    private val expense: Expense? = null,
+    private val expenseId: String? = null
 ) : Screen {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
+        val navigator = LocalNavigator.currentOrThrow
         val vm = koinScreenModel<ExpensePropertiesViewModel>()
-        val userViewModel = koinScreenModel<UserViewModel>()
+        val userViewModel = navigator.koinNavigatorScreenModel<UserViewModel>()
 
         LaunchedEffect(Unit) {
-            if (expense != null) {
-                vm.setViewModelExpense(expense)
+            if (expenseId != null) {
+                vm.setViewModelExpense(userViewModel.getExpenseById(expenseId))
             }
         }
 
@@ -116,13 +108,12 @@ class ExpensePropertiesScreen(
         var selectDateDialogEnabled by remember { mutableStateOf(false) }
         val scrollState = rememberScrollState()
 
-        var selectedDate: Long? by remember { mutableStateOf(null) }
+        var selectedDate: Long by remember { mutableStateOf(Clock.System.now().toEpochMilliseconds()) }
 
         LaunchedEffect(vm.payments) {
             paymentSuffix =
                 if (vm.payments == "1") Res.string.payments else Res.string.payments_plural
         }
-        val navigator = LocalNavigator.currentOrThrow
         val onBackClick: () -> Unit = {
             navigator.pop()
         }
@@ -131,7 +122,7 @@ class ExpensePropertiesScreen(
                 CenterAlignedTopAppBar(
                     title = {
                         Text(
-                            stringResource(if (expense == null) Res.string.add_expense else Res.string.update_expense),
+                            stringResource(if (expenseId == null) Res.string.add_expense else Res.string.update_expense),
                             style = MaterialTheme.typography.titleLarge
                         )
                     },
@@ -156,7 +147,7 @@ class ExpensePropertiesScreen(
             ) {
                 if (selectDateDialogEnabled) {
                     DateTimePickerDialog(
-                        initialTime = vm.startingDate,
+                        initialTime = selectedDate,
                         onDismissRequest = { selectDateDialogEnabled = false },
                         onConfirmClick = {
                             vm.updateStartingDate(it)
@@ -403,7 +394,7 @@ class ExpensePropertiesScreen(
                                     .height(60.dp)
                             ) {
                                 Text(
-                                    text = selectedDate?.let { formatDate(it) } ?: stringResource(Res.string.select_date),
+                                    text = formatDate(selectedDate) ?: stringResource(Res.string.select_date),
                                     style = MaterialTheme.typography.bodyLarge,
                                     textAlign = TextAlign.Center
                                 )
@@ -432,7 +423,7 @@ class ExpensePropertiesScreen(
                         .size(64.dp)
                 ) {
                     Text(
-                        text = stringResource(if (expense == null) Res.string.add else Res.string.update),
+                        text = stringResource(if (expenseId == null) Res.string.add else Res.string.update),
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }

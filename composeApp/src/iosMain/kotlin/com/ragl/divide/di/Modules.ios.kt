@@ -3,9 +3,8 @@ package com.ragl.divide.di
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import com.ragl.divide.data.services.ScheduleNotificationService
-import com.ragl.divide.ui.utils.NotificationStrings
+import com.ragl.divide.ui.utils.Strings
 import createDataStore
-import org.koin.core.module.Module
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
@@ -19,6 +18,6 @@ actual val platformModule = module {
     }.bind<ScheduleNotificationService>()
 
     single{
-        NotificationStrings()
-    }.bind<NotificationStrings>()
+        Strings()
+    }.bind<Strings>()
 }

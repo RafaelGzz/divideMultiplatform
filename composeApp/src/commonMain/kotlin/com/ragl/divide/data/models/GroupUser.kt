@@ -10,4 +10,6 @@ data class GroupUser(
     val totalOwed: Double = 0.0,
     val totalDebt: Double = 0.0,
     val netDebt: Double = 0.0
-)
+){
+    fun hasDebts() = debts.isNotEmpty()
+}

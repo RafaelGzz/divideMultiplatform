@@ -1,8 +1,10 @@
 package com.ragl.divide.data.models
 
 import dividemultiplatform.composeapp.generated.resources.*
+import kotlinx.serialization.Serializable
 import org.jetbrains.compose.resources.StringResource
 
+@Serializable
 enum class Frequency(val resId: StringResource) {
     ONCE(Res.string.once),
     DAILY(Res.string.daily),

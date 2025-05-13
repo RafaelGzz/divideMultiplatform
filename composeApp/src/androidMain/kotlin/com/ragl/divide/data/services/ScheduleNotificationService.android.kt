@@ -13,6 +13,8 @@ import com.ragl.divide.data.models.Frequency
 import com.ragl.divide.data.models.getInMillis
 import com.ragl.divide.ui.utils.formatDate
 import com.ragl.divide.ui.utils.logMessage
+import java.util.Calendar
+import java.util.Date
 
 actual class ScheduleNotificationService(
     private val context: Context
@@ -54,40 +56,61 @@ actual class ScheduleNotificationService(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Verificar si la fecha está en el pasado
+        val now = System.currentTimeMillis()
+        var finalStartingDateMillis = startingDateMillis
+        
+        if (finalStartingDateMillis <= now && frequency == Frequency.ONCE) {
+            // Si la fecha está en el pasado y es una notificación única, la programamos para dentro de 1 minuto
+            val calendar = Calendar.getInstance()
+            calendar.timeInMillis = now
+            calendar.add(Calendar.MINUTE, 1)
+            finalStartingDateMillis = calendar.timeInMillis
+            logMessage("ScheduleNotificationService", "¡Aviso! La fecha estaba en el pasado, ajustando a 1 minuto en el futuro: ${formatDate(finalStartingDateMillis)}")
+        }
+        
+        // Log detallado para diagnóstico
+        logMessage("ScheduleNotificationService", "Programando notificación $id para la fecha: ${formatDate(finalStartingDateMillis)} (${Date(finalStartingDateMillis)})")
+        logMessage("ScheduleNotificationService", "Hora actual: ${formatDate(now)} (${Date(now)})")
+        logMessage("ScheduleNotificationService", "Diferencia en milisegundos: ${finalStartingDateMillis - now}")
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (alarmManager.canScheduleExactAlarms()) {
                 if (frequency == Frequency.ONCE) {
                     alarmManager.setAndAllowWhileIdle(
                         AlarmManager.RTC_WAKEUP,
-                        startingDateMillis,
+                        finalStartingDateMillis,
                         pendingIntent
                     )
                 } else {
                     alarmManager.setInexactRepeating(
                         AlarmManager.RTC_WAKEUP,
-                        startingDateMillis,
+                        finalStartingDateMillis,
                         frequency.getInMillis(),
                         pendingIntent
                     )
                 }
+                logMessage("ScheduleNotificationService", "Notificación $id programada para el ${formatDate(finalStartingDateMillis)}")
+            } else {
+                logMessage("ScheduleNotificationService", "No se pudo programar la notificación $id (permiso denegado)")
             }
         } else {
             if (frequency == Frequency.ONCE) {
                 alarmManager.setAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
-                    startingDateMillis,
+                    finalStartingDateMillis,
                     pendingIntent
                 )
             } else {
                 alarmManager.setInexactRepeating(
                     AlarmManager.RTC_WAKEUP,
-                    startingDateMillis,
+                    finalStartingDateMillis,
                     frequency.getInMillis(),
                     pendingIntent
                 )
             }
+            logMessage("ScheduleNotificationService", "Notificación $id programada para el ${formatDate(finalStartingDateMillis)}")
         }
-        logMessage("ScheduleNotificationService", "Notificación programada para el ${formatDate(startingDateMillis)}")
         enableBootReceiver()
     }
 
@@ -116,6 +139,7 @@ actual class ScheduleNotificationService(
         pendingIntent?.let { existingIntent ->
             alarmManager.cancel(existingIntent)
             existingIntent.cancel() // Importante liberar el PendingIntent
+            logMessage("ScheduleNotificationService", "Notificación $id cancelada")
         }
     }
 }

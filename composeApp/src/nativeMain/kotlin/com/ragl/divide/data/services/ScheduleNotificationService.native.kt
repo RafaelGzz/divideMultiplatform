@@ -2,6 +2,7 @@ package com.ragl.divide.data.services
 
 import com.ragl.divide.data.models.Frequency
 import com.ragl.divide.data.models.getInMillis
+import com.ragl.divide.ui.utils.logMessage
 import platform.Foundation.NSDate
 import platform.Foundation.timeIntervalSince1970
 import platform.UserNotifications.UNAuthorizationOptionAlert
@@ -33,10 +34,19 @@ actual class ScheduleNotificationService {
 
                     val trigger: UNNotificationTrigger?
                     if(frequency == Frequency.ONCE){
-                        val triggerTime = startingDateMillis - NSDate().timeIntervalSince1970
+                        val startingTimeInSeconds = startingDateMillis / 1000.0
+                        val currentTimeInSeconds = NSDate().timeIntervalSince1970
+                        var triggerTime = startingTimeInSeconds - currentTimeInSeconds
+                        
+                        if (triggerTime <= 0) {
+                            triggerTime = 1.0
+                            logMessage("ScheduleNotificationService", "¡Aviso! Tiempo ajustado ya que la fecha estaba en el pasado")
+                        }
+                        
+                        logMessage("ScheduleNotificationService", "Notificación $id programada para dentro de $triggerTime segundos")
                         trigger = UNTimeIntervalNotificationTrigger.triggerWithTimeInterval(triggerTime, false)
                     } else {
-                        val triggerTime = frequency.getInMillis().toDouble()
+                        val triggerTime = frequency.getInMillis() / 1000.0
                         trigger = UNTimeIntervalNotificationTrigger.triggerWithTimeInterval(triggerTime, true)
                     }
 

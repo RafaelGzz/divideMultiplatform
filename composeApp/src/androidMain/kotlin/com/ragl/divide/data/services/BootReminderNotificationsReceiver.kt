@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.ragl.divide.data.repositories.UserRepository
+import com.ragl.divide.ui.utils.Strings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
@@ -16,18 +17,20 @@ import kotlin.coroutines.EmptyCoroutineContext
 class BootReminderNotificationsReceiver : BroadcastReceiver(), KoinComponent {
     // Inyectar userRepository usando Koin
     private val userRepository: UserRepository by inject()
-    
+    private val strings: Strings by inject()
+
     override fun onReceive(context: Context, intent: Intent) = goAsync {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
             val scheduleNotificationService = ScheduleNotificationService(context)
             userRepository.getExpenses().values.forEach {
-                scheduleNotificationService.scheduleNotification(
-                    id = it.startingDate.toInt(),
-                    title = "Expense - $it.title",
-                    message = "This is your reminder to pay $it.amount for $it.title",
-                    it.startingDate,
-                    it.frequency
-                )
+                if(it.reminders && !it.paid)
+                    scheduleNotificationService.scheduleNotification(
+                        id = it.id.takeLast(5).toInt(),
+                        title = strings.getNotificationTitleString(it.title),
+                        message = strings.getNotificationBodyString(),
+                        it.startingDate,
+                        it.frequency
+                    )
             }
         }
     }
