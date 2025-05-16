@@ -9,11 +9,14 @@ import com.ragl.divide.data.repositories.UserRepository
 import com.ragl.divide.data.repositories.UserRepositoryImpl
 import com.ragl.divide.data.services.GroupExpenseService
 import com.ragl.divide.ui.screens.UserViewModel
+import com.ragl.divide.ui.screens.addFriends.AddFriendsViewModel
 import com.ragl.divide.ui.screens.expense.ExpenseViewModel
 import com.ragl.divide.ui.screens.expenseProperties.ExpensePropertiesViewModel
 import com.ragl.divide.ui.screens.group.GroupViewModel
 import com.ragl.divide.ui.screens.groupExpense.GroupExpenseViewModel
 import com.ragl.divide.ui.screens.groupExpenseProperties.GroupExpensePropertiesViewModel
+import com.ragl.divide.ui.screens.groupPayment.GroupPaymentViewModel
+import com.ragl.divide.ui.screens.groupPaymentProperties.GroupPaymentPropertiesViewModel
 import com.ragl.divide.ui.screens.groupProperties.GroupPropertiesViewModel
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.FirebaseAuth
@@ -44,6 +47,9 @@ val sharedModule = module {
     factoryOf(::GroupPropertiesViewModel)
     factoryOf(::GroupExpensePropertiesViewModel)
     factoryOf(::GroupExpenseViewModel)
+    factoryOf(::GroupPaymentPropertiesViewModel)
+    factoryOf(::GroupPaymentViewModel)
+    factoryOf(::AddFriendsViewModel)
 
     singleOf(::GroupExpenseService)
 

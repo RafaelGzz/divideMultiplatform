@@ -217,7 +217,7 @@ fun FriendItem(
         @Composable {
             Text(
                 text = supporting,
-                style = MaterialTheme.typography.bodyMedium.copy(
+                style = MaterialTheme.typography.bodySmall.copy(
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                 )
             )
@@ -243,6 +243,7 @@ fun FriendItem(
             headlineContent = {
                 Text(
                     text = headline,
+                    style = MaterialTheme.typography.titleMedium,
                     color = if (enabled) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary.copy(
                         alpha = 0.5f
                     ),

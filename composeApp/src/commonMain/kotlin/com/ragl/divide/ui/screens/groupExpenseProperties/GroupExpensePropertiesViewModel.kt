@@ -37,7 +37,7 @@ class GroupExpensePropertiesViewModel(
         private set
     var amountError by mutableStateOf("")
         private set
-    var paidBy by mutableStateOf(User())
+    var payer by mutableStateOf(User())
         private set
     var splitMethod by mutableStateOf(SplitMethod.EQUALLY)
         private set
@@ -58,8 +58,8 @@ class GroupExpensePropertiesViewModel(
         this.amount = amount
     }
 
-    fun updatePaidBy(user: User) {
-        paidBy = user
+    fun updatePayer(user: User) {
+        payer = user
     }
 
     fun updateMethod(splitMethod: SplitMethod) {
@@ -94,35 +94,45 @@ class GroupExpensePropertiesViewModel(
                 _expense.update { expense }
                 title = expense.title
                 amount = expense.amount.let { if (it == 0.0) "" else it.toString() }
-                paidBy = members.firstOrNull { it.uuid == expense.paidBy.keys.first() }!!
+                payer = members.firstOrNull { it.uuid == expense.payers.keys.first() }!!
                 splitMethod = expense.splitMethod
 
                 when (expense.splitMethod) {
                     SplitMethod.EQUALLY -> {
-                        selectedMembers = expense.debtors.keys.toList() + if(expense.paidBy.entries.first().value > 0.0) listOf(expense.paidBy.keys.first()) else listOf()
+                        selectedMembers =
+                            expense.debtors.keys.toList() + if (expense.payers.entries.first().value > 0.0) listOf(
+                                expense.payers.keys.first()
+                            ) else listOf()
                         amountPerPerson = expense.debtors.values.first()
                         percentages = members.associate { it.uuid to 0 }
                         quantities = members.associate { it.uuid to 0.0 }
                     }
 
                     SplitMethod.PERCENTAGES -> {
-                        selectedMembers = expense.debtors.keys.toList() + if(expense.paidBy.entries.first().value > 0.0) listOf(expense.paidBy.keys.first()) else listOf()
+                        selectedMembers =
+                            expense.debtors.keys.toList() + if (expense.payers.entries.first().value > 0.0) listOf(
+                                expense.payers.keys.first()
+                            ) else listOf()
                         quantities = members.associate { it.uuid to 0.0 }
-                        percentages = expense.debtors.mapValues { it.value.toInt() } + expense.paidBy.mapValues { it.value.toInt() }
+                        percentages =
+                            expense.debtors.mapValues { it.value.toInt() } + expense.payers.mapValues { it.value.toInt() }
                     }
 
                     SplitMethod.CUSTOM -> {
-                        selectedMembers = expense.debtors.keys.toList() + if(expense.paidBy.entries.first().value > 0.0) listOf(expense.paidBy.keys.first()) else listOf()
+                        selectedMembers =
+                            expense.debtors.keys.toList() + if (expense.payers.entries.first().value > 0.0) listOf(
+                                expense.payers.keys.first()
+                            ) else listOf()
                         percentages = members.associate { it.uuid to 0 }
                         quantities =
-                            expense.debtors + (paidBy.uuid to expense.paidBy[paidBy.uuid]!!)
+                            expense.debtors + (payer.uuid to expense.payers[payer.uuid]!!)
                     }
                 }
             } else {
                 selectedMembers = members.map { it.uuid }
                 percentages = members.associate { it.uuid to 0 }
                 quantities = members.associate { it.uuid to 0.0 }
-                paidBy = members.first { it.uuid == userId }
+                payer = members.first { it.uuid == userId }
             }
             _group.update { group }
         }
@@ -164,7 +174,7 @@ class GroupExpensePropertiesViewModel(
     }
 
     fun saveExpense(
-        onSuccess: (GroupExpense, GroupExpense) -> Unit,
+        onSuccess: (GroupExpense) -> Unit,
         onError: (String) -> Unit
     ) {
         try {
@@ -172,34 +182,28 @@ class GroupExpensePropertiesViewModel(
                 val expense = _expense.value.copy(
                     title = title,
                     amount = amount.toDouble(),
-                    paidBy = when (splitMethod) {
-                        SplitMethod.EQUALLY -> mapOf(paidBy.uuid to if (paidBy.uuid in selectedMembers) amountPerPerson else 0.0)
-                        SplitMethod.PERCENTAGES -> mapOf(paidBy.uuid to percentages[paidBy.uuid]!!.toDouble())
-                        SplitMethod.CUSTOM -> mapOf(paidBy.uuid to quantities[paidBy.uuid]!!)
+                    payers = when (splitMethod) {
+                        SplitMethod.EQUALLY -> mapOf(payer.uuid to if (payer.uuid in selectedMembers) amountPerPerson else 0.0)
+                        SplitMethod.PERCENTAGES -> mapOf(payer.uuid to percentages[payer.uuid]!!.toDouble())
+                        SplitMethod.CUSTOM -> mapOf(payer.uuid to quantities[payer.uuid]!!)
                     },
                     splitMethod = splitMethod,
                     debtors = when (splitMethod) {
                         SplitMethod.EQUALLY -> selectedMembers.associateWith { amountPerPerson }
-                            .filter { it.key != paidBy.uuid }
+                            .filter { it.key != payer.uuid }
+
                         SplitMethod.PERCENTAGES -> percentages.mapValues { it.value.toDouble() }
-                            .filter { it.key != paidBy.uuid }
-                        SplitMethod.CUSTOM -> quantities.filter { it.key != paidBy.uuid }
+                            .filter { it.key != payer.uuid }
+
+                        SplitMethod.CUSTOM -> quantities.filter { it.key != payer.uuid }
                     }
                 )
                 screenModelScope.launch {
-                    val savedExpense = if (!isUpdate.value) {
-                        groupRepository.saveExpense(
-                            groupId = _group.value.id,
-                            expense = expense
-                        )
-                    } else {
-                        groupRepository.updateExpense(
-                            groupId = _group.value.id,
-                            newExpense = expense,
-                            oldExpense = _expense.value
-                        )
-                    }
-                    onSuccess(savedExpense, _expense.value)
+                    val savedExpense = groupRepository.saveExpense(
+                        groupId = _group.value.id,
+                        expense = expense
+                    )
+                    onSuccess(savedExpense)
                 }
             }
         } catch (e: Exception) {

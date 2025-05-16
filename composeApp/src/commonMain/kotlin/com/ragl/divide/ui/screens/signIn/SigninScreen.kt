@@ -42,20 +42,26 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import cafe.adriel.voyager.core.model.rememberNavigatorScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinNavigatorScreenModel
-import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.mmk.kmpauth.firebase.google.GoogleButtonUiContainerFirebase
 import com.mmk.kmpauth.uihelper.google.GoogleSignInButton
-import com.ragl.divide.data.models.User
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.home.HomeScreen
 import com.ragl.divide.ui.utils.DivideTextField
 import dev.gitlive.firebase.auth.FirebaseUser
-import dividemultiplatform.composeapp.generated.resources.*
+import dividemultiplatform.composeapp.generated.resources.Res
+import dividemultiplatform.composeapp.generated.resources.app_name
+import dividemultiplatform.composeapp.generated.resources.confirm_password_text
+import dividemultiplatform.composeapp.generated.resources.connect_with_google
+import dividemultiplatform.composeapp.generated.resources.connect_with_social_media
+import dividemultiplatform.composeapp.generated.resources.email_address_text
+import dividemultiplatform.composeapp.generated.resources.log_in
+import dividemultiplatform.composeapp.generated.resources.password_text
+import dividemultiplatform.composeapp.generated.resources.sign_up
+import dividemultiplatform.composeapp.generated.resources.username
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 
@@ -198,7 +204,7 @@ class SignInScreen : Screen {
             )
             Spacer(modifier = Modifier.height(20.dp))
             GoogleButtonUiContainerFirebase(
-                linkAccount = false,
+                linkAccount = true,
                 onResult = { result ->
                     onGoogleSignIn(result)
                 }

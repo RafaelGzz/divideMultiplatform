@@ -66,13 +66,11 @@ import dividemultiplatform.composeapp.generated.resources.add_expense
 import dividemultiplatform.composeapp.generated.resources.amount
 import dividemultiplatform.composeapp.generated.resources.cancel
 import dividemultiplatform.composeapp.generated.resources.category
-import dividemultiplatform.composeapp.generated.resources.divided_in
 import dividemultiplatform.composeapp.generated.resources.frequency
 import dividemultiplatform.composeapp.generated.resources.get_reminders
 import dividemultiplatform.composeapp.generated.resources.notes
 import dividemultiplatform.composeapp.generated.resources.ok
 import dividemultiplatform.composeapp.generated.resources.payments
-import dividemultiplatform.composeapp.generated.resources.payments_plural
 import dividemultiplatform.composeapp.generated.resources.reminder_permission_message
 import dividemultiplatform.composeapp.generated.resources.reminder_permission_title
 import dividemultiplatform.composeapp.generated.resources.select_date
@@ -110,10 +108,10 @@ class ExpensePropertiesScreen(
 
         var selectedDate: Long by remember { mutableStateOf(Clock.System.now().toEpochMilliseconds()) }
 
-        LaunchedEffect(vm.payments) {
-            paymentSuffix =
-                if (vm.payments == "1") Res.string.payments else Res.string.payments_plural
-        }
+//        LaunchedEffect(vm.numberOfPayments) {
+//            paymentSuffix =
+//                if (vm.numberOfPayments == "1") Res.string.payments else Res.string.payments_plural
+//        }
         val onBackClick: () -> Unit = {
             navigator.pop()
         }
@@ -269,24 +267,24 @@ class ExpensePropertiesScreen(
                     },
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
-                DivideTextField(
-                    label = stringResource(Res.string.divided_in),
-                    input = vm.payments,
-                    error = vm.paymentsError,
-                    keyboardType = KeyboardType.Number,
-                    suffix = {
-                        Text(
-                            stringResource(paymentSuffix),
-                            style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onPrimaryContainer)
-                        )
-                    },
-                    onValueChange = {
-                        if (it.all { char -> char.isDigit() }) vm.updatePayments(
-                            it
-                        )
-                    },
-                    modifier = Modifier.padding(bottom = 12.dp)
-                )
+//                DivideTextField(
+//                    label = stringResource(Res.string.divided_in),
+//                    input = vm.numberOfPayments,
+//                    error = vm.paymentsError,
+//                    keyboardType = KeyboardType.Number,
+//                    suffix = {
+//                        Text(
+//                            stringResource(paymentSuffix),
+//                            style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onPrimaryContainer)
+//                        )
+//                    },
+//                    onValueChange = {
+//                        if (it.all { char -> char.isDigit() }) vm.updatePayments(
+//                            it
+//                        )
+//                    },
+//                    modifier = Modifier.padding(bottom = 12.dp)
+//                )
                 DivideTextField(
                     label = stringResource(Res.string.notes),
                     input = vm.notes,
@@ -405,6 +403,7 @@ class ExpensePropertiesScreen(
                 Spacer(modifier = Modifier.weight(1f))
                 Button(
                     onClick = {
+                        userViewModel.showLoading()
                         vm.saveExpense(
                             onSuccess = {
                                 userViewModel.saveExpense(it)
@@ -414,6 +413,7 @@ class ExpensePropertiesScreen(
                                 userViewModel.handleError(Exception(it))
                             }
                         )
+                        userViewModel.hideLoading()
                     },
                     shape = ShapeDefaults.Medium,
                     modifier = Modifier

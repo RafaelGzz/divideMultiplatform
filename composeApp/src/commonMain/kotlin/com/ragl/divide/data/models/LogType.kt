@@ -1,0 +1,15 @@
+package com.ragl.divide.data.models
+
+enum class LogType{
+    EXPENSE_CREATED,
+    EXPENSE_UPDATED,
+    EXPENSE_DELETED,
+    PAYMENT_CREATED,
+    PAYMENT_UPDATED,
+    PAYMENT_DELETED,
+    USER_ADDED,
+    USER_REMOVED,
+    GROUP_CREATED,
+    GROUP_DELETED,
+    GROUP_UPDATED,
+}

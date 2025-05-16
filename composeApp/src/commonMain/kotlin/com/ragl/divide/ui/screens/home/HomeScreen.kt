@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -38,10 +37,12 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
@@ -64,12 +65,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
@@ -82,14 +85,16 @@ import com.ragl.divide.data.models.User
 import com.ragl.divide.data.models.getCategoryIcon
 import com.ragl.divide.ui.components.TitleRow
 import com.ragl.divide.ui.screens.UserViewModel
+import com.ragl.divide.ui.screens.addFriends.AddFriendsScreen
 import com.ragl.divide.ui.screens.expense.ExpenseScreen
 import com.ragl.divide.ui.screens.expenseProperties.ExpensePropertiesScreen
 import com.ragl.divide.ui.screens.group.GroupScreen
 import com.ragl.divide.ui.screens.groupProperties.GroupPropertiesScreen
 import com.ragl.divide.ui.screens.signIn.SignInScreen
 import com.ragl.divide.ui.utils.FriendItem
+import com.ragl.divide.ui.utils.ProfileImage
 import com.ragl.divide.ui.utils.formatCurrency
-import com.ragl.divide.ui.utils.logMessage
+import com.ragl.divide.ui.utils.toTwoDecimals
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil3.CoilImage
 import compose.icons.FontAwesomeIcons
@@ -139,7 +144,7 @@ class HomeScreen : Screen {
             state.friends.values.toList().sortedBy { it.name.lowercase() }
         }
         val expenses = remember(state.user.expenses) {
-            state.user.expenses.values.toList().sortedByDescending { it.addedDate }
+            state.user.expenses.values.toList().sortedByDescending { it.createdAt }
         }
         val groups = remember(state.groups) {
             state.groups.values.toList().sortedBy { it.name.lowercase() }
@@ -157,6 +162,8 @@ class HomeScreen : Screen {
             pullLoading = state.isLoading
         }
 
+        val isDarkMode by userViewModel.isDarkMode.collectAsState()
+
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
@@ -172,13 +179,33 @@ class HomeScreen : Screen {
             ) {
                 Scaffold(
                     bottomBar = {
-                        BottomBar(
-                            tabs = tabs,
-                            selectedTabIndex = selectedTabIndex,
-                            onItemClick = {
-                                selectedTabIndex = it
+                        NavigationBar(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        ) {
+                            tabs.forEachIndexed { index, pair ->
+                                NavigationBarItem(
+                                    selected = selectedTabIndex == index,
+                                    onClick = { selectedTabIndex = index },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = MaterialTheme.colorScheme.onPrimary,
+                                        indicatorColor = MaterialTheme.colorScheme.primary
+                                    ),
+                                    icon = {
+                                        Icon(
+                                            pair.second,
+                                            contentDescription = stringResource(pair.first),
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    },
+                                    label = {
+                                        Text(
+                                            text = stringResource(pair.first),
+                                            style = MaterialTheme.typography.labelMedium
+                                        )
+                                    }
+                                )
                             }
-                        )
+                        }
                     },
                     floatingActionButton = {
                         AnimatedVisibility(
@@ -196,7 +223,7 @@ class HomeScreen : Screen {
                                     )
                                 },
                                 onClick = {
-                                    //navigator.push(AddFriendScreen(userViewModel))
+                                    navigator.push(AddFriendsScreen())
                                 },
                                 containerColor = MaterialTheme.colorScheme.primary,
                                 contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -268,7 +295,7 @@ class HomeScreen : Screen {
                                                 navigator.replaceAll(SignInScreen())
                                             }
                                         },
-                                        isDarkMode = userViewModel.isDarkMode.value,
+                                        isDarkMode = isDarkMode,
                                         onChangeDarkMode = userViewModel::changeDarkMode
                                     )
                                 }
@@ -290,94 +317,93 @@ class HomeScreen : Screen {
     ) {
         val allowNotifications = remember { mutableStateOf(true) }
         var isSignOutDialogVisible by remember { mutableStateOf(false) }
-        Column {
+        LazyColumn {
             if (isSignOutDialogVisible) {
-                AlertDialog(
-                    onDismissRequest = { isSignOutDialogVisible = false },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            isSignOutDialogVisible = false
-                            onSignOut()
-                        }) {
-                            Text(stringResource(Res.string.yes))
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { isSignOutDialogVisible = false }) {
-                            Text(stringResource(Res.string.no))
-                        }
-                    },
-                    title = {
-                        Text(
-                            stringResource(Res.string.sign_out),
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                    },
-                    text = {
-                        Text(
-                            stringResource(Res.string.sign_out_confirmation),
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    },
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.primary,
-                    textContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            }
-            TopBar(
-                title = stringResource(Res.string.bar_item_profile_text)
-            )
-            Box(modifier = modifier.padding(16.dp)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    if (user.photoUrl.isNotEmpty()) {
-                        logMessage("HomeScreen", user.photoUrl)
-                        CoilImage(
-                            imageModel = { user.photoUrl },
-                            imageOptions = ImageOptions(
-                                contentScale = ContentScale.Crop
+                item {
+                    AlertDialog(
+                        onDismissRequest = { isSignOutDialogVisible = false },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                isSignOutDialogVisible = false
+                                onSignOut()
+                            }) {
+                                Text(stringResource(Res.string.yes))
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { isSignOutDialogVisible = false }) {
+                                Text(stringResource(Res.string.no))
+                            }
+                        },
+                        title = {
+                            Text(
+                                stringResource(Res.string.sign_out),
+                                style = MaterialTheme.typography.titleLarge
                             )
-                        )
-                    } else {
-                        Icon(
-                            Icons.Filled.Person,
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(52.dp)
-                                .padding(12.dp)
-                                .clip(CircleShape)
-                        )
-                    }
-                    Column {
-                        Text(
-                            user.name,
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                        Text(
-                            user.email,
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.Normal,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                            ),
-                        )
-                    }
-                    Spacer(modifier = Modifier.weight(1f))
-                    IconButton(onClick = { isSignOutDialogVisible = true }) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ExitToApp,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
+                        },
+                        text = {
+                            Text(
+                                stringResource(Res.string.sign_out_confirmation),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        },
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        titleContentColor = MaterialTheme.colorScheme.primary,
+                        textContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            NotificationSetting(allowNotifications)
-            Spacer(modifier = Modifier.height(16.dp))
-            DarkModeSetting(isDarkMode, onChangeDarkMode)
-            Spacer(modifier = Modifier.weight(1f))
+            item {
+                TopBar(
+                    title = stringResource(Res.string.bar_item_profile_text)
+                )
+            }
+            item {
+                Box(modifier = modifier.padding(16.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        if (user.photoUrl.isNotEmpty()) {
+                            ProfileImage(user.photoUrl)
+                        } else {
+                            Icon(
+                                Icons.Filled.Person,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(52.dp)
+                                    .padding(12.dp)
+                                    .clip(CircleShape)
+                            )
+                        }
+                        Column {
+                            Text(
+                                user.name,
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Text(
+                                user.email,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Normal,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                ),
+                            )
+                        }
+                        Spacer(modifier = Modifier.weight(1f))
+                        IconButton(onClick = { isSignOutDialogVisible = true }) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ExitToApp,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                NotificationSetting(allowNotifications)
+                Spacer(modifier = Modifier.height(16.dp))
+                DarkModeSetting(isDarkMode, onChangeDarkMode)
+            }
         }
     }
 
@@ -531,7 +557,6 @@ class HomeScreen : Screen {
                 } else items(friends, key = { it.uuid }) { friend ->
                     FriendItem(
                         headline = friend.name,
-                        supporting = friend.email,
                         photoUrl = friend.photoUrl,
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surface,
@@ -693,6 +718,10 @@ class HomeScreen : Screen {
 
     @Composable
     private fun ExpenseCard(expense: Expense, onClick: () -> Unit) {
+
+        val remainingBalance = remember(expense.amountPaid, expense.amount) {
+            (expense.amount - expense.amountPaid).toTwoDecimals()
+        }
         Row(
             modifier = Modifier
                 .height(80.dp)
@@ -726,16 +755,39 @@ class HomeScreen : Screen {
                     maxLines = 1
                 )
                 Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = formatCurrency(expense.amount, "es-MX"),
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Normal
-                    ),
-                    softWrap = true,
-                    overflow = TextOverflow.Ellipsis,
-                    maxLines = 1
-                )
+                if (expense.amountPaid != 0.0) {
+                    Text(
+                        text = formatCurrency(expense.amount, "es-MX"),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            textDecoration = TextDecoration.LineThrough,
+                            color = Color.Gray
+                        ),
+                        softWrap = true,
+                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 1
+                    )
+                    Text(
+                        text = formatCurrency(remainingBalance, "es-MX"),
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Normal
+                        ),
+                        softWrap = true,
+                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 1
+                    )
+                } else {
+                    Text(
+                        text = formatCurrency(expense.amount, "es-MX"),
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Normal
+                        ),
+                        softWrap = true,
+                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 1
+                    )
+                }
             }
         }
     }
@@ -776,71 +828,5 @@ class HomeScreen : Screen {
             }
         }
 
-    }
-
-    @Composable
-    private fun BottomBar(
-        tabs: List<Pair<StringResource, ImageVector>>,
-        selectedTabIndex: Int,
-        onItemClick: (Int) -> Unit
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            HorizontalDivider(Modifier.padding(horizontal = 16.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .height(80.dp)
-            ) {
-                tabs.forEachIndexed { index, pair ->
-                    BottomBarItem(
-                        labelStringResource = pair.first,
-                        icon = pair.second,
-                        selected = selectedTabIndex == index,
-                        onItemClick = { onItemClick(index) },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-        }
-    }
-
-    @Composable
-    private fun BottomBarItem(
-        modifier: Modifier = Modifier,
-        selected: Boolean = false,
-        labelStringResource: StringResource,
-        icon: ImageVector,
-        onItemClick: () -> Unit
-    ) {
-        Box(modifier = modifier.clickable { onItemClick() }) {
-            Column(
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    tint = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(
-                        alpha = 0.6f
-                    ),
-                    modifier = Modifier
-                        .clip(ShapeDefaults.Medium)
-                        .size(24.dp)
-                    //.padding(horizontal = 16.dp, vertical = 4.dp)
-                )
-                Text(
-                    text = stringResource(labelStringResource),
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(
-                            alpha = 0.6f
-                        )
-                    ),
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
-        }
     }
 }

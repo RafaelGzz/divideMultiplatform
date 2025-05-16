@@ -1,7 +1,7 @@
 package com.ragl.divide.ui.screens.groupExpense
 
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.toMutableStateMap
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.GroupExpense
@@ -18,29 +18,37 @@ class GroupExpenseViewModel(
     private val _groupExpense = MutableStateFlow(GroupExpense())
     val groupExpense = _groupExpense.asStateFlow()
 
-    var sortedDebtors: Map<User, Double> = mutableStateMapOf()
-    var sortedPaidBy: Map<User, Double> = mutableStateMapOf()
-    var members: List<User> = mutableStateListOf()
+    private var _sortedDebtors = MutableStateFlow(mutableMapOf<User, Double>())
+    val sortedDebtors = _sortedDebtors.asStateFlow()
 
+    private var _sortedPaidBy = MutableStateFlow(mutableMapOf<User, Double>())
+    val sortedPaidBy = _sortedPaidBy.asStateFlow()
+
+    var members: List<User> = mutableStateListOf()
+    
     fun setGroupExpense(groupExpense: GroupExpense, users: List<User>) {
         _groupExpense.update {
             groupExpense
         }
         members = users
-        sortedDebtors = groupExpense.debtors.entries.filter { it.value != 0.0 }
-            .mapNotNull { (memberId, debt) ->
-                members.find { it.uuid == memberId }?.let { member -> // Use let for conciseness
-                    member to debt // Create a Pair of (member, debt)
+        _sortedDebtors.update {
+            groupExpense.debtors.entries.filter { it.value != 0.0 }
+                .mapNotNull { (memberId, debt) ->
+                    members.find { it.uuid == memberId }?.let { member -> // Use let for conciseness
+                        member to debt // Create a Pair of (member, debt)
+                    }
                 }
-            }
-            .sortedBy { (member, _) -> member.name.lowercase() }.toMap()
-        sortedPaidBy = groupExpense.paidBy.entries.filter { it.value != 0.0 }
-            .mapNotNull { (memberId, debt) ->
-                members.find { it.uuid == memberId }?.let { member -> // Use let for conciseness
-                    member to debt // Create a Pair of (member, debt)
+                .sortedBy { (member, _) -> member.name.lowercase() }.toMutableStateMap()
+        }
+        _sortedPaidBy.update {
+            groupExpense.payers.entries.filter { it.value != 0.0 }
+                .mapNotNull { (memberId, debt) ->
+                    members.find { it.uuid == memberId }?.let { member -> // Use let for conciseness
+                        member to debt // Create a Pair of (member, debt)
+                    }
                 }
-            }
-            .sortedBy { (member, _) -> member.name.lowercase() }.toMap()
+                .sortedBy { (member, _) -> member.name.lowercase() }.toMutableStateMap()
+        }
     }
 
     fun deleteExpense(groupId: String, onSuccess: (GroupExpense) -> Unit, onError: (String) -> Unit) {

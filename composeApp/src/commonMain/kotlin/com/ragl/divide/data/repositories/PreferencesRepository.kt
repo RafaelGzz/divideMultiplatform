@@ -22,7 +22,7 @@ class PreferencesRepository(
     val startDestinationFlow: Flow<String> = dataStore.data
         .catch {
             if (it is IOException) {
-                logMessage("PreferencesRepository","Error reading preferences: $it")
+                logMessage("PreferencesRepository", "Error reading preferences: $it")
                 emit(emptyPreferences())
             } else {
                 throw it
@@ -35,7 +35,7 @@ class PreferencesRepository(
     val darkModeFlow: Flow<String?> = dataStore.data
         .catch {
             if (it is IOException) {
-                logMessage("PreferencesRepository","Error reading preferences: $it")
+                logMessage("PreferencesRepository", "Error reading preferences: $it")
                 emit(emptyPreferences())
             } else {
                 throw it
@@ -52,7 +52,7 @@ class PreferencesRepository(
             }
             true
         } catch (e: Exception) {
-            logMessage("PreferencesRepository","Error saving start destination: $e")
+            logMessage("PreferencesRepository", "Error saving start destination: $e")
             false
         }
 
@@ -60,11 +60,12 @@ class PreferencesRepository(
     suspend fun saveDarkMode(darkMode: Boolean?): Boolean =
         try {
             dataStore.edit {
-                it[KEY_DARK_MODE] = darkMode.toString()
+                if (darkMode == null) it.remove(KEY_DARK_MODE)
+                else it[KEY_DARK_MODE] = darkMode.toString()
             }
             true
         } catch (e: Exception) {
-            logMessage("PreferencesRepository","Error saving start destination: $e")
+            logMessage("PreferencesRepository", "Error saving start destination: $e")
             false
         }
 }

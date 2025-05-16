@@ -31,7 +31,7 @@ class FriendsRepositoryImpl(
         val uuid = auth.currentUser!!.uid
         val map = mutableMapOf<String, User>()
         val usersRef =
-            database.reference("users").orderByChild("email").startAt(query).limitToFirst(limit)
+            database.reference("users").orderByChild("name").startAt(query).limitToFirst(limit)
 
         // Use firstOrNull to get just the first emission from the flow
         usersRef.valueEvents.firstOrNull()?.children?.forEach {

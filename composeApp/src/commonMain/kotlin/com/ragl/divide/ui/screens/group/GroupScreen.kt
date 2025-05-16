@@ -62,7 +62,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.koin.koinScreenModel
+import cafe.adriel.voyager.koin.koinNavigatorScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ragl.divide.data.models.Group
@@ -73,6 +73,8 @@ import com.ragl.divide.data.models.getCategoryIcon
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.groupExpense.GroupExpenseScreen
 import com.ragl.divide.ui.screens.groupExpenseProperties.GroupExpensePropertiesScreen
+import com.ragl.divide.ui.screens.groupPayment.GroupPaymentScreen
+import com.ragl.divide.ui.screens.groupPaymentProperties.GroupPaymentPropertiesScreen
 import com.ragl.divide.ui.screens.groupProperties.GroupPropertiesScreen
 import com.ragl.divide.ui.utils.formatCurrency
 import com.ragl.divide.ui.utils.formatDate
@@ -86,33 +88,37 @@ import dividemultiplatform.composeapp.generated.resources.add_expense
 import dividemultiplatform.composeapp.generated.resources.compose_multiplatform
 import dividemultiplatform.composeapp.generated.resources.group_no_expenses
 import dividemultiplatform.composeapp.generated.resources.make_a_payment
-import dividemultiplatform.composeapp.generated.resources.owe_in_general
-import dividemultiplatform.composeapp.generated.resources.owed_in_general
 import dividemultiplatform.composeapp.generated.resources.paid_by
+import dividemultiplatform.composeapp.generated.resources.pending
+import dividemultiplatform.composeapp.generated.resources.settled
+import dividemultiplatform.composeapp.generated.resources.x_paid_y
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 class GroupScreen(private val groupId: String) : Screen {
     @Composable
     override fun Content() {
-        val viewModel = koinScreenModel<GroupViewModel>()
-        val userViewModel = koinScreenModel<UserViewModel>()
         val navigator = LocalNavigator.currentOrThrow
+        val viewModel = navigator.koinNavigatorScreenModel<GroupViewModel>()
+        val userViewModel = navigator.koinNavigatorScreenModel<UserViewModel>()
 
-        LaunchedEffect(groupId) {
+        LaunchedEffect(Unit) {
             val group = userViewModel.getGroupById(groupId)
             val uuid = userViewModel.getUUID()
             viewModel.setGroup(group, uuid)
         }
 
         val groupState by viewModel.group.collectAsState()
-        val groupUser = viewModel.groupUser
         val isLoading by viewModel.isLoading.collectAsState()
 
         val hasExpenses = remember(groupState.expenses) { groupState.expenses.isNotEmpty() }
 
         val addExpenseClick = {
             navigator.push(GroupExpensePropertiesScreen(groupId, viewModel.members))
+        }
+
+        val addPaymentClick = {
+            navigator.push(GroupPaymentPropertiesScreen(groupId, viewModel.members))
         }
 
         Scaffold(
@@ -128,8 +134,7 @@ class GroupScreen(private val groupId: String) : Screen {
                     CustomFloatingActionButton(
                         fabIcon = Icons.Filled.Add,
                         onAddExpenseClick = addExpenseClick,
-                        onAddPaymentClick = {},
-                        hasDebts = groupUser.hasDebts()
+                        onAddPaymentClick = addPaymentClick,
                     )
             }
         ) { paddingValues ->
@@ -142,36 +147,13 @@ class GroupScreen(private val groupId: String) : Screen {
                     .background(MaterialTheme.colorScheme.background)
             ) {
 
-                if (groupUser.totalOwed != 0.0) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        buildAnnotatedString {
-                            append(stringResource(Res.string.owed_in_general))
-                            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
-                                append(formatCurrency(groupUser.totalOwed, local = "es-MX"))
-                            }
-                        },
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-                if (groupUser.totalDebt != 0.0) {
-                    Text(
-                        buildAnnotatedString {
-                            append(stringResource(Res.string.owe_in_general))
-                            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
-                                append(formatCurrency(groupUser.totalDebt, local = "es-MX"))
-                            }
-                        },
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
                 Spacer(modifier = Modifier.height(8.dp))
                 if (!hasExpenses) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Column (verticalArrangement = Arrangement.spacedBy(8.dp)){
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(
                                 text = stringResource(Res.string.group_no_expenses),
                                 style = MaterialTheme.typography.labelSmall,
@@ -202,12 +184,28 @@ class GroupScreen(private val groupId: String) : Screen {
                     }
                 } else {
                     if (!isLoading) {
+                        // Mostrar las deudas actuales antes de la lista de gastos
+                        CurrentDebtsView(
+                            currentDebts = groupState.currentDebts,
+                            currentUserId = viewModel.currentUserId,
+                            members = viewModel.members
+                        )
+
                         ExpenseListView(
                             expensesAndPayments = viewModel.expensesAndPayments,
                             modifier = Modifier.weight(1f),
                             getPaidByNames = viewModel::getPaidByNames,
                             onExpenseClick = {
                                 navigator.push(GroupExpenseScreen(groupId, it, viewModel.members))
+                            },
+                            onPaymentClick = { paymentId ->
+                                navigator.push(
+                                    GroupPaymentScreen(
+                                        groupId,
+                                        paymentId,
+                                        viewModel.members
+                                    )
+                                )
                             },
                             members = viewModel.members
                         )
@@ -322,7 +320,6 @@ fun CustomFloatingActionButton(
     fabIcon: ImageVector,
     onAddExpenseClick: () -> Unit,
     onAddPaymentClick: () -> Unit,
-    hasDebts: Boolean = false
 ) {
     var isExpanded by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
@@ -371,26 +368,29 @@ fun CustomFloatingActionButton(
                 Spacer(modifier = Modifier.width(8.dp))
             }
             Spacer(modifier = Modifier.height(8.dp))
-            if (hasDebts)
-                Button(
-                    onClick = { onAddPaymentClick() },
-                    shape = ShapeDefaults.Medium,
-                    contentPadding = PaddingValues(horizontal = 12.dp),
+            Button(
+                onClick = { onAddPaymentClick() },
+                shape = ShapeDefaults.Medium,
+                contentPadding = PaddingValues(horizontal = 12.dp),
+                modifier = Modifier
+                    .height(60.dp)
+                    .align(Alignment.End)
+            ) {
+                Icon(
+                    FontAwesomeIcons.Solid.DollarSign,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(Res.string.make_a_payment),
+                    maxLines = 1,
+                    softWrap = true,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
-                        .height(60.dp)
-                        .align(Alignment.End)
-                ) {
-                    Icon(FontAwesomeIcons.Solid.DollarSign, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = stringResource(Res.string.make_a_payment),
-                        maxLines = 1,
-                        softWrap = true,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
         }
         Spacer(modifier = Modifier.height(8.dp))
         FloatingActionButton(
@@ -421,12 +421,13 @@ private fun ExpenseListView(
     expensesAndPayments: List<Any>,
     getPaidByNames: (List<String>) -> String,
     members: List<User>,
-    onExpenseClick: (String) -> Unit
+    onExpenseClick: (String) -> Unit,
+    onPaymentClick: (String) -> Unit
 ) {
     val expensesByMonth = expensesAndPayments.groupBy {
         when (it) {
             is GroupExpense -> {
-                formatDate(it.addedDate, "MMMM yyyy")
+                formatDate(it.createdAt, "MMMM yyyy")
             }
 
             is Payment -> {
@@ -446,7 +447,8 @@ private fun ExpenseListView(
                 expensesAndPayments = expensesByMonth[month] ?: emptyList(),
                 getPaidByNames = getPaidByNames,
                 members = members,
-                onExpenseClick = onExpenseClick
+                onExpenseClick = onExpenseClick,
+                onPaymentClick = onPaymentClick
             )
         }
         item {
@@ -461,7 +463,8 @@ private fun MonthSection(
     expensesAndPayments: List<Any>,
     getPaidByNames: (List<String>) -> String,
     members: List<User>,
-    onExpenseClick: (String) -> Unit
+    onExpenseClick: (String) -> Unit,
+    onPaymentClick: (String) -> Unit
 ) {
     Column {
         Text(
@@ -474,7 +477,7 @@ private fun MonthSection(
         ) {
             for (expense in expensesAndPayments.sortedByDescending {
                 when (it) {
-                    is GroupExpense -> it.addedDate
+                    is GroupExpense -> it.createdAt
                     is Payment -> it.date
                     else -> null
                 }
@@ -483,7 +486,8 @@ private fun MonthSection(
                     expenseOrPayment = expense,
                     getPaidByNames = getPaidByNames,
                     members = members,
-                    onExpenseClick = onExpenseClick
+                    onExpenseClick = onExpenseClick,
+                    onPaymentClick = onPaymentClick
                 )
             }
         }
@@ -495,20 +499,33 @@ private fun GroupExpenseItem(
     expenseOrPayment: Any,
     getPaidByNames: (List<String>) -> String,
     members: List<User>,
-    onExpenseClick: (String) -> Unit
+    onExpenseClick: (String) -> Unit,
+    onPaymentClick: (String) -> Unit
 ) {
     val formattedDate = formatDate(
-        if (expenseOrPayment is GroupExpense) expenseOrPayment.addedDate else (expenseOrPayment as Payment).date,
+        if (expenseOrPayment is GroupExpense) expenseOrPayment.createdAt else (expenseOrPayment as Payment).date,
         "MMM\ndd"
     )
+
+    val isSettled = when (expenseOrPayment) {
+        is GroupExpense -> expenseOrPayment.settled ?: false
+        is Payment -> expenseOrPayment.settled ?: false
+        else -> false
+    }
+
     Row(
         modifier = Modifier
             .height(80.dp)
             .fillMaxWidth()
             .clip(ShapeDefaults.Medium)
-            .background(MaterialTheme.colorScheme.primaryContainer)
+            .background(
+                MaterialTheme.colorScheme.primaryContainer
+            )
             .clickable {
-                if (expenseOrPayment is GroupExpense) onExpenseClick(expenseOrPayment.id)
+                when (expenseOrPayment) {
+                    is GroupExpense -> onExpenseClick(expenseOrPayment.id)
+                    is Payment -> onPaymentClick(expenseOrPayment.id)
+                }
             },
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -520,17 +537,22 @@ private fun GroupExpenseItem(
             ),
             modifier = Modifier.padding(start = 16.dp)
         )
+
         Icon(
             if (expenseOrPayment is GroupExpense) getCategoryIcon(expenseOrPayment.category) else FontAwesomeIcons.Solid.DollarSign,
             tint = MaterialTheme.colorScheme.primary,
             contentDescription = null,
-            modifier = Modifier.padding(start = 12.dp).size(24.dp)
+            modifier = Modifier
+                .padding(start = 12.dp)
+                .size(24.dp)
         )
+
         Column(
             modifier = Modifier
                 .fillMaxHeight()
                 .weight(1f)
-                .padding(horizontal = 12.dp), verticalArrangement = Arrangement.Center
+                .padding(horizontal = 12.dp),
+            verticalArrangement = Arrangement.Center
         ) {
             when (expenseOrPayment) {
                 is GroupExpense -> {
@@ -544,9 +566,10 @@ private fun GroupExpenseItem(
                             fontWeight = FontWeight.Normal
                         ),
                     )
+
                     Text(
                         text = stringResource(Res.string.paid_by) + " " + getPaidByNames(
-                            expenseOrPayment.paidBy.keys.toList()
+                            expenseOrPayment.payers.keys.toList()
                         ),
                         maxLines = 1,
                         softWrap = true,
@@ -560,7 +583,8 @@ private fun GroupExpenseItem(
 
                 is Payment -> {
                     Text(
-                        "${members.find { it.uuid == expenseOrPayment.issuer }?.name} paid ${members.find { it.uuid == expenseOrPayment.receiver }?.name}",
+                        stringResource(Res.string.x_paid_y, members.find { it.uuid == expenseOrPayment.from }?.name!!,  members.find { it.uuid == expenseOrPayment.to }?.name!!),
+                        //"${members.find { it.uuid == expenseOrPayment.from }?.name} paid ${members.find { it.uuid == expenseOrPayment.to }?.name}",
                         softWrap = true,
                         overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.labelMedium.copy(
@@ -571,23 +595,119 @@ private fun GroupExpenseItem(
                 }
             }
         }
-        Text(
-            text = formatCurrency(
-                when (expenseOrPayment) {
-                    is GroupExpense -> expenseOrPayment.amount
-                    is Payment -> expenseOrPayment.amount
-                    else -> 0.0
+
+        Column(
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(end = 12.dp)
+        ) {
+            Text(
+                text = formatCurrency(
+                    when (expenseOrPayment) {
+                        is GroupExpense -> expenseOrPayment.amount
+                        is Payment -> expenseOrPayment.amount
+                        else -> 0.0
+                    },
+                    "es-MX"
+                ),
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    fontWeight = FontWeight.Normal
+                ),
+                softWrap = true,
+                overflow = TextOverflow.Ellipsis,
+                maxLines = 1
+            )
+            if (expenseOrPayment is GroupExpense) {
+                if (isSettled) {
+                    Text(
+                        text = stringResource(Res.string.settled),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                            fontWeight = FontWeight.Medium
+                        ),
+                        modifier = Modifier
+                            .padding(top = 4.dp)
+                            .background(
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                shape = ShapeDefaults.Small
+                            )
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                } else {
+                    Text(
+                        text = stringResource(Res.string.pending),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                            fontWeight = FontWeight.Medium
+                        ),
+                        modifier = Modifier
+                            .padding(top = 4.dp)
+                            .background(
+                                MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
+                                shape = ShapeDefaults.Small
+                            )
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CurrentDebtsView(
+    currentDebts: Map<String, Map<String, Double>>,
+    currentUserId: String,
+    members: List<User>,
+    modifier: Modifier = Modifier
+) {
+    if (currentDebts.isEmpty()) return
+
+    // Filtrar deudas del usuario actual
+    val userDebts = currentDebts[currentUserId] ?: emptyMap()
+    val userOwed = currentDebts.filter { it.key != currentUserId }
+        .mapValues { it.value[currentUserId] ?: 0.0 }
+        .filter { it.value > 0.01 }
+
+    if (userDebts.isEmpty() && userOwed.isEmpty()) return
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp)
+    ) {
+        // Si el usuario debe dinero a alguien
+        userDebts.forEach { (toUserId, amount) ->
+            if (amount > 0.01) {
+                val toUser = members.find { it.uuid == toUserId }
+                Text(
+                    buildAnnotatedString {
+                        append("Debes ")
+                        withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
+                            append(formatCurrency(amount, "es-MX"))
+                        }
+                        append(" a ${toUser?.name ?: "Desconocido"}")
+                    },
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+        }
+
+        // Si alguien debe dinero al usuario
+        userOwed.forEach { (fromUserId, amount) ->
+            val fromUser = members.find { it.uuid == fromUserId }
+            Text(
+                buildAnnotatedString {
+                    append("${fromUser?.name ?: "Desconocido"} te debe ")
+                    withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
+                        append(formatCurrency(amount, "es-MX"))
+                    }
                 },
-                "es-MX"
-            ),
-            style = MaterialTheme.typography.bodySmall.copy(
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Normal
-            ),
-            softWrap = true,
-            overflow = TextOverflow.Ellipsis,
-            maxLines = 1,
-            modifier = Modifier.padding(end = 20.dp)
-        )
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+        }
     }
 }

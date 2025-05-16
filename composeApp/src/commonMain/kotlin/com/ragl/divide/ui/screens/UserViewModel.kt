@@ -6,14 +6,13 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.GroupExpense
-import com.ragl.divide.data.models.GroupUser
 import com.ragl.divide.data.models.Payment
-import com.ragl.divide.data.models.SplitMethod
 import com.ragl.divide.data.models.User
 import com.ragl.divide.data.repositories.FriendsRepository
 import com.ragl.divide.data.repositories.GroupRepository
 import com.ragl.divide.data.repositories.PreferencesRepository
 import com.ragl.divide.data.repositories.UserRepository
+import com.ragl.divide.data.services.GroupExpenseService
 import com.ragl.divide.ui.utils.logMessage
 import dev.gitlive.firebase.auth.FirebaseUser
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,7 +32,8 @@ class UserViewModel(
     private var userRepository: UserRepository,
     private var friendsRepository: FriendsRepository,
     private val preferencesRepository: PreferencesRepository,
-    private val groupRepository: GroupRepository
+    private val groupRepository: GroupRepository,
+    private val groupExpenseService: GroupExpenseService
 ) : ScreenModel {
 
     private val _state = MutableStateFlow(AppState())
@@ -75,6 +75,18 @@ class UserViewModel(
         _errorState.value = null
     }
 
+    fun showLoading() {
+        _state.update {
+            it.copy(isLoading = true)
+        }
+    }
+
+    fun hideLoading() {
+        _state.update {
+            it.copy(isLoading = false)
+        }
+    }
+
     fun changeDarkMode(isDarkMode: Boolean?) {
         screenModelScope.launch {
             preferencesRepository.saveDarkMode(isDarkMode)
@@ -83,11 +95,9 @@ class UserViewModel(
 
     fun getUserData() {
         screenModelScope.launch {
-            _state.update {
-                it.copy(isLoading = true)
-            }
+            showLoading()
             try {
-                val user = userRepository.getUser(userRepository.getFirebaseUser()!!.uid)
+                val user =  userRepository.getUser(userRepository.getFirebaseUser()!!.uid)
                 val groups = groupRepository.getGroups(user.groups)
                 //val expenses = userRepository.getExpenses()
                 val friends = friendsRepository.getFriends(user.friends)
@@ -103,9 +113,7 @@ class UserViewModel(
                 e.printStackTrace()
                 logMessage("HomeViewModel", e.message.toString())
             }
-            _state.update {
-                it.copy(isLoading = false)
-            }
+            hideLoading()
         }
     }
 
@@ -117,9 +125,7 @@ class UserViewModel(
     ) {
         screenModelScope.launch {
             try {
-                _state.update {
-                    it.copy(isLoading = true)
-                }
+                showLoading()
                 if (userRepository.signInWithEmailAndPassword(email, password) != null) {
                     //preferencesRepository.saveStartDestination(Screen.Home.route)
                     getUserData()
@@ -130,9 +136,7 @@ class UserViewModel(
                 onFail(handleAuthError(e))
                 logMessage("UserViewModel: signInWithEmailAndPassword", e.message.toString())
             } finally {
-                _state.update {
-                    it.copy(isLoading = false)
-                }
+                hideLoading()
             }
         }
     }
@@ -144,9 +148,7 @@ class UserViewModel(
     ) {
         screenModelScope.launch {
             try {
-                _state.update {
-                    it.copy(isLoading = true)
-                }
+                showLoading()
                 if (userRepository.signUpWithEmailAndPassword(email, password, name) != null) {
                     //preferencesRepository.saveStartDestination(Screen.Home.route)
                     getUserData()
@@ -156,9 +158,7 @@ class UserViewModel(
                 onFail(handleAuthError(e))
                 logMessage("UserViewModel: signUpWithEmailAndPassword", e.message.toString())
             } finally {
-                _state.update {
-                    it.copy(isLoading = false)
-                }
+                hideLoading()
             }
         }
     }
@@ -170,12 +170,14 @@ class UserViewModel(
     ) {
         screenModelScope.launch {
             try {
-                _state.update {
-                    it.copy(isLoading = true)
-                }
+                showLoading()
 
-                if (result.getOrNull() != null) {
-                    //preferencesRepository.saveStartDestination(Screen.Home.route)
+                val firebaseUser = result.getOrNull()
+                if (firebaseUser != null) {
+                    val checkedUser = userRepository.getUser(firebaseUser.uid)
+                    if (checkedUser.uuid.isEmpty()) {
+                        userRepository.createUserInDatabase()
+                    }
                     getUserData()
                     onSuccess()
                 } else {
@@ -191,21 +193,19 @@ class UserViewModel(
                 logMessage("UserViewModel", e.message.toString())
                 //Log.e("UserViewModel", "signUpWithEmailAndPassword: ", e)
             } finally {
-                _state.update {
-                    it.copy(isLoading = false)
-                }
+                hideLoading()
             }
         }
     }
 
     private fun handleAuthError(e: Exception): Exception {
-        return when (e.message) {
-            "There is no user record corresponding to this identifier. The user may have been deleted.",
-            "The password is invalid or the user does not have a password." -> {
+        return when {
+            e.message?.contains("There is no user record corresponding to this identifier") == true ||
+            e.message?.contains("The password is invalid or the user does not have a password") == true -> {
                 Exception("The email or password is invalid.")
             }
 
-            "The email address is already in use by another account." -> {
+            e.message?.contains("The email address is already in use by another account") == true -> {
                 Exception(e.message)
             }
 
@@ -218,20 +218,15 @@ class UserViewModel(
     fun signOut(onSignOut: () -> Unit) {
         screenModelScope.launch {
             try {
-                _state.update {
-                    it.copy(isLoading = true)
-                }
+                showLoading()
                 userRepository.signOut()
                 if (userRepository.getFirebaseUser() == null) {
                     //preferencesRepository.saveStartDestination(Screen.Login.route)
                     onSignOut()
-                    _state.update {
-                        AppState(isLoading = false)
-                    }
+                    hideLoading()
                 }
             } catch (e: Exception) {
                 logMessage("UserViewModel", e.message.toString())
-                //Log.e("HomeViewModel", e.message.toString())
             }
         }
     }
@@ -264,6 +259,7 @@ class UserViewModel(
         _state.update {
             it.copy(groups = it.groups + (group.id to group))
         }
+        recalculateDebts(group.id)
     }
 
     fun saveExpense(expense: Expense) {
@@ -308,12 +304,53 @@ class UserViewModel(
         }
     }
 
-    fun getGroupMembers(group: Group): List<User> {
-        var users = listOf<User>()
-            screenModelScope.launch {
-                users = groupRepository.getUsers(group.users.values.map { it.id })
-            }
-        return users
+    private fun recalculateDebts(groupId: String) {
+        val group = _state.value.groups[groupId] ?: return
+
+        val expensesToSettle = mutableListOf<String>()
+        val paymentsToSettle = mutableListOf<String>()
+        val currentDebts = groupExpenseService.calculateDebts(
+            group.expenses.values,
+            group.payments.values,
+            group.simplifyDebts,
+            expensesToSettle,
+            paymentsToSettle
+        )
+        _state.update {
+            it.copy(
+                groups = it.groups.mapValues { group ->
+                    if (group.key == groupId) {
+                        group.value.copy(
+                            currentDebts = currentDebts,
+                            expenses = if (expensesToSettle.isNotEmpty()) {
+                                group.value.expenses.mapValues { expense ->
+                                    if (expense.key in expensesToSettle) {
+                                        expense.value.copy(settled = true)
+                                    } else {
+                                        expense.value
+                                    }
+                                }
+                            } else {
+                                group.value.expenses
+                            },
+                            payments = if (paymentsToSettle.isNotEmpty()) {
+                                group.value.payments.mapValues { payment ->
+                                    if (payment.key in paymentsToSettle) {
+                                        payment.value.copy(settled = true)
+                                    } else {
+                                        payment.value
+                                    }
+                                }
+                            } else {
+                                group.value.payments
+                            }
+                        )
+                    } else {
+                        group.value
+                    }
+                }
+            )
+        }
     }
 
     fun saveGroupExpense(groupId: String, expense: GroupExpense) {
@@ -328,178 +365,7 @@ class UserViewModel(
                 }
             )
         }
-        expense.paidBy.entries.forEach { (payerId, amountPaid) ->
-            val groupUser: GroupUser = _state.value.groups[groupId]?.users?.get(payerId)!!
-            val newOwedMap = groupUser.owed.toMutableMap()
-            expense.debtors.entries.forEach { (debtorId, debtorAmount) ->
-                val debt = when (expense.splitMethod) {
-                    SplitMethod.EQUALLY, SplitMethod.CUSTOM -> debtorAmount
-                    SplitMethod.PERCENTAGES -> (debtorAmount * expense.amount) / 100
-                }
-                newOwedMap[debtorId] = (newOwedMap[debtorId] ?: 0.0) + debt
-            }
-            val payerOwed = expense.amount - when (expense.splitMethod) {
-                SplitMethod.EQUALLY, SplitMethod.CUSTOM -> amountPaid
-                SplitMethod.PERCENTAGES -> (amountPaid * expense.amount) / 100
-            }
-            _state.update {
-                it.copy(
-                    groups = it.groups.mapValues { group ->
-                        if (group.key == groupId) {
-                            group.value.copy(
-                                users = group.value.users.mapValues { user ->
-                                    if (user.key == payerId) {
-                                        user.value.copy(
-                                            owed = newOwedMap,
-                                            totalOwed = user.value.totalOwed + payerOwed
-                                        )
-                                    } else {
-                                        user.value
-                                    }
-                                }
-                            )
-                        } else {
-                            group.value
-                        }
-                    }
-                )
-            }
-        }
-        expense.debtors.entries.forEach { (debtorId, amount) ->
-            val groupUser: GroupUser = _state.value.groups[groupId]?.users?.get(debtorId)!!
-            //groupUser.totalDebt += amount
-            val newDebtsMap = groupUser.debts.toMutableMap()
-            val totalDebt = when (expense.splitMethod) {
-                SplitMethod.EQUALLY, SplitMethod.CUSTOM -> amount
-                SplitMethod.PERCENTAGES -> (amount * expense.amount) / 100
-            }
-            expense.paidBy.keys.forEach { payerId ->
-                newDebtsMap[payerId] = (newDebtsMap[payerId] ?: 0.0) + totalDebt
-            }
-            _state.update {
-                it.copy(
-                    groups = it.groups.mapValues { group ->
-                        if (group.key == groupId) {
-                            group.value.copy(
-                                users = group.value.users.mapValues { user ->
-                                    if (user.key == debtorId) {
-                                        user.value.copy(
-                                            debts = newDebtsMap,
-                                            totalDebt = user.value.totalDebt + totalDebt
-                                        )
-                                    } else {
-                                        user.value
-                                    }
-                                }
-                            )
-                        } else {
-                            group.value
-                        }
-                    }
-                )
-            }
-        }
-    }
-
-    fun updateGroupExpense(groupId: String, newExpense: GroupExpense, oldExpense: GroupExpense) {
-        _state.update { currentUser ->
-            // Actualiza el gasto del grupo
-            val updatedGroups = currentUser.groups.mapValues { group ->
-                if (group.key == groupId) {
-                    group.value.copy(expenses = group.value.expenses + (newExpense.id to newExpense))
-                } else {
-                    group.value
-                }
-            }
-
-            val updatedGroupsAfterPaidBy =
-                newExpense.paidBy.entries.fold(updatedGroups) { groups, (payerId, amountPaid) ->
-                    val groupUser = groups[groupId]?.users?.get(payerId) ?: return@fold groups
-                    val newOwedMap = groupUser.owed.toMutableMap()
-
-                    oldExpense.debtors.entries.forEach { (debtorId, debtorAmount) ->
-                        val oldDebt = calculateDebt(oldExpense, debtorAmount)
-                        newOwedMap[debtorId] = (newOwedMap[debtorId] ?: 0.0) - oldDebt
-                    }
-
-                    newExpense.debtors.entries.forEach { (debtorId, debtorAmount) ->
-                        val newDebt = calculateDebt(newExpense, debtorAmount)
-                        newOwedMap[debtorId] = (newOwedMap[debtorId] ?: 0.0) + newDebt
-                    }
-
-                    val newPayerOwed = newExpense.amount - calculateDebt(newExpense, amountPaid)
-                    val oldPayerOwed =
-                        oldExpense.amount - calculateDebt(oldExpense, oldExpense.paidBy[payerId]!!)
-
-                    groups.mapValues { group ->
-                        if (group.key == groupId) {
-                            group.value.copy(
-                                users = group.value.users.mapValues { user ->
-                                    if (user.key == payerId) {
-                                        user.value.copy(
-                                            owed = newOwedMap,
-                                            totalOwed = user.value.totalOwed + newPayerOwed - oldPayerOwed
-                                        )
-                                    } else {
-                                        user.value
-                                    }
-                                }
-                            )
-                        } else {
-                            group.value
-                        }
-                    }
-                }
-
-            // Procesa a los deudores
-            val finalUpdatedGroups =
-                newExpense.debtors.entries.fold(updatedGroupsAfterPaidBy) { groups, (debtorId, amount) ->
-                    val groupUser = groups[groupId]?.users?.get(debtorId) ?: return@fold groups
-                    val newDebtsMap = groupUser.debts.toMutableMap()
-
-                    // Resta la vieja deuda
-                    oldExpense.paidBy.entries.forEach { (payerId, payerAmount) ->
-                        val oldDebt = calculateDebt(oldExpense, payerAmount)
-                        newDebtsMap[payerId] = (newDebtsMap[payerId] ?: 0.0) - oldDebt
-                    }
-
-                    // Ajusta las deudas con los pagadores del nuevo gasto
-                    newExpense.paidBy.entries.forEach { (payerId, payerAmount) ->
-                        val newDebt = calculateDebt(newExpense, payerAmount)
-                        newDebtsMap[payerId] = (newDebtsMap[payerId] ?: 0.0) + newDebt
-                    }
-
-                    groups.mapValues { group ->
-                        if (group.key == groupId) {
-                            group.value.copy(
-                                users = group.value.users.mapValues { user ->
-                                    if (user.key == debtorId) {
-                                        user.value.copy(
-                                            debts = newDebtsMap,
-                                            totalDebt = user.value.totalDebt + amount - (oldExpense.debtors[debtorId]
-                                                ?: 0.0)
-                                        )
-                                    } else {
-                                        user.value
-                                    }
-                                }
-                            )
-                        } else {
-                            group.value
-                        }
-                    }
-                }
-
-            // Devuelve el estado actualizado
-            currentUser.copy(groups = finalUpdatedGroups)
-        }
-    }
-
-    private fun calculateDebt(expense: GroupExpense, amount: Double): Double {
-        return when (expense.splitMethod) {
-            SplitMethod.EQUALLY, SplitMethod.CUSTOM -> amount
-            SplitMethod.PERCENTAGES -> (amount * expense.amount) / 100
-        }
+        recalculateDebts(groupId)
     }
 
     fun removeGroupExpense(groupId: String, expense: GroupExpense) {
@@ -514,95 +380,56 @@ class UserViewModel(
                 }
             )
         }
-        expense.paidBy.entries.forEach { (payerId, amountPaid) ->
-            val groupUser: GroupUser = _state.value.groups[groupId]?.users?.get(payerId)!!
-            //groupUser.totalOwed += amountPaid
-            val newOwedMap = groupUser.owed.toMutableMap()
-            expense.debtors.entries.forEach { (debtorId, debtorAmount) ->
-                val debt = when (expense.splitMethod) {
-                    SplitMethod.EQUALLY, SplitMethod.CUSTOM -> debtorAmount
-                    SplitMethod.PERCENTAGES -> (debtorAmount * amountPaid) / 100
-                }
-                newOwedMap[debtorId] =
-                    if (newOwedMap[debtorId] == null) 0.0 else (newOwedMap[debtorId]!! - debt)
-            }
-            val payerOwed = expense.amount - when (expense.splitMethod) {
-                SplitMethod.EQUALLY, SplitMethod.CUSTOM -> amountPaid
-                SplitMethod.PERCENTAGES -> (amountPaid * expense.amount) / 100
-            }
-            _state.update {
-                it.copy(
-                    groups = it.groups.mapValues { group ->
-                        if (group.key == groupId) {
-                            group.value.copy(
-                                users = group.value.users.mapValues { user ->
-                                    if (user.key == payerId) {
-                                        user.value.copy(
-                                            owed = newOwedMap,
-                                            totalOwed = user.value.totalOwed - payerOwed
-                                        )
-                                    } else {
-                                        user.value
-                                    }
-                                }
-                            )
-                        } else {
-                            group.value
-                        }
-                    }
-                )
-            }
-        }
-        expense.debtors.entries.forEach { (debtorId, amount) ->
-            val groupUser: GroupUser = _state.value.groups[groupId]?.users?.get(debtorId)!!
-            //groupUser.totalDebt += amount
-            val newDebtsMap = groupUser.debts.toMutableMap()
-            val totalDebt = when (expense.splitMethod) {
-                SplitMethod.EQUALLY, SplitMethod.CUSTOM -> amount
-                SplitMethod.PERCENTAGES -> (amount * groupUser.totalDebt) / 100
-            }
-            expense.paidBy.keys.forEach { payerId ->
-                newDebtsMap[payerId] =
-                    if (newDebtsMap[payerId] == null) 0.0 else (newDebtsMap[payerId]!! - totalDebt)
-            }
-            _state.update {
-                it.copy(
-                    groups = it.groups.mapValues { group ->
-                        if (group.key == groupId) {
-                            group.value.copy(
-                                users = group.value.users.mapValues { user ->
-                                    if (user.key == debtorId) {
-                                        user.value.copy(
-                                            debts = newDebtsMap,
-                                            totalDebt = user.value.totalDebt - totalDebt
-                                        )
-                                    } else {
-                                        user.value
-                                    }
-                                }
-                            )
-                        } else {
-                            group.value
-                        }
-                    }
-                )
-            }
-        }
+        recalculateDebts(groupId)
     }
 
     fun getExpenseById(expenseId: String): Expense {
         return _state.value.user.expenses[expenseId] ?: Expense()
     }
 
-    fun getGroupById(groupId: String): Group {
-        return _state.value.groups[groupId] ?: Group()
+    fun getGroupById(id: String): Group {
+        return _state.value.groups[id] ?: Group()
+    }
+
+    fun getGroupExpenseById(groupId: String, expenseId: String?): GroupExpense {
+        return _state.value.groups[groupId]?.expenses?.get(expenseId) ?: GroupExpense()
+    }
+
+    fun getGroupPaymentById(groupId: String, paymentId: String?): Payment {
+        return _state.value.groups[groupId]?.payments?.get(paymentId) ?: Payment()
     }
 
     fun getUUID(): String {
         return userRepository.getFirebaseUser()!!.uid
     }
 
-    fun getGroupExpenseById(groupId: String, expenseId: String?): GroupExpense {
-        return _state.value.groups[groupId]?.expenses?.get(expenseId) ?: GroupExpense()
+    fun saveGroupPayment(groupId: String, savedPayment: Payment) {
+        _state.update {
+            it.copy(
+                groups = it.groups.mapValues { group ->
+                    if (group.key == groupId) {
+                        group.value.copy(payments = group.value.payments + (savedPayment.id to savedPayment))
+                    } else {
+                        group.value
+                    }
+                }
+            )
+        }
+        recalculateDebts(groupId)
+    }
+
+    fun deleteGroupPayment(groupId: String, paymentId: String) {
+        _state.update {
+            it.copy(
+                groups = it.groups.mapValues { group ->
+                    if (group.key == groupId) {
+                        group.value.copy(payments = group.value.payments - paymentId)
+                    } else {
+                        group.value
+                    }
+                }
+            )
+        }
+        recalculateDebts(groupId)
     }
 }

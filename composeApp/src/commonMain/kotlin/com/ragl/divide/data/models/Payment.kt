@@ -7,7 +7,9 @@ data class Payment(
     val id: String = "",
     val amount: Double = 0.0,
     val date: Long = Clock.System.now().toEpochMilliseconds(),
-    val issuer: String = "",
-    val receiver: String = "",
-    val expensesDeducted: Map<String, Double> = emptyMap()
+    val from: String = "",
+    val to: String = "",
+    val createdAt: Long = Clock.System.now().toEpochMilliseconds(),
+    val updatedAt: Long = Clock.System.now().toEpochMilliseconds(),
+    val settled: Boolean = false,
 )

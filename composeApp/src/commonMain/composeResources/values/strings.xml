@@ -132,4 +132,12 @@
     <string name="back">Back</string>
     <string name="notification_title">Expense: %1$s</string>
     <string name="notification_body">Remember to pay!</string>
+    <string name="simplify_debts">Simplify debts</string>
+    <string name="from">From</string>
+    <string name="to">To</string>
+    <string name="select_sender">Select sender</string>
+    <string name="select_receiver">Select receiver</string>
+    <string name="settled">Settled</string>
+    <string name="pending">Pending</string>
+    <string name="x_paid_y">%1$s paid %2$s</string>
 </resources>

@@ -201,7 +201,7 @@ class GroupExpensePropertiesScreen(
                                     focusedIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent,
                                 ),
-                                value = vm.paidBy.name,
+                                value = vm.payer.name,
                                 textStyle = MaterialTheme.typography.bodyMedium,
                                 onValueChange = {},
                                 singleLine = true,
@@ -226,7 +226,7 @@ class GroupExpensePropertiesScreen(
                                                 style = MaterialTheme.typography.bodyMedium
                                             )
                                         }, onClick = {
-                                            vm.updatePaidBy(it)
+                                            vm.updatePayer(it)
                                             paidByMenuExpanded = false
                                         },
                                         modifier = Modifier.background(color = MaterialTheme.colorScheme.primaryContainer)
@@ -574,24 +574,18 @@ class GroupExpensePropertiesScreen(
                                                 }
                                             }
                                         }
+                                        userViewModel.showLoading()
                                         vm.saveExpense(
-                                            onSuccess = { groupExpense, oldExpense ->
-                                                if (expenseId == null) {
-                                                    userViewModel.saveGroupExpense(
-                                                        groupId,
-                                                        groupExpense
-                                                    )
-                                                } else {
-                                                    userViewModel.updateGroupExpense(
-                                                        groupId,
-                                                        groupExpense,
-                                                        oldExpense
-                                                    )
-                                                }
+                                            onSuccess = { groupExpense ->
+                                                userViewModel.saveGroupExpense(
+                                                    groupId,
+                                                    groupExpense
+                                                )
                                                 navigator.pop()
                                             },
                                             onError = { userViewModel.handleError(Exception(it)) }
                                         )
+                                        userViewModel.hideLoading()
                                     }
                                 },
                                 shape = ShapeDefaults.Medium,

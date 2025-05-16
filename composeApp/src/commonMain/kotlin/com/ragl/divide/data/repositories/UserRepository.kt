@@ -3,21 +3,17 @@ package com.ragl.divide.data.repositories
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.data.models.Payment
 import com.ragl.divide.data.models.User
-import dev.gitlive.firebase.auth.AuthCredential
 import dev.gitlive.firebase.auth.FirebaseAuth
 import dev.gitlive.firebase.auth.FirebaseUser
 import dev.gitlive.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
-import kotlinx.datetime.DateTimePeriod
-import kotlinx.datetime.DateTimeUnit
 
 interface UserRepository {
     fun isUserSignedIn(): Boolean
     suspend fun createUserInDatabase(): User
     suspend fun getUser(id: String): User
     fun getFirebaseUser(): FirebaseUser?
-    suspend fun signInWithCredential(credential: AuthCredential): User?
     suspend fun signInWithEmailAndPassword(email: String, password: String): User?
     suspend fun signUpWithEmailAndPassword(email: String, password: String, name: String): User?
     suspend fun signOut()
@@ -75,7 +71,7 @@ class UserRepositoryImpl(
         val userData = User(
             user.uid,
             providerData.email ?: user.email.orEmpty(),
-            providerData.displayName ?: user.displayName.orEmpty(),
+            providerData.email?.split("@")?.get(0) ?: user.displayName.orEmpty(),
             (providerData.photoURL ?: "").toString()
         )
         userRef.setValue(userData)
@@ -85,24 +81,10 @@ class UserRepositoryImpl(
     override suspend fun getUser(id: String): User {
         val userRef = database.reference("users/$id")
         val snapshot = userRef.valueEvents.firstOrNull()
-        return snapshot?.value<User>() ?: User()
+        return snapshot?.value<User?>() ?: User()
     }
 
     override fun getFirebaseUser(): FirebaseUser? = auth.currentUser
-
-    override suspend fun signInWithCredential(
-        credential: AuthCredential
-    ): User? {
-        val res = auth.signInWithCredential(credential)
-        return if (res.user != null) {
-            if (res.additionalUserInfo!!.isNewUser) {
-                createUserInDatabase()
-            } else
-                getUser(res.user!!.uid)
-        } else {
-            null
-        }
-    }
 
     override suspend fun signOut() {
         auth.signOut()

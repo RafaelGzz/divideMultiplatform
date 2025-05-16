@@ -75,8 +75,8 @@ class GroupExpenseScreen(
 
         val groupExpenseState by viewModel.groupExpense.collectAsState()
 
-        val sortedDebtors = viewModel.sortedDebtors
-        val sortedPaidBy = viewModel.sortedPaidBy
+        val sortedDebtors by viewModel.sortedDebtors.collectAsState()
+        val sortedPaidBy by viewModel.sortedPaidBy.collectAsState()
 
         var isDeleteDialogEnabled by remember { mutableStateOf(false) }
 
@@ -91,16 +91,26 @@ class GroupExpenseScreen(
                     ),
                     navigationIcon = {
                         IconButton(
-                            onClick = {navigator.pop()}
+                            onClick = { navigator.pop() }
                         ) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
                     },
                     actions = {
-                        IconButton(
-                            onClick = { navigator.push(GroupExpensePropertiesScreen(groupId, members, groupExpenseState.id)) }
-                        ) {
-                            Icon(Icons.Default.Edit, contentDescription = "Edit")
+                        if (!groupExpenseState.settled) {
+                            IconButton(
+                                onClick = {
+                                    navigator.push(
+                                        GroupExpensePropertiesScreen(
+                                            groupId,
+                                            members,
+                                            groupExpenseState.id
+                                        )
+                                    )
+                                }
+                            ) {
+                                Icon(Icons.Default.Edit, contentDescription = "Edit")
+                            }
                         }
                         IconButton(
                             onClick = { isDeleteDialogEnabled = true }
@@ -111,26 +121,39 @@ class GroupExpenseScreen(
                 )
             }
         ) { pv ->
+            val scrollState = rememberScrollState()
             Column(
                 modifier = Modifier
                     .padding(pv)
                     .padding(horizontal = 16.dp)
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(scrollState)
             ) {
                 if (isDeleteDialogEnabled) {
                     AlertDialog(
                         onDismissRequest = { isDeleteDialogEnabled = false },
-                        title = { Text(stringResource(Res.string.delete), style = MaterialTheme.typography.titleMedium) },
-                        text = { Text(stringResource(Res.string.delete_expense_confirm), style = MaterialTheme.typography.bodyMedium) },
+                        title = {
+                            Text(
+                                stringResource(Res.string.delete),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        },
+                        text = {
+                            Text(
+                                stringResource(Res.string.delete_expense_confirm),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        },
                         confirmButton = {
                             TextButton(onClick = {
                                 isDeleteDialogEnabled = false
+                                userViewModel.showLoading()
                                 viewModel.deleteExpense(groupId, {
                                     userViewModel.removeGroupExpense(groupId, it)
                                     navigator.pop()
                                 }) {
                                     userViewModel.handleError(Exception(it))
                                 }
+                                userViewModel.hideLoading()
                             }) {
                                 Text(stringResource(Res.string.delete))
                             }
@@ -145,14 +168,19 @@ class GroupExpenseScreen(
                         textContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
-
+                
                 ExpenseDetails(groupExpenseState)
-
                 Spacer(modifier = Modifier.height(16.dp))
-
+                Text(
+                    text = "Pagado por:",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+                
                 sortedPaidBy.forEach { (member, debt) ->
-                    val realDebt = when(groupExpenseState.splitMethod) {
-                        SplitMethod.EQUALLY,SplitMethod.CUSTOM -> debt
+                    val realDebt = when (groupExpenseState.splitMethod) {
+                        SplitMethod.EQUALLY, SplitMethod.CUSTOM -> debt
                         SplitMethod.PERCENTAGES -> debt / 100 * groupExpenseState.amount
                     }
                     FriendItem(
@@ -171,9 +199,17 @@ class GroupExpenseScreen(
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                 }
+                
+                Text(
+                    text = "Deudores:",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+                
                 when (groupExpenseState.splitMethod) {
                     SplitMethod.EQUALLY -> {
-                        sortedDebtors.map { (member, debt) ->
+                        sortedDebtors.forEach { (member, debt) ->
                             FriendItem(
                                 headline = member.name,
                                 hasLeadingContent = false,
@@ -193,7 +229,7 @@ class GroupExpenseScreen(
                     }
 
                     SplitMethod.PERCENTAGES -> {
-                        sortedDebtors.map { (member, percentage) ->
+                        sortedDebtors.forEach { (member, percentage) ->
                             val debt = groupExpenseState.amount * (percentage / 100)
                             FriendItem(
                                 headline = member.name,
@@ -214,7 +250,7 @@ class GroupExpenseScreen(
                     }
 
                     SplitMethod.CUSTOM -> {
-                        sortedDebtors.map { (member, debt) ->
+                        sortedDebtors.forEach { (member, debt) ->
                             FriendItem(
                                 headline = member.name,
                                 hasLeadingContent = false,
@@ -239,48 +275,41 @@ class GroupExpenseScreen(
 
     @Composable
     private fun ExpenseDetails(expense: GroupExpense) {
-        Text(
-            text = formatCurrency(expense.amount, "es-MX"),
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.headlineLarge.copy(color = MaterialTheme.colorScheme.primary),
-            modifier = Modifier.fillMaxWidth()
-        )
-        Text(
-            text = stringResource(
-                Res.string.added_on,
-                formatDate(expense.addedDate)
-            ),
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp)
-        )
-        if (expense.notes != "") {
+        Column {
             Text(
-                text = "${stringResource(Res.string.notes)}:",
-                color = MaterialTheme.colorScheme.primary,
+                text = formatCurrency(expense.amount, "es-MX"),
                 textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp)
-            )
-            Text(
-                text = expense.notes,
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.headlineLarge.copy(color = MaterialTheme.colorScheme.primary),
                 modifier = Modifier.fillMaxWidth()
             )
+            Text(
+                text = stringResource(
+                    Res.string.added_on,
+                    formatDate(expense.createdAt)
+                ),
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+            )
+            if (expense.notes != "") {
+                Text(
+                    text = "${stringResource(Res.string.notes)}:",
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp)
+                )
+                Text(
+                    text = expense.notes,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
-
-    //            Text(
-    //                stringResource(Res.string.split_method) + ": " + stringResource(groupExpense.splitMethod.resId),
-    //                textAlign = TextAlign.Center,
-    //                style = MaterialTheme.typography.bodyLarge,
-    //                modifier = Modifier.fillMaxWidth()
-    //            )
-    //
-    //            Spacer(modifier = Modifier.height(16.dp))
     }
 }

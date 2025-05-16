@@ -2,10 +2,9 @@ package com.ragl.divide.data.repositories
 
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.GroupExpense
-import com.ragl.divide.data.models.GroupUser
-import com.ragl.divide.data.models.SplitMethod
+import com.ragl.divide.data.models.Payment
 import com.ragl.divide.data.models.User
-import com.ragl.divide.ui.utils.toTwoDecimals
+import com.ragl.divide.data.services.GroupExpenseService
 import dev.gitlive.firebase.database.FirebaseDatabase
 import dev.gitlive.firebase.storage.File
 import dev.gitlive.firebase.storage.FirebaseStorage
@@ -21,18 +20,22 @@ interface GroupRepository {
     suspend fun uploadPhoto(photo: File, id: String): String
     suspend fun getPhoto(id: String): String
     suspend fun addUser(groupId: String, userId: String)
-    suspend fun getUsers(userIds: List<String>): List<User>
+    suspend fun getUsers(userIds: Collection<String>): List<User>
     suspend fun leaveGroup(groupId: String)
     suspend fun deleteGroup(groupId: String, image: String)
     suspend fun saveExpense(groupId: String, expense: GroupExpense): GroupExpense
-    suspend fun updateExpense(groupId: String, oldExpense: GroupExpense, newExpense: GroupExpense): GroupExpense
+    suspend fun updateExpense(groupId: String, newExpense: GroupExpense): GroupExpense
     suspend fun deleteExpense(groupId: String, expense: GroupExpense)
+    suspend fun savePayment(groupId: String, payment: Payment): Payment
+    suspend fun updatePayment(groupId: String, payment: Payment): Payment
+    suspend fun deletePayment(groupId: String, paymentId: String)
 }
 
 class GroupRepositoryImpl(
     private val database: FirebaseDatabase,
     private val storage: FirebaseStorage,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val groupExpenseService: GroupExpenseService
 ) : GroupRepository {
     init {
         //database.reference("groups")
@@ -56,7 +59,7 @@ class GroupRepositoryImpl(
         val id = group.id.ifEmpty { "id${Clock.System.now().toEpochMilliseconds()}" }
         val uid = userRepository.getFirebaseUser()!!.uid
         val savedGroup = group.copy(
-            users = group.users + (uid to GroupUser(id = uid)),
+            users = group.users + (uid to uid),
             image = if (photo != null) uploadPhoto(photo, id) else group.image,
             id = id
         )
@@ -68,6 +71,7 @@ class GroupRepositoryImpl(
                 }
             }
         }
+        updateCurrentDebts(id)
         return savedGroup
     }
 
@@ -87,7 +91,7 @@ class GroupRepositoryImpl(
         groupRef.child(userId).setValue(userId)
     }
 
-    override suspend fun getUsers(userIds: List<String>): List<User> = userIds.map {
+    override suspend fun getUsers(userIds: Collection<String>): List<User> = userIds.map {
         userRepository.getUser(it)
     }
 
@@ -120,150 +124,104 @@ class GroupRepositoryImpl(
     }
 
     override suspend fun saveExpense(groupId: String, expense: GroupExpense): GroupExpense {
-        val id = "id${Clock.System.now().toEpochMilliseconds()}"
-        val newExpense = expense.copy(id = id)
-        val groupRef = database.reference("groups/$groupId")
-        groupRef.child("expenses").child(id).setValue(newExpense)
-
-        coroutineScope {
-            expense.paidBy.entries.forEach { (payerId, amountPaid) ->
-                val userRef = groupRef.child("users").child(payerId)
-                val groupUser = userRef.valueEvents.firstOrNull()?.value<GroupUser>()!!
-                val newOwedMap = groupUser.owed.toMutableMap()
-                expense.debtors.entries.forEach { (debtorId, debtorAmount) ->
-                    val debt = calculateDebt(expense, debtorAmount)
-                    newOwedMap[debtorId] = ((newOwedMap[debtorId] ?: 0.0) + debt).toTwoDecimals()
-                }
-                val payerOwed = expense.amount - calculateDebt(expense, amountPaid)
-                userRef.setValue(
-                    groupUser.copy(
-                        owed = newOwedMap,
-                        totalOwed = (groupUser.totalOwed + payerOwed).toTwoDecimals()
-                    )
-                )
+        val newExpense = expense.copy(
+            id = expense.id.ifEmpty {
+                "id${Clock.System.now().toEpochMilliseconds()}"
             }
-            expense.debtors.entries.forEach { (debtorId, amount) ->
-                launch {
-                    val userRef = groupRef.child("users").child(debtorId)
-                    val groupUser = userRef.valueEvents.firstOrNull()?.value<GroupUser>()!!
-                    val newDebtsMap = groupUser.debts.toMutableMap()
-                    val totalDebt = calculateDebt(expense, amount)
-                    expense.paidBy.keys.forEach { payerId ->
-                        newDebtsMap[payerId] = ((newDebtsMap[payerId] ?: 0.0) + totalDebt).toTwoDecimals()
-                    }
-                    userRef.setValue(
-                        groupUser.copy(
-                            debts = newDebtsMap,
-                            totalDebt = (groupUser.totalDebt + totalDebt).toTwoDecimals()
-                        )
-                    )
-                }
-            }
-        }
-
-        return newExpense
-    }
-
-    override suspend fun updateExpense(groupId: String, oldExpense: GroupExpense, newExpense: GroupExpense): GroupExpense {
+        )
         val groupRef = database.reference("groups/$groupId")
         groupRef.child("expenses").child(newExpense.id).setValue(newExpense)
 
-        coroutineScope {
-            newExpense.paidBy.entries.forEach { (payerId, amountPaid) ->
-                val userRef = groupRef.child("users").child(payerId)
-                val groupUser = userRef.valueEvents.firstOrNull()?.value<GroupUser>()!!
-                val newOwedMap = groupUser.owed.toMutableMap()
-                oldExpense.debtors.entries.forEach { (debtorId, oldDebtorAmount) ->
-                    val oldDebt = calculateDebt(oldExpense, oldDebtorAmount)
-                    newOwedMap[debtorId] = ((newOwedMap[debtorId] ?: 0.0) - oldDebt).toTwoDecimals()
-                }
-                newExpense.debtors.entries.forEach { (debtorId, newDebtorAmount) ->
-                    val newDebt = calculateDebt(newExpense, newDebtorAmount)
-                    newOwedMap[debtorId] = ((newOwedMap[debtorId] ?: 0.0) + newDebt).toTwoDecimals()
-                }
-                val newPayerOwed = newExpense.amount - calculateDebt(newExpense, amountPaid)
-                val oldPayerOwed = oldExpense.amount - calculateDebt(oldExpense, oldExpense.paidBy[payerId]!!)
-                userRef.setValue(
-                    groupUser.copy(
-                        owed = newOwedMap,
-                        totalOwed = (groupUser.totalOwed - oldPayerOwed + newPayerOwed).toTwoDecimals()
-                    )
-                )
-            }
-
-            newExpense.debtors.entries.forEach { (debtorId, amount) ->
-                launch {
-                    val userRef = groupRef.child("users").child(debtorId)
-                    val groupUser = userRef.valueEvents.firstOrNull()?.value<GroupUser>()!!
-                    val newDebtsMap = groupUser.debts.toMutableMap()
-                    oldExpense.paidBy.entries.forEach { (payerId, payerAmount) ->
-                        val oldDebt = calculateDebt(oldExpense, payerAmount)
-                        newDebtsMap[payerId] = ((newDebtsMap[payerId] ?: 0.0) - oldDebt).toTwoDecimals()
-                    }
-                    newExpense.paidBy.entries.forEach { (payerId, payerAmount) ->
-                        val newDebt = calculateDebt(newExpense, payerAmount)
-                        newDebtsMap[payerId] = ((newDebtsMap[payerId] ?: 0.0) + newDebt).toTwoDecimals()
-                    }
-                    userRef.setValue(
-                        groupUser.copy(
-                            debts = newDebtsMap,
-                            totalDebt = (groupUser.totalDebt - (oldExpense.debtors[debtorId] ?: 0.0) + amount).toTwoDecimals()
-                        )
-                    )
-                }
-            }
-        }
+        updateCurrentDebts(groupId)
         return newExpense
     }
 
+    override suspend fun updateExpense(groupId: String, newExpense: GroupExpense): GroupExpense {
+        val groupRef = database.reference("groups/$groupId")
+        groupRef.child("expenses").child(newExpense.id).setValue(newExpense)
+
+        updateCurrentDebts(groupId)
+        return newExpense
+    }
 
     override suspend fun deleteExpense(groupId: String, expense: GroupExpense) {
         val groupRef = database.reference("groups/$groupId")
         groupRef.child("expenses").child(expense.id).removeValue()
-        coroutineScope {
-            expense.paidBy.entries.forEach { (userId, amountPaid) ->
-                val userRef = groupRef.child("users").child(userId)
-                val groupUser = userRef.valueEvents.firstOrNull()?.value<GroupUser>()!!
-                val newOwedMap = groupUser.owed.toMutableMap()
-                expense.debtors.entries.forEach { (debtorId, debtorAmount) ->
-                    val debt = calculateDebt(expense, debtorAmount)
-                    newOwedMap[debtorId] =
-                        if (newOwedMap[debtorId] == null) 0.0 else (newOwedMap[debtorId]!! - debt).toTwoDecimals()
-                }
-                val payerOwed = expense.amount - calculateDebt(expense, amountPaid)
-                userRef.setValue(
-                    groupUser.copy(
-                        totalOwed = (groupUser.totalOwed - payerOwed).toTwoDecimals(),
-                        owed = newOwedMap
-                    )
-                )
-            }
-            expense.debtors.entries.forEach { (userId, amount) ->
-                launch {
-                    val userRef = groupRef.child("users").child(userId)
-                    val groupUser = userRef.valueEvents.firstOrNull()?.value<GroupUser>()!!
-                    val newDebtsMap = groupUser.debts.toMutableMap()
-                    val totalDebt = calculateDebt(expense, amount)
-                    expense.paidBy.keys.forEach { payerId ->
-                        newDebtsMap[payerId] =
-                            if (newDebtsMap[payerId] == null) 0.0 else (newDebtsMap[payerId]!! - totalDebt).toTwoDecimals()
-                    }
-                    userRef.setValue(
-                        groupUser.copy(
-                            totalDebt = (groupUser.totalDebt - totalDebt).toTwoDecimals(),
-                            debts = newDebtsMap
-                        )
-                    )
-                }
-            }
-        }
+
+        updateCurrentDebts(groupId)
     }
 
-    private fun calculateDebt(
-        expense: GroupExpense,
-        amount: Double
-    ) = when (expense.splitMethod) {
-        SplitMethod.EQUALLY, SplitMethod.CUSTOM -> amount
-        SplitMethod.PERCENTAGES -> (amount * expense.amount) / 100
+    override suspend fun savePayment(groupId: String, payment: Payment): Payment {
+        val id = "id${Clock.System.now().toEpochMilliseconds()}"
+        val newPayment = payment.copy(id = payment.id.ifEmpty { id })
+        val groupRef = database.reference("groups/$groupId")
+        groupRef.child("payments").child(newPayment.id).setValue(newPayment)
+
+        updateCurrentDebts(groupId)
+        return newPayment
+    }
+
+    override suspend fun updatePayment(groupId: String, payment: Payment): Payment {
+        val groupRef = database.reference("groups/$groupId")
+        groupRef.child("payments").child(payment.id).setValue(payment)
+
+        updateCurrentDebts(groupId)
+        return payment
+    }
+
+    override suspend fun deletePayment(groupId: String, paymentId: String) {
+        val groupRef = database.reference("groups/$groupId")
+        groupRef.child("payments").child(paymentId).removeValue()
+
+        updateCurrentDebts(groupId)
+    }
+
+    private suspend fun updateCurrentDebts(groupId: String) {
+        val groupRef = database.reference("groups/$groupId")
+
+        val expenses = groupRef.child("expenses").valueEvents.firstOrNull()?.children?.map {
+            it.value<GroupExpense>()
+        } ?: emptyList()
+
+        val payments = groupRef.child("payments").valueEvents.firstOrNull()?.children?.map {
+            it.value<Payment>()
+        } ?: emptyList()
+
+        val group = groupRef.valueEvents.firstOrNull()?.value<Group>() ?: return
+
+        // Listas para almacenar IDs de gastos y pagos a liquidar
+        val expensesToSettle = mutableListOf<String>()
+        val paymentsToSettle = mutableListOf<String>()
+
+        // Calcular deudas actuales, potencialmente identificando gastos/pagos a liquidar
+        val currentDebts = groupExpenseService.calculateDebts(
+            expenses,
+            payments,
+            group.simplifyDebts,
+            expensesToSettle,
+            paymentsToSettle
+        )
+
+        // Crear un mapa de actualizaciones para realizar en una única transacción
+        val updates = mutableMapOf<String, Any?>()
+
+        // Agregar actualización de deudas actuales
+        updates["currentDebts"] = currentDebts
+
+        // Si hay gastos o pagos para liquidar (cuando calculateDebts detectó que no hay deudas)
+        if (expensesToSettle.isNotEmpty() || paymentsToSettle.isNotEmpty()) {
+            // Agregar actualizaciones para marcar gastos como liquidados
+            for (expenseId in expensesToSettle) {
+                updates["expenses/$expenseId/settled"] = true
+            }
+
+            // Agregar actualizaciones para marcar pagos como liquidados
+            for (paymentId in paymentsToSettle) {
+                updates["payments/$paymentId/settled"] = true
+            }
+        }
+
+        // Ejecutar todas las actualizaciones en una única transacción
+        groupRef.updateChildren(updates)
     }
 }

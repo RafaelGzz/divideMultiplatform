@@ -41,12 +41,12 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -61,6 +61,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
@@ -69,10 +70,12 @@ import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ragl.divide.data.models.User
+import com.ragl.divide.ui.components.ImagePicker
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.home.HomeScreen
 import com.ragl.divide.ui.utils.DivideTextField
 import com.ragl.divide.ui.utils.FriendItem
+import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil3.CoilImage
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.add
@@ -91,9 +94,7 @@ import dividemultiplatform.composeapp.generated.resources.name
 import dividemultiplatform.composeapp.generated.resources.search
 import dividemultiplatform.composeapp.generated.resources.select_friends
 import dividemultiplatform.composeapp.generated.resources.select_group_members
-import dividemultiplatform.composeapp.generated.resources.select_image_from_gallery
-import dividemultiplatform.composeapp.generated.resources.select_image_source
-import dividemultiplatform.composeapp.generated.resources.take_photo
+import dividemultiplatform.composeapp.generated.resources.simplify_debts
 import dividemultiplatform.composeapp.generated.resources.update
 import dividemultiplatform.composeapp.generated.resources.update_group
 import org.jetbrains.compose.resources.stringResource
@@ -116,6 +117,7 @@ class GroupPropertiesScreen(private val groupId: String? = null) : Screen {
         var isModalSheetVisible by remember { mutableStateOf(false) }
         val isLoading by viewModel.isLoading.collectAsState()
         val groupState by viewModel.group.collectAsState()
+        val temporaryImagePath by viewModel.temporaryImagePath.collectAsState()
 
         val defaultColors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
@@ -129,9 +131,12 @@ class GroupPropertiesScreen(private val groupId: String? = null) : Screen {
 
         var dialogEnabled by remember { mutableStateOf(false) }
         var isDeleteDialog by remember { mutableStateOf(false) }
-
+        var showImagePicker by remember { mutableStateOf(false) }
+        
         var showFriendSelection by remember { mutableStateOf(false) }
         var searchText by remember { mutableStateOf("") }
+
+        var simplifyDebts = viewModel.simplifyDebts
 
         val isUpdate by remember { mutableStateOf(groupId != null) }
 
@@ -144,7 +149,7 @@ class GroupPropertiesScreen(private val groupId: String? = null) : Screen {
         val uuid = userViewModel.getUUID()
 
         Box {
-            if(isLoading) {
+            if (isLoading) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -185,12 +190,14 @@ class GroupPropertiesScreen(private val groupId: String? = null) : Screen {
                             if (!isUpdate && selectedFriends.size > 0)
                                 Button(
                                     onClick = {
+                                        userViewModel.showLoading()
                                         viewModel.saveGroup(onSuccess = { group ->
                                             userViewModel.addGroup(group)
                                             navigator.pop()
                                         }, onError = {
                                             userViewModel.handleError(Exception(it))
                                         })
+                                        userViewModel.hideLoading()
                                     },
                                     shape = ShapeDefaults.Medium,
                                     modifier = Modifier
@@ -206,49 +213,14 @@ class GroupPropertiesScreen(private val groupId: String? = null) : Screen {
                                 }
                         }
                     ) { paddingValues ->
-                        if (isModalSheetVisible) {
-                            ModalBottomSheet(
-                                onDismissRequest = { isModalSheetVisible = false },
-                                containerColor = MaterialTheme.colorScheme.surface
-                            ) {
-                                Text(
-                                    stringResource(Res.string.select_image_source),
-                                    style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.primary),
-                                    modifier = Modifier.padding(start = 16.dp, bottom = 16.dp)
-                                )
-                                ListItem(
-                                    headlineContent = {
-                                        Text(
-                                            stringResource(Res.string.select_image_from_gallery),
-                                            style = MaterialTheme.typography.bodyMedium
-                                        )
-                                    },
-                                    modifier = Modifier.clickable {
-                                        isModalSheetVisible = false
-                                        //imagePickerLauncher.launch("image/*")
-                                    }
-                                )
-                                ListItem(
-                                    headlineContent = {
-                                        Text(
-                                            stringResource(Res.string.take_photo),
-                                            style = MaterialTheme.typography.bodyMedium
-                                        )
-                                    },
-                                    modifier = Modifier.clickable {
-                                        isModalSheetVisible = false
-//                                    if (ContextCompat.checkSelfPermission(
-//                                            context,
-//                                            Manifest.permission.CAMERA
-//                                        ) == PackageManager.PERMISSION_GRANTED
-//                                    ) {
-//                                        cameraLauncher.launch(uri)
-//                                    } else {
-//                                        permissionLauncher.launch(Manifest.permission.CAMERA)
-//                                    }
-                                    }
-                                )
-                            }
+                        if (showImagePicker) {
+                            ImagePicker(
+                                onImageSelected = { imagePath ->
+                                    viewModel.updateImage(imagePath)
+                                    showImagePicker = false
+                                },
+                                onDismiss = { showImagePicker = false }
+                            )
                         } else if (dialogEnabled) {
                             if (isDeleteDialog)
                                 AlertDialog(
@@ -267,8 +239,10 @@ class GroupPropertiesScreen(private val groupId: String? = null) : Screen {
                                     },
                                     confirmButton = {
                                         TextButton(onClick = {
+                                            userViewModel.showLoading()
                                             dialogEnabled = false
                                             viewModel.deleteGroup(onDeleteGroup)
+                                            userViewModel.hideLoading()
                                         }) {
                                             Text(stringResource(Res.string.delete))
                                         }
@@ -300,9 +274,11 @@ class GroupPropertiesScreen(private val groupId: String? = null) : Screen {
                                     confirmButton = {
                                         TextButton(onClick = {
                                             dialogEnabled = false
+                                            userViewModel.showLoading()
                                             viewModel.leaveGroup(
                                                 onSuccessful = onDeleteGroup,
                                                 onError = { userViewModel.handleError(Exception(it)) })
+                                            userViewModel.hideLoading()
                                         }) {
                                             Text(stringResource(Res.string.leave))
                                         }
@@ -332,22 +308,87 @@ class GroupPropertiesScreen(private val groupId: String? = null) : Screen {
                                 Box(
                                     modifier = Modifier
                                         .size(80.dp)
-                                        .clickable { isModalSheetVisible = true }
+                                        .clickable { showImagePicker = true }
                                         .clip(ShapeDefaults.Medium)
                                         .background(MaterialTheme.colorScheme.primaryContainer),
                                 ) {
-                                    if (groupState.image.isEmpty()) Icon(
-                                        Icons.Filled.Add,
-                                        contentDescription = "Add image button",
-                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        modifier = Modifier
-                                            .size(32.dp)
-                                            .align(Alignment.Center)
-                                    )
-                                    else {
+                                    if (temporaryImagePath != null) {
+                                        // Mostrar la imagen temporal seleccionada
+                                        CoilImage(
+                                            imageModel = { temporaryImagePath },
+                                            imageOptions = ImageOptions(
+                                                contentScale = ContentScale.Crop
+                                            ),
+                                            loading = {
+                                                Box(
+                                                    modifier = Modifier.fillMaxSize(),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    CircularProgressIndicator(
+                                                        modifier = Modifier.size(24.dp),
+                                                        color = MaterialTheme.colorScheme.primary
+                                                    )
+                                                }
+                                            },
+                                            failure = {
+                                                // Mostrar icono cuando falla la carga
+                                                Box(
+                                                    modifier = Modifier.fillMaxSize(),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Icon(
+                                                        Icons.Filled.Add,
+                                                        contentDescription = "Failed to load image",
+                                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                        modifier = Modifier.size(32.dp)
+                                                    )
+                                                }
+                                            },
+                                            modifier = Modifier.fillMaxSize(),
+                                        )
+                                    } else if (groupState.image.isNotEmpty()) {
+                                        // Mostrar la imagen actual del grupo
                                         CoilImage(
                                             imageModel = { groupState.image },
+                                            imageOptions = ImageOptions(
+                                                contentScale = ContentScale.Crop
+                                            ),
+                                            loading = {
+                                                Box(
+                                                    modifier = Modifier.fillMaxSize(),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    CircularProgressIndicator(
+                                                        modifier = Modifier.size(24.dp),
+                                                        color = MaterialTheme.colorScheme.primary
+                                                    )
+                                                }
+                                            },
+                                            failure = {
+                                                // Mostrar icono cuando falla la carga
+                                                Box(
+                                                    modifier = Modifier.fillMaxSize(),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Icon(
+                                                        Icons.Filled.Add,
+                                                        contentDescription = "Failed to load image",
+                                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                        modifier = Modifier.size(32.dp)
+                                                    )
+                                                }
+                                            },
                                             modifier = Modifier.fillMaxSize(),
+                                        )
+                                    } else {
+                                        // No hay imagen
+                                        Icon(
+                                            Icons.Filled.Add,
+                                            contentDescription = "Add image button",
+                                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                            modifier = Modifier
+                                                .size(32.dp)
+                                                .align(Alignment.Center)
                                         )
                                     }
                                 }
@@ -374,11 +415,15 @@ class GroupPropertiesScreen(private val groupId: String? = null) : Screen {
                                         colors = if (isSelected) selectedColors else defaultColors,
                                         onClick = {
                                             if (isSelected) {
+                                                userViewModel.showLoading()
                                                 viewModel.removeUser(friend.uuid)
                                                 selectedFriends.remove(friend.uuid)
+                                                userViewModel.hideLoading()
                                             } else {
+                                                userViewModel.showLoading()
                                                 viewModel.addUser(friend.uuid)
                                                 selectedFriends.add(friend.uuid)
+                                                userViewModel.hideLoading()
                                             }
                                         }
                                     )
@@ -427,35 +472,58 @@ class GroupPropertiesScreen(private val groupId: String? = null) : Screen {
                                         .padding(top = 16.dp)
                                         .wrapContentHeight()
                                 )
-                                if (groupState.users[uuid]?.totalDebt == 0.0 && groupState.users[uuid]?.totalOwed == 0.0) {
-                                    OutlinedButton(
-                                        onClick = {
-                                            isDeleteDialog = false
-                                            dialogEnabled = true
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp)
+                                ) {
+                                    Switch(
+                                        checked = simplifyDebts,
+                                        onCheckedChange = {
+                                            simplifyDebts = it
+                                            viewModel.updateSimplifyDebts(it)
                                         },
-                                        shape = ShapeDefaults.Medium,
-                                        colors = ButtonDefaults.outlinedButtonColors(
-                                            contentColor = MaterialTheme.colorScheme.error
-                                        ),
-                                        border = BorderStroke(
-                                            2.dp,
-                                            MaterialTheme.colorScheme.error
-                                        ),
-                                        modifier = Modifier
-                                            .padding(top = 8.dp)
-                                            .fillMaxWidth()
-                                    ) {
-                                        Icon(
-                                            Icons.AutoMirrored.Filled.ExitToApp,
-                                            contentDescription = null,
-                                            modifier = Modifier.padding(end = 8.dp)
+                                        colors = SwitchDefaults.colors(
+                                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+                                            uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
                                         )
-                                        Text(
-                                            text = stringResource(Res.string.leave_group),
-                                            style = MaterialTheme.typography.titleMedium,
-                                            modifier = Modifier.padding(vertical = 12.dp)
-                                        )
-                                    }
+                                    )
+                                    Text(
+                                        text = stringResource(Res.string.simplify_debts),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier.padding(start = 12.dp)
+                                    )
+                                }
+                                OutlinedButton(
+                                    onClick = {
+                                        isDeleteDialog = false
+                                        dialogEnabled = true
+                                    },
+                                    shape = ShapeDefaults.Medium,
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = MaterialTheme.colorScheme.error
+                                    ),
+                                    border = BorderStroke(
+                                        2.dp,
+                                        MaterialTheme.colorScheme.error
+                                    ),
+                                    modifier = Modifier
+                                        .padding(top = 8.dp)
+                                        .fillMaxWidth()
+                                ) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.ExitToApp,
+                                        contentDescription = null,
+                                        modifier = Modifier.padding(end = 8.dp)
+                                    )
+                                    Text(
+                                        text = stringResource(Res.string.leave_group),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        modifier = Modifier.padding(vertical = 12.dp)
+                                    )
                                 }
                                 Button(
                                     onClick = {
@@ -486,6 +554,7 @@ class GroupPropertiesScreen(private val groupId: String? = null) : Screen {
                             if (isUpdate)
                                 Button(
                                     onClick = {
+                                        userViewModel.showLoading()
                                         viewModel.saveGroup(
                                             onSuccess = {
                                                 userViewModel.addGroup(it)
@@ -494,6 +563,7 @@ class GroupPropertiesScreen(private val groupId: String? = null) : Screen {
                                             onError = {
                                                 userViewModel.handleError(Exception(it))
                                             })
+                                        userViewModel.hideLoading()
                                     },
                                     shape = ShapeDefaults.Medium,
                                     modifier = Modifier

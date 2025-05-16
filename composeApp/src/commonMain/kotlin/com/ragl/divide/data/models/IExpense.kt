@@ -6,5 +6,6 @@ interface IExpense{
     val category: Category
     val amount: Double
     val notes: String
-    val addedDate: Long
+    val createdAt: Long
+    val updatedAt: Long
 }

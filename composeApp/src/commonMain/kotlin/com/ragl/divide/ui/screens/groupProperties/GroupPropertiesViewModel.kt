@@ -6,7 +6,6 @@ import androidx.compose.runtime.setValue
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.Group
-import com.ragl.divide.data.models.GroupUser
 import com.ragl.divide.data.models.User
 import com.ragl.divide.data.repositories.GroupRepository
 import com.ragl.divide.ui.utils.logMessage
@@ -26,14 +25,30 @@ class GroupPropertiesViewModel(
     private var _group = MutableStateFlow(Group())
     var group = _group.asStateFlow()
 
+    // Imagen temporal para mostrar antes de subir a Firebase
+    private var _temporaryImagePath = MutableStateFlow<String?>(null)
+    val temporaryImagePath = _temporaryImagePath.asStateFlow()
+
     var members by mutableStateOf<List<User>>(listOf())
         private set
 
     var nameError by mutableStateOf("")
         private set
 
+    var simplifyDebts by mutableStateOf(false)
+        private set
+
     private var _isLoading = MutableStateFlow(false)
     var isLoading = _isLoading.asStateFlow()
+
+    // Almacena la ruta del archivo de imagen seleccionado
+    private var selectedImagePath: String? = null
+
+    fun updateSimplifyDebts(simplify: Boolean) {
+        _group.update {
+            it.copy(simplifyDebts = simplify)
+        }
+    }
 
     fun updateName(name: String) {
         _group.update {
@@ -41,9 +56,14 @@ class GroupPropertiesViewModel(
         }
     }
 
+    fun updateImage(imagePath: String) {
+        selectedImagePath = imagePath
+        _temporaryImagePath.update { imagePath }
+    }
+
     fun addUser(userId: String) {
         _group.update {
-            it.copy(users = it.users + (userId to GroupUser(id = userId)))
+            it.copy(users = it.users + (userId to userId))
         }
     }
 
@@ -63,7 +83,8 @@ class GroupPropertiesViewModel(
             _group.update {
                 group
             }
-            members = groupRepository.getUsers(_group.value.users.values.map { it.id })
+            simplifyDebts = group.simplifyDebts
+            members = groupRepository.getUsers(_group.value.users.values)
             _isLoading.update { false }
         }
     }
@@ -103,20 +124,32 @@ class GroupPropertiesViewModel(
             _group.update {
                 it.copy(
                     name = it.name.trim(),
-                    users = it.users + members.associate { member -> member.uuid to GroupUser(id = member.uuid) }
-                        .filter { member -> member.value.id !in it.users.keys }
+                    users = it.users + members.associate { member -> member.uuid to member.uuid }
+                        .filter { member -> member.value !in it.users.keys }
                 )
             }
             screenModelScope.launch {
                 try {
                     _isLoading.update { true }
+                    
+                    // Crear File de Firebase si hay una imagen seleccionada
+                    val imageFile = selectedImagePath?.let { path ->
+                        PlatformImageUtils.createFirebaseFile(path)
+                    }
+                    
                     val savedGroup = groupRepository.saveGroup(
                         _group.value,
-                        null
+                        imageFile
                     )
+                    
+                    // Limpiar imagen temporal después de guardar
+                    _temporaryImagePath.update { null }
+                    selectedImagePath = null
+                    
                     _isLoading.update { false }
                     onSuccess(savedGroup)
                 } catch (e: Exception) {
+                    _isLoading.update { false }
                     logMessage("GroupDetailsViewModel", e.toString())
                     onError(e.message ?: "Unknown error")
                 }

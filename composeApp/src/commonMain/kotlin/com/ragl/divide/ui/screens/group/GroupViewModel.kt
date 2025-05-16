@@ -6,7 +6,6 @@ import androidx.compose.runtime.setValue
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.Group
-import com.ragl.divide.data.models.GroupUser
 import com.ragl.divide.data.models.User
 import com.ragl.divide.data.repositories.GroupRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,8 +29,8 @@ class GroupViewModel(
 
     var members by mutableStateOf<List<User>>(listOf())
         private set
-
-    var groupUser by mutableStateOf(GroupUser())
+        
+    var currentUserId by mutableStateOf("")
         private set
 
     private fun updateExpensesAndPayments(expensesAndPayments: List<Any>) {
@@ -44,8 +43,8 @@ class GroupViewModel(
             _group.update {
                 group
             }
-            groupUser = group.users[userId]!!
-            members = groupRepository.getUsers(_group.value.users.values.map { it.id })
+            currentUserId = userId
+            members = groupRepository.getUsers(_group.value.users.values)
             updateExpensesAndPayments(group.expenses.values.toList() + group.payments.values.toList())
             _isLoading.update { false }
         }

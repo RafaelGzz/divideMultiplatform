@@ -1,25 +1,36 @@
 package com.ragl.divide
 
-import ContentWithMessageBar
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.*
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import cafe.adriel.voyager.navigator.Navigator
-import cafe.adriel.voyager.transitions.CrossfadeTransition
 import cafe.adriel.voyager.transitions.FadeTransition
-import cafe.adriel.voyager.transitions.SlideTransition
 import com.mmk.kmpauth.google.GoogleAuthCredentials
 import com.mmk.kmpauth.google.GoogleAuthProvider
-import com.ragl.divide.data.repositories.PreferencesRepository
+import com.ragl.divide.ui.components.ContentWithMessageBar
+import com.ragl.divide.ui.components.MessageBarPosition
+import com.ragl.divide.ui.components.rememberMessageBarState
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.home.HomeScreen
 import com.ragl.divide.ui.screens.signIn.SignInScreen
 import com.ragl.divide.ui.theme.DivideTheme
-import org.koin.compose.KoinContext
 import org.koin.compose.koinInject
-import rememberMessageBarState
 
 @Composable
 fun App() {
@@ -31,6 +42,7 @@ fun App() {
     val messageBarState = rememberMessageBarState()
     val errorState by userViewModel.errorState.collectAsState()
     val successState by userViewModel.successState.collectAsState()
+    val appState by userViewModel.state.collectAsState()
 
     LaunchedEffect(Unit) {
         GoogleAuthProvider.create(
@@ -55,8 +67,8 @@ fun App() {
     }
 
     DivideTheme(darkTheme = darkModeState?.toBoolean() ?: isSystemInDarkTheme()) {
-        KoinContext {
-            AnimatedVisibility(visible = loaded, enter = fadeIn()) {
+        AnimatedVisibility(visible = loaded, enter = fadeIn()) {
+            Box(modifier = Modifier.fillMaxSize()) {
                 ContentWithMessageBar(
                     messageBarState = messageBarState,
                     position = MessageBarPosition.BOTTOM,
@@ -64,9 +76,10 @@ fun App() {
                     successContainerColor = MaterialTheme.colorScheme.primary,
                     errorContentColor = MaterialTheme.colorScheme.onError,
                     errorContainerColor = MaterialTheme.colorScheme.error,
-                    showCopyButton = false,
-                    errorMaxLines = 3,
-                    successMaxLines = 3
+                    maxLines = 3,
+                    autoDismiss = true,
+                    autoDismissDuration = 4000L,
+                    showDismissButton = true
                 ) {
                     Navigator(
                         if (startAtLogin)
@@ -75,6 +88,23 @@ fun App() {
                             HomeScreen()
                     ) { navigator ->
                         FadeTransition(navigator)
+                    }
+                }
+
+                // Indicador de carga global
+                if (appState.isLoading) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = Color.Transparent,
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize().background(Color.Transparent),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
             }
