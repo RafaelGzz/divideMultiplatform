@@ -89,7 +89,7 @@ class ExpensePropertiesViewModel(
     private fun validateTitle(): Boolean {
         return when (title.trim()) {
             "" -> {
-                this.titleError = "Title is required"
+                this.titleError = strings.getTitleRequired()
                 false
             }
 
@@ -111,12 +111,12 @@ class ExpensePropertiesViewModel(
         }
 
         val amountDouble = amount.toDoubleOrNull() ?: run {
-            this.amountError = "Invalid amount"
+            this.amountError = strings.getInvalidAmount()
             return false
         }
 
         if (amountDouble <= 0) {
-            this.amountError = "Amount must be greater than 0"
+            this.amountError = strings.getAmountMustBeGreater()
             return false
         }
 
@@ -203,9 +203,9 @@ class ExpensePropertiesViewModel(
                     }
                     onSuccess(savedExpense)
                 } catch (e: Exception) {
-                    logMessage("ExpenseViewModel", e.stackTraceToString() ?: "Unknown error")
+                    logMessage("ExpenseViewModel", e.stackTraceToString())
                     //Log.e("ExpenseViewModel", e.message, e)
-                    onError(e.message ?: "Unknown error")
+                    onError(e.message ?: strings.getUnknownError())
                 }
             }
         }

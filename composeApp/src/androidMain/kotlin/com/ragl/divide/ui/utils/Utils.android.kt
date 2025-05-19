@@ -53,4 +53,96 @@ actual class Strings(private val context: Context) {
     actual fun getSumMustBe(amount: String): String {
         return context.getString(R.string.quantities_sum_must_be_amount, amount)
     }
+    
+    actual fun getEmailRequired(): String {
+        return context.getString(R.string.email_required)
+    }
+    
+    actual fun getEmailNotValid(): String {
+        return context.getString(R.string.email_not_valid)
+    }
+    
+    actual fun getPasswordRequired(): String {
+        return context.getString(R.string.password_required)
+    }
+    
+    actual fun getEmailAddressRequired(): String {
+        return context.getString(R.string.email_address_required)
+    }
+    
+    actual fun getInvalidEmailAddress(): String {
+        return context.getString(R.string.invalid_email_address)
+    }
+    
+    actual fun getUsernameEmpty(): String {
+        return context.getString(R.string.username_empty)
+    }
+    
+    actual fun getUsernameRequirements(): String {
+        return context.getString(R.string.username_requirements)
+    }
+    
+    actual fun getPasswordMinLength(): String {
+        return context.getString(R.string.password_min_length)
+    }
+    
+    actual fun getPasswordRequirements(): String {
+        return context.getString(R.string.password_requirements)
+    }
+    
+    actual fun getPasswordsNotMatch(): String {
+        return context.getString(R.string.passwords_not_match)
+    }
+    
+    actual fun getSomethingWentWrong(): String {
+        return context.getString(R.string.something_went_wrong)
+    }
+    
+    actual fun getTitleRequired(): String {
+        return context.getString(R.string.title_required)
+    }
+    
+    actual fun getAmountRequired(): String {
+        return context.getString(R.string.amount_required)
+    }
+    
+    actual fun getInvalidAmount(): String {
+        return context.getString(R.string.invalid_amount)
+    }
+    
+    actual fun getAmountMustBeGreater(): String {
+        return context.getString(R.string.amount_must_be_greater)
+    }
+    
+    actual fun getUnknownError(): String {
+        return context.getString(R.string.unknown_error)
+    }
+    
+    actual fun getErrorDeletingPayment(): String {
+        return context.getString(R.string.error_deleting_payment)
+    }
+    
+    actual fun getEmailPasswordInvalid(): String {
+        return context.getString(R.string.email_password_invalid)
+    }
+    
+    actual fun getEmailAlreadyInUse(): String {
+        return context.getString(R.string.email_already_in_use)
+    }
+    
+    actual fun getFailedToLogin(): String {
+        return context.getString(R.string.failed_to_login)
+    }
+
+    actual fun getUnusualActivity(): String {
+        return context.getString(R.string.unusual_activity)
+    }
+
+    actual fun getEmailNotVerified(): String {
+        return context.getString(R.string.email_not_verified)
+    }
+
+    actual fun getVerificationEmailSent(): String {
+        return context.getString(R.string.verification_email_sent)
+    }
 }

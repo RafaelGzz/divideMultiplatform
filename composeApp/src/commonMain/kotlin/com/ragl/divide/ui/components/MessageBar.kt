@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -146,12 +147,10 @@ fun MessageBar(
         Box(
             modifier = modifier
                 .fillMaxWidth()
+                .imePadding() // Esto hará que el MessageBar se desplace hacia arriba cuando el teclado esté visible
                 .padding(
                     horizontal = 16.dp,
-                    vertical = when (position) {
-                        MessageBarPosition.TOP -> 16.dp
-                        MessageBarPosition.BOTTOM -> 16.dp
-                    }
+                    vertical = 16.dp
                 ),
             contentAlignment = when (position) {
                 MessageBarPosition.TOP -> Alignment.TopCenter
@@ -228,23 +227,28 @@ fun ContentWithMessageBar(
     Box(modifier = Modifier.fillMaxWidth()) {
         content()
         
-        MessageBar(
-            messageBarState = messageBarState,
-            position = position,
-            successContainerColor = successContainerColor,
-            successContentColor = successContentColor,
-            errorContainerColor = errorContainerColor,
-            errorContentColor = errorContentColor,
-            maxLines = maxLines,
-            autoDismiss = autoDismiss,
-            autoDismissDuration = autoDismissDuration,
-            showDismissButton = showDismissButton,
-            modifier = Modifier.align(
-                when (position) {
-                    MessageBarPosition.TOP -> Alignment.TopCenter
-                    MessageBarPosition.BOTTOM -> Alignment.BottomCenter
-                }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(
+                    when (position) {
+                        MessageBarPosition.TOP -> Alignment.TopCenter
+                        MessageBarPosition.BOTTOM -> Alignment.BottomCenter
+                    }
+                )
+        ) {
+            MessageBar(
+                messageBarState = messageBarState,
+                position = position,
+                successContainerColor = successContainerColor,
+                successContentColor = successContentColor,
+                errorContainerColor = errorContainerColor,
+                errorContentColor = errorContentColor,
+                maxLines = maxLines,
+                autoDismiss = autoDismiss,
+                autoDismissDuration = autoDismissDuration,
+                showDismissButton = showDismissButton
             )
-        )
+        }
     }
 } 

@@ -8,6 +8,7 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.User
 import com.ragl.divide.data.repositories.GroupRepository
+import com.ragl.divide.ui.utils.Strings
 import com.ragl.divide.ui.utils.logMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,7 +20,8 @@ import kotlinx.coroutines.launch
  * del grupo como nombre, descripción, imagen, y gestión de miembros.
  */
 class GroupPropertiesViewModel(
-    private val groupRepository: GroupRepository
+    private val groupRepository: GroupRepository,
+    private val strings: Strings
 ) : ScreenModel {
 
     private var _group = MutableStateFlow(Group())
@@ -108,7 +110,7 @@ class GroupPropertiesViewModel(
     private fun validateName(): Boolean {
         return when (_group.value.name) {
             "" -> {
-                this.nameError = "Title is required"
+                this.nameError = strings.getTitleRequired()
                 false
             }
 
@@ -151,7 +153,7 @@ class GroupPropertiesViewModel(
                 } catch (e: Exception) {
                     _isLoading.update { false }
                     logMessage("GroupDetailsViewModel", e.toString())
-                    onError(e.message ?: "Unknown error")
+                    onError(e.message ?: strings.getUnknownError())
                 }
             }
         }

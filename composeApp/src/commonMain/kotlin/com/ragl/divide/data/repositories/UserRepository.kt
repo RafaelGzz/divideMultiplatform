@@ -26,6 +26,8 @@ interface UserRepository {
     suspend fun deleteExpensePayment(paymentId: String, amount: Double, expenseId: String)
     suspend fun saveGroup(id: String, userId: String)
     suspend fun leaveGroup(groupId: String, userId: String)
+    suspend fun sendEmailVerification()
+    suspend fun isEmailVerified(): Boolean
 }
 
 class UserRepositoryImpl(
@@ -43,8 +45,10 @@ class UserRepositoryImpl(
         password: String,
         name: String
     ): User? {
+
         val user = auth.createUserWithEmailAndPassword(email, password).user
         return if (user != null) {
+            sendEmailVerification()
             user.updateProfile(displayName = name)
             createUserInDatabase()
         } else {
@@ -88,6 +92,21 @@ class UserRepositoryImpl(
 
     override suspend fun signOut() {
         auth.signOut()
+    }
+
+    override suspend fun sendEmailVerification() {
+        auth.currentUser?.sendEmailVerification()
+    }
+
+    override suspend fun isEmailVerified(): Boolean {
+        auth.currentUser?.reload()
+        val user = auth.currentUser ?: return false
+        val providerData = user.providerData
+        return if (providerData.any { it.providerId == "google.com" }) {
+            true
+        } else {
+            user.isEmailVerified
+        }
     }
 
     override suspend fun getExpense(id: String): Expense {

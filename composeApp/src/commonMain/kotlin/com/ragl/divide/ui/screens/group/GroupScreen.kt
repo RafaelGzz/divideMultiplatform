@@ -508,8 +508,8 @@ private fun GroupExpenseItem(
     )
 
     val isSettled = when (expenseOrPayment) {
-        is GroupExpense -> expenseOrPayment.settled ?: false
-        is Payment -> expenseOrPayment.settled ?: false
+        is GroupExpense -> expenseOrPayment.settled
+        is Payment -> expenseOrPayment.settled
         else -> false
     }
 
@@ -583,7 +583,7 @@ private fun GroupExpenseItem(
 
                 is Payment -> {
                     Text(
-                        stringResource(Res.string.x_paid_y, members.find { it.uuid == expenseOrPayment.from }?.name!!,  members.find { it.uuid == expenseOrPayment.to }?.name!!),
+                        stringResource(Res.string.x_paid_y, members.find { it.uuid == expenseOrPayment.from }?.name ?: "",  members.find { it.uuid == expenseOrPayment.to }?.name ?: ""),
                         //"${members.find { it.uuid == expenseOrPayment.from }?.name} paid ${members.find { it.uuid == expenseOrPayment.to }?.name}",
                         softWrap = true,
                         overflow = TextOverflow.Ellipsis,

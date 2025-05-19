@@ -11,13 +11,15 @@ import com.ragl.divide.data.models.GroupExpense
 import com.ragl.divide.data.models.SplitMethod
 import com.ragl.divide.data.models.User
 import com.ragl.divide.data.repositories.GroupRepository
+import com.ragl.divide.ui.utils.Strings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class GroupExpensePropertiesViewModel(
-    private val groupRepository: GroupRepository
+    private val groupRepository: GroupRepository,
+    private val strings: Strings
 ) : ScreenModel {
 
     private val _group = MutableStateFlow(Group())
@@ -142,7 +144,7 @@ class GroupExpensePropertiesViewModel(
     fun validateTitle(): Boolean {
         return when (title.trim()) {
             "" -> {
-                this.titleError = "Title is required"
+                this.titleError = strings.getTitleRequired()
                 false
             }
 
@@ -155,17 +157,17 @@ class GroupExpensePropertiesViewModel(
 
     fun validateAmount(): Boolean {
         if (amount.isEmpty()) {
-            this.amountError = "Amount is required"
+            this.amountError = strings.getAmountRequired()
             return false
         }
 
         val amountDouble = amount.toDoubleOrNull() ?: run {
-            this.amountError = "Invalid amount"
+            this.amountError = strings.getInvalidAmount()
             return false
         }
 
         if (amountDouble <= 0) {
-            this.amountError = "Amount must be greater than 0"
+            this.amountError = strings.getAmountMustBeGreater()
             return false
         }
 

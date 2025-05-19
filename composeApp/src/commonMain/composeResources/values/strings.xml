@@ -120,9 +120,9 @@
     <string name="select_friends">Select Friends</string>
     <string name="no_users_found">No users found</string>
     <string name="bar_item_profile_text">Profile</string>
+    <string name="theme">Theme</string>
     <string name="dark_mode">Dark Mode</string>
-    <string name="activated">Activated</string>
-    <string name="deactivated">Deactivated</string>
+    <string name="light_mode">Light Mode</string>
     <string name="system_default">System Default</string>
     <string name="allow_notifications">Allow notifications</string>
     <string name="sign_out">Sign Out</string>
@@ -140,4 +140,24 @@
     <string name="settled">Settled</string>
     <string name="pending">Pending</string>
     <string name="x_paid_y">%1$s paid %2$s</string>
+    <string name="paid_by_text">Paid by:</string>
+    <string name="debtors">Debtors:</string>
+    <string name="edit">Edit</string>
+    <string name="dollar_sign">$</string>
+    <string name="percent_sign">%</string>
+    <string name="currency_es_mx">es-MX</string>
+    <string name="notification_warning_past_date">Warning! The date was in the past, adjusting to 1 minute in the future: %1$s</string>
+    <string name="notification_scheduling">Scheduling notification %1$s for date: %2$s (%3$s)</string>
+    <string name="notification_current_time">Current time: %1$s (%2$s)</string>
+    <string name="notification_difference_ms">Difference in milliseconds: %1$s</string>
+    <string name="notification_scheduled">Notification %1$s scheduled for %2$s</string>
+    <string name="notification_failed">Failed to schedule notification %1$s (permission denied)</string>
+    <string name="notification_canceled">Notification %1$s canceled</string>
+    <string name="warning_date_adjusted">Warning! Time adjusted since date was in the past</string>
+    <string name="notification_scheduled_seconds">Notification %1$s scheduled for %2$s seconds from now</string>
+    <string name="email_not_verified">Email not verified</string>
+    <string name="check_email_for_verification">Please check your inbox and verify your email address</string>
+    <string name="verification_email_sent">Verification email sent. Please check your inbox</string>
+    <string name="resend_verification">Resend verification email</string>
+    <string name="verify_email">Verify email</string>
 </resources>

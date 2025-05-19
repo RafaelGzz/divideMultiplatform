@@ -47,11 +47,16 @@ import com.ragl.divide.ui.utils.formatCurrency
 import com.ragl.divide.ui.utils.formatDate
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.added_on
+import dividemultiplatform.composeapp.generated.resources.back
 import dividemultiplatform.composeapp.generated.resources.cancel
+import dividemultiplatform.composeapp.generated.resources.currency_es_mx
 import dividemultiplatform.composeapp.generated.resources.delete
 import dividemultiplatform.composeapp.generated.resources.delete_expense_confirm
+import dividemultiplatform.composeapp.generated.resources.debtors
+import dividemultiplatform.composeapp.generated.resources.edit
 import dividemultiplatform.composeapp.generated.resources.notes
 import dividemultiplatform.composeapp.generated.resources.owes_x
+import dividemultiplatform.composeapp.generated.resources.paid_by_text
 import dividemultiplatform.composeapp.generated.resources.paid_x
 import org.jetbrains.compose.resources.stringResource
 
@@ -93,7 +98,7 @@ class GroupExpenseScreen(
                         IconButton(
                             onClick = { navigator.pop() }
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.back))
                         }
                     },
                     actions = {
@@ -109,13 +114,13 @@ class GroupExpenseScreen(
                                     )
                                 }
                             ) {
-                                Icon(Icons.Default.Edit, contentDescription = "Edit")
+                                Icon(Icons.Default.Edit, contentDescription = stringResource(Res.string.edit))
                             }
                         }
                         IconButton(
                             onClick = { isDeleteDialogEnabled = true }
                         ) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete")
+                            Icon(Icons.Default.Delete, contentDescription = stringResource(Res.string.delete))
                         }
                     }
                 )
@@ -172,7 +177,7 @@ class GroupExpenseScreen(
                 ExpenseDetails(groupExpenseState)
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "Pagado por:",
+                    text = stringResource(Res.string.paid_by_text),
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(vertical = 8.dp)
@@ -190,7 +195,7 @@ class GroupExpenseScreen(
                             Text(
                                 text = stringResource(
                                     Res.string.paid_x,
-                                    formatCurrency(realDebt, "es-MX")
+                                    formatCurrency(realDebt, stringResource(Res.string.currency_es_mx))
                                 ),
                                 textAlign = TextAlign.Center,
                                 style = MaterialTheme.typography.bodyMedium,
@@ -201,7 +206,7 @@ class GroupExpenseScreen(
                 }
                 
                 Text(
-                    text = "Deudores:",
+                    text = stringResource(Res.string.debtors),
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(vertical = 8.dp)
@@ -217,7 +222,7 @@ class GroupExpenseScreen(
                                     Text(
                                         text = stringResource(
                                             Res.string.owes_x,
-                                            formatCurrency(debt, "es-MX")
+                                            formatCurrency(debt, stringResource(Res.string.currency_es_mx))
                                         ),
                                         textAlign = TextAlign.Center,
                                         style = MaterialTheme.typography.bodyMedium,
@@ -238,7 +243,7 @@ class GroupExpenseScreen(
                                     Text(
                                         text = stringResource(
                                             Res.string.owes_x,
-                                            formatCurrency(debt, "es-MX")
+                                            formatCurrency(debt, stringResource(Res.string.currency_es_mx))
                                         ),
                                         textAlign = TextAlign.Center,
                                         style = MaterialTheme.typography.bodyMedium,
@@ -258,7 +263,7 @@ class GroupExpenseScreen(
                                     Text(
                                         text = stringResource(
                                             Res.string.owes_x,
-                                            formatCurrency(debt, "es-MX")
+                                            formatCurrency(debt, stringResource(Res.string.currency_es_mx))
                                         ),
                                         textAlign = TextAlign.Center,
                                         style = MaterialTheme.typography.bodyMedium,
@@ -277,7 +282,7 @@ class GroupExpenseScreen(
     private fun ExpenseDetails(expense: GroupExpense) {
         Column {
             Text(
-                text = formatCurrency(expense.amount, "es-MX"),
+                text = formatCurrency(expense.amount, stringResource(Res.string.currency_es_mx)),
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.headlineLarge.copy(color = MaterialTheme.colorScheme.primary),
                 modifier = Modifier.fillMaxWidth()
@@ -295,7 +300,7 @@ class GroupExpenseScreen(
             )
             if (expense.notes != "") {
                 Text(
-                    text = "${stringResource(Res.string.notes)}:",
+                    text = stringResource(Res.string.notes) + ":",
                     color = MaterialTheme.colorScheme.primary,
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.labelLarge,

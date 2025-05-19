@@ -1,9 +1,32 @@
 <resources>
-    <string name="app_name">DivideMultiplatform</string>
+    <string name="app_name">Divide</string>
     <string name="notification_title">%1$s</string>
     <string name="notification_body">Remember to pay and keep track of your expenses!</string>
     <string name="two_people_must_be_selected">At least two people must be selected</string>
     <string name="percentages_sum_must_be_100">Percentage sum must be 100%</string>
     <string name="quantities_sum_must_be_amount">Quantities sum must be %1$s</string>
     <string name="two_people_must_pay">At least two people must pay</string>
+    <string name="email_required">Email is required</string>
+    <string name="email_not_valid">Email is not valid</string>
+    <string name="password_required">Password is required</string>
+    <string name="email_address_required">Email Address is required</string>
+    <string name="invalid_email_address">Invalid email address</string>
+    <string name="username_empty">Username cannot be empty</string>
+    <string name="username_requirements">Username must be between 3 and 20 characters and can only contain letters, numbers, underscores, and hyphens</string>
+    <string name="password_min_length">Password must be at least 8 characters</string>
+    <string name="password_requirements">Password must contain at least one number, one uppercase letter, one lowercase letter and one special character</string>
+    <string name="passwords_not_match">Passwords do not match</string>
+    <string name="something_went_wrong">Something went wrong</string>
+    <string name="title_required">Title is required</string>
+    <string name="amount_required">Amount is required</string>
+    <string name="invalid_amount">Invalid amount</string>
+    <string name="amount_must_be_greater">Amount must be greater than 0</string>
+    <string name="unknown_error">Unknown error</string>
+    <string name="error_deleting_payment">Error deleting payment</string>
+    <string name="email_password_invalid">The email or password is invalid</string>
+    <string name="email_already_in_use">The email address is already in use by another account</string>
+    <string name="failed_to_login">Failed to Log in</string>
+    <string name="unusual_activity">Unusual activity detected. Try again later.</string>
+    <string name="email_not_verified">Email not verified</string>
+    <string name="verification_email_sent">Verification email sent</string>
 </resources>

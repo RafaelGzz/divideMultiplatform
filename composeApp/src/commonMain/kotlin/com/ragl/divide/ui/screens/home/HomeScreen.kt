@@ -22,39 +22,24 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -81,7 +66,6 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.data.models.Group
-import com.ragl.divide.data.models.User
 import com.ragl.divide.data.models.getCategoryIcon
 import com.ragl.divide.ui.components.TitleRow
 import com.ragl.divide.ui.screens.UserViewModel
@@ -91,8 +75,7 @@ import com.ragl.divide.ui.screens.expenseProperties.ExpensePropertiesScreen
 import com.ragl.divide.ui.screens.group.GroupScreen
 import com.ragl.divide.ui.screens.groupProperties.GroupPropertiesScreen
 import com.ragl.divide.ui.screens.signIn.SignInScreen
-import com.ragl.divide.ui.utils.FriendItem
-import com.ragl.divide.ui.utils.ProfileImage
+import com.ragl.divide.ui.utils.Header
 import com.ragl.divide.ui.utils.formatCurrency
 import com.ragl.divide.ui.utils.toTwoDecimals
 import com.skydoves.landscapist.ImageOptions
@@ -100,29 +83,18 @@ import com.skydoves.landscapist.coil3.CoilImage
 import compose.icons.FontAwesomeIcons
 import compose.icons.fontawesomeicons.Solid
 import compose.icons.fontawesomeicons.solid.DollarSign
-import compose.icons.fontawesomeicons.solid.Moon
 import compose.icons.fontawesomeicons.solid.User
 import compose.icons.fontawesomeicons.solid.UserPlus
 import compose.icons.fontawesomeicons.solid.Users
 import dividemultiplatform.composeapp.generated.resources.Res
-import dividemultiplatform.composeapp.generated.resources.activated
 import dividemultiplatform.composeapp.generated.resources.add
 import dividemultiplatform.composeapp.generated.resources.add_friends
-import dividemultiplatform.composeapp.generated.resources.allow_notifications
 import dividemultiplatform.composeapp.generated.resources.app_name
 import dividemultiplatform.composeapp.generated.resources.bar_item_friends_text
 import dividemultiplatform.composeapp.generated.resources.bar_item_home_text
 import dividemultiplatform.composeapp.generated.resources.bar_item_profile_text
 import dividemultiplatform.composeapp.generated.resources.compose_multiplatform
-import dividemultiplatform.composeapp.generated.resources.dark_mode
-import dividemultiplatform.composeapp.generated.resources.deactivated
-import dividemultiplatform.composeapp.generated.resources.no
-import dividemultiplatform.composeapp.generated.resources.sign_out
-import dividemultiplatform.composeapp.generated.resources.sign_out_confirmation
-import dividemultiplatform.composeapp.generated.resources.system_default
-import dividemultiplatform.composeapp.generated.resources.yes
 import dividemultiplatform.composeapp.generated.resources.you_have_no_expenses
-import dividemultiplatform.composeapp.generated.resources.you_have_no_friends
 import dividemultiplatform.composeapp.generated.resources.you_have_no_groups
 import dividemultiplatform.composeapp.generated.resources.your_expenses
 import dividemultiplatform.composeapp.generated.resources.your_groups
@@ -308,268 +280,6 @@ class HomeScreen : Screen {
     }
 
     @Composable
-    private fun ProfileBody(
-        modifier: Modifier = Modifier,
-        user: User,
-        onSignOut: () -> Unit,
-        isDarkMode: String?,
-        onChangeDarkMode: (Boolean?) -> Unit
-    ) {
-        val allowNotifications = remember { mutableStateOf(true) }
-        var isSignOutDialogVisible by remember { mutableStateOf(false) }
-        LazyColumn {
-            if (isSignOutDialogVisible) {
-                item {
-                    AlertDialog(
-                        onDismissRequest = { isSignOutDialogVisible = false },
-                        confirmButton = {
-                            TextButton(onClick = {
-                                isSignOutDialogVisible = false
-                                onSignOut()
-                            }) {
-                                Text(stringResource(Res.string.yes))
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { isSignOutDialogVisible = false }) {
-                                Text(stringResource(Res.string.no))
-                            }
-                        },
-                        title = {
-                            Text(
-                                stringResource(Res.string.sign_out),
-                                style = MaterialTheme.typography.titleLarge
-                            )
-                        },
-                        text = {
-                            Text(
-                                stringResource(Res.string.sign_out_confirmation),
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        },
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        titleContentColor = MaterialTheme.colorScheme.primary,
-                        textContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
-                }
-            }
-            item {
-                TopBar(
-                    title = stringResource(Res.string.bar_item_profile_text)
-                )
-            }
-            item {
-                Box(modifier = modifier.padding(16.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        if (user.photoUrl.isNotEmpty()) {
-                            ProfileImage(user.photoUrl)
-                        } else {
-                            Icon(
-                                Icons.Filled.Person,
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(52.dp)
-                                    .padding(12.dp)
-                                    .clip(CircleShape)
-                            )
-                        }
-                        Column {
-                            Text(
-                                user.name,
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-                            Text(
-                                user.email,
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Normal,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                ),
-                            )
-                        }
-                        Spacer(modifier = Modifier.weight(1f))
-                        IconButton(onClick = { isSignOutDialogVisible = true }) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ExitToApp,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                NotificationSetting(allowNotifications)
-                Spacer(modifier = Modifier.height(16.dp))
-                DarkModeSetting(isDarkMode, onChangeDarkMode)
-            }
-        }
-    }
-
-    @Composable
-    private fun NotificationSetting(allowNotifications: MutableState<Boolean>) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            ),
-            shape = RoundedCornerShape(8.dp),
-            onClick = { allowNotifications.value = !allowNotifications.value }
-        ) {
-            Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Filled.Notifications,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = stringResource(Res.string.allow_notifications),
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Normal)
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Switch(
-                    checked = allowNotifications.value,
-                    onCheckedChange = { allowNotifications.value = it })
-            }
-        }
-    }
-
-    @Composable
-    private fun DarkModeSetting(
-        isDarkMode: String?,
-        onChangeDarkMode: (Boolean?) -> Unit
-    ) {
-        val isExpanded = remember { mutableStateOf(false) }
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            ),
-            shape = RoundedCornerShape(8.dp),
-            onClick = { isExpanded.value = !isExpanded.value },
-        ) {
-            Row(
-                Modifier
-                    .padding(horizontal = 12.dp)
-                    .padding(top = 12.dp, bottom = if (isExpanded.value) 0.dp else 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    FontAwesomeIcons.Solid.Moon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = stringResource(Res.string.dark_mode),
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Normal)
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                IconButton(onClick = { isExpanded.value = !isExpanded.value }) {
-                    Icon(
-                        if (isExpanded.value) Icons.Filled.KeyboardArrowUp
-                        else Icons.Filled.KeyboardArrowDown,
-                        contentDescription = null
-                    )
-                }
-            }
-            AnimatedVisibility(visible = isExpanded.value) {
-                Column {
-                    Row(
-                        Modifier.padding(horizontal = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Spacer(modifier = Modifier.width(36.dp))
-                        Text(
-                            stringResource(Res.string.activated),
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Normal)
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
-                        RadioButton(
-                            selected = isDarkMode == "true",
-                            onClick = { onChangeDarkMode(true) })
-                    }
-                    Row(
-                        Modifier.padding(horizontal = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Spacer(modifier = Modifier.width(36.dp))
-                        Text(
-                            stringResource(Res.string.deactivated),
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Normal)
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
-                        RadioButton(
-                            selected = isDarkMode == "false",
-                            onClick = { onChangeDarkMode(false) })
-                    }
-                    Row(
-                        Modifier.padding(horizontal = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Spacer(modifier = Modifier.width(36.dp))
-                        Text(
-                            stringResource(Res.string.system_default),
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Normal)
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
-                        RadioButton(
-                            selected = isDarkMode == null,
-                            onClick = { onChangeDarkMode(null) })
-                    }
-                }
-            }
-        }
-    }
-
-    @Composable
-    fun FriendsBody(
-        friends: List<User>
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-        ) {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                item {
-                    TopBar(
-                        title = stringResource(Res.string.bar_item_friends_text)
-                    )
-                }
-                if (friends.isEmpty()) {
-                    item {
-                        Text(
-                            text = stringResource(Res.string.you_have_no_friends),
-                            style = MaterialTheme.typography.labelSmall,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                } else items(friends, key = { it.uuid }) { friend ->
-                    FriendItem(
-                        headline = friend.name,
-                        photoUrl = friend.photoUrl,
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.onSurface
-                        )
-                    )
-                }
-
-            }
-        }
-    }
-
-    @Composable
     private fun HomeBody(
         expenses: List<Expense>,
         groups: List<Group>,
@@ -580,7 +290,7 @@ class HomeScreen : Screen {
     ) {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             item {
-                TopBar(
+                Header(
                     title = stringResource(Res.string.app_name)
                 )
             }
@@ -807,26 +517,5 @@ class HomeScreen : Screen {
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
         }
-    }
-
-    @Composable
-    private fun TopBar(
-        title: String
-    ) {
-        Box(
-            modifier = Modifier
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(horizontal = 16.dp, vertical = 20.dp)
-                    .align(Alignment.Center)
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineMedium
-                )
-            }
-        }
-
     }
 }

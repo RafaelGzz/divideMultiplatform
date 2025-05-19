@@ -18,6 +18,8 @@ import com.ragl.divide.ui.screens.groupExpenseProperties.GroupExpensePropertiesV
 import com.ragl.divide.ui.screens.groupPayment.GroupPaymentViewModel
 import com.ragl.divide.ui.screens.groupPaymentProperties.GroupPaymentPropertiesViewModel
 import com.ragl.divide.ui.screens.groupProperties.GroupPropertiesViewModel
+import com.ragl.divide.ui.screens.signIn.LogInViewModel
+import com.ragl.divide.ui.screens.signIn.SignUpViewModel
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.FirebaseAuth
 import dev.gitlive.firebase.auth.auth
@@ -41,6 +43,8 @@ val sharedModule = module {
     singleOf(::PreferencesRepository)
 
     singleOf(::UserViewModel)
+    factoryOf(::LogInViewModel)
+    factoryOf(::SignUpViewModel)
     factoryOf(::ExpensePropertiesViewModel)
     factoryOf(::ExpenseViewModel)
     factoryOf(::GroupViewModel)

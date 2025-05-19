@@ -13,12 +13,15 @@ import com.ragl.divide.data.repositories.GroupRepository
 import com.ragl.divide.data.repositories.PreferencesRepository
 import com.ragl.divide.data.repositories.UserRepository
 import com.ragl.divide.data.services.GroupExpenseService
+import com.ragl.divide.ui.utils.Strings
 import com.ragl.divide.ui.utils.logMessage
 import dev.gitlive.firebase.auth.FirebaseUser
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 data class AppState(
     val isLoading: Boolean = false,
@@ -33,7 +36,8 @@ class UserViewModel(
     private var friendsRepository: FriendsRepository,
     private val preferencesRepository: PreferencesRepository,
     private val groupRepository: GroupRepository,
-    private val groupExpenseService: GroupExpenseService
+    private val groupExpenseService: GroupExpenseService,
+    private val strings: Strings
 ) : ScreenModel {
 
     private val _state = MutableStateFlow(AppState())
@@ -44,6 +48,9 @@ class UserViewModel(
 
     private val _successState = MutableStateFlow<String?>(null)
     val successState = _successState.asStateFlow()
+
+    private val _countdown = MutableStateFlow(0)
+    val countdown = _countdown.asStateFlow()
 
     var isDarkMode = MutableStateFlow<String?>(null)
 
@@ -56,14 +63,21 @@ class UserViewModel(
                 isDarkMode.value = it
             }
         }
-        if (userRepository.getFirebaseUser() != null) {
-            getUserData()
-            startAtLogin.value = false
+        runBlocking {
+            if (userRepository.getFirebaseUser() != null) {
+                if (userRepository.isEmailVerified()) {
+                    getUserData()
+                    startAtLogin.value = false
+                } else {
+                    userRepository.signOut()
+                    startAtLogin.value = true
+                }
+            }
         }
     }
 
     fun handleError(e: Exception) {
-        _errorState.value = e.message ?: "Unknown error"
+        _errorState.value = e.message ?: strings.getUnknownError()
         logMessage("UserViewModel", "$e")
     }
 
@@ -97,7 +111,7 @@ class UserViewModel(
         screenModelScope.launch {
             showLoading()
             try {
-                val user =  userRepository.getUser(userRepository.getFirebaseUser()!!.uid)
+                val user = userRepository.getUser(userRepository.getFirebaseUser()!!.uid)
                 val groups = groupRepository.getGroups(user.groups)
                 //val expenses = userRepository.getExpenses()
                 val friends = friendsRepository.getFriends(user.friends)
@@ -127,12 +141,14 @@ class UserViewModel(
             try {
                 showLoading()
                 if (userRepository.signInWithEmailAndPassword(email, password) != null) {
-                    //preferencesRepository.saveStartDestination(Screen.Home.route)
-                    getUserData()
-                    onSuccess()
-                } else onFail(Exception("Failed to Log in"))
+                    if (userRepository.isEmailVerified()) {
+                        getUserData()
+                        onSuccess()
+                    } else {
+                        onFail(Exception(strings.getEmailNotVerified()))
+                    }
+                } else onFail(Exception(strings.getFailedToLogin()))
             } catch (e: Exception) {
-                //Log.e("UserViewModel", "signInWithEmailAndPassword: ", e)
                 onFail(handleAuthError(e))
                 logMessage("UserViewModel: signInWithEmailAndPassword", e.message.toString())
             } finally {
@@ -142,20 +158,17 @@ class UserViewModel(
     }
 
     fun signUpWithEmailAndPassword(
-        email: String, password: String, name: String,
-        onSuccess: () -> Unit,
-        onFail: (Exception) -> Unit
+        email: String, password: String, name: String
     ) {
         screenModelScope.launch {
             try {
                 showLoading()
                 if (userRepository.signUpWithEmailAndPassword(email, password, name) != null) {
-                    //preferencesRepository.saveStartDestination(Screen.Home.route)
-                    getUserData()
-                    onSuccess()
-                } else onFail(Exception("Failed to Log in"))
+                    userRepository.signOut()
+                    handleSuccess(strings.getVerificationEmailSent())
+                } else handleError(Exception(strings.getFailedToLogin()))
             } catch (e: Exception) {
-                onFail(handleAuthError(e))
+                handleError(handleAuthError(e))
                 logMessage("UserViewModel: signUpWithEmailAndPassword", e.message.toString())
             } finally {
                 hideLoading()
@@ -181,7 +194,7 @@ class UserViewModel(
                     getUserData()
                     onSuccess()
                 } else {
-                    onFail(Exception("Failed to Log in"))
+                    onFail(Exception(strings.getFailedToLogin()))
                     logMessage(
                         "UserViewModel: signInWithGoogle",
                         "${result.exceptionOrNull()?.message}"
@@ -189,7 +202,7 @@ class UserViewModel(
                 }
 
             } catch (e: Exception) {
-                onFail(Exception(e.message ?: "Unknown error"))
+                onFail(Exception(e.message ?: strings.getUnknownError()))
                 logMessage("UserViewModel", e.message.toString())
                 //Log.e("UserViewModel", "signUpWithEmailAndPassword: ", e)
             } finally {
@@ -200,17 +213,21 @@ class UserViewModel(
 
     private fun handleAuthError(e: Exception): Exception {
         return when {
-            e.message?.contains("There is no user record corresponding to this identifier") == true ||
-            e.message?.contains("The password is invalid or the user does not have a password") == true -> {
-                Exception("The email or password is invalid.")
+            e.message?.contains("no user record") == true ||
+                    e.message?.contains("password is invalid") == true -> {
+                Exception(strings.getEmailPasswordInvalid())
             }
 
-            e.message?.contains("The email address is already in use by another account") == true -> {
-                Exception(e.message)
+            e.message?.contains("email address is already in use") == true -> {
+                Exception(strings.getEmailAlreadyInUse())
+            }
+
+            e.message?.contains("unusual activity") == true -> {
+                Exception(strings.getUnusualActivity())
             }
 
             else -> {
-                Exception(e.message ?: "Unknown error")
+                Exception(e.message ?: strings.getUnknownError())
             }
         }
     }
@@ -431,5 +448,43 @@ class UserViewModel(
             )
         }
         recalculateDebts(groupId)
+    }
+
+    fun resendVerificationEmail() {
+        screenModelScope.launch {
+            try {
+                showLoading()
+                userRepository.sendEmailVerification()
+                handleSuccess(strings.getVerificationEmailSent())
+                startCountdown()
+            } catch (e: Exception) {
+                handleError(Exception(e.message ?: strings.getUnknownError()))
+            } finally {
+                hideLoading()
+            }
+        }
+    }
+
+    private fun startCountdown() {
+        screenModelScope.launch {
+            _countdown.value = 300
+            while (_countdown.value > 0) {
+                delay(1000)
+                _countdown.value--
+            }
+        }
+    }
+
+    suspend fun isEmailVerified(): Boolean {
+        var res = false
+        try {
+            showLoading()
+            res = userRepository.isEmailVerified()
+        } catch (e: Exception) {
+            handleError(Exception(e.message ?: strings.getUnknownError()))
+        } finally {
+            hideLoading()
+        }
+        return res
     }
 }

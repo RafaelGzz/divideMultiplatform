@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -68,7 +67,7 @@ fun App() {
 
     DivideTheme(darkTheme = darkModeState?.toBoolean() ?: isSystemInDarkTheme()) {
         AnimatedVisibility(visible = loaded, enter = fadeIn()) {
-            Box(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
                 ContentWithMessageBar(
                     messageBarState = messageBarState,
                     position = MessageBarPosition.BOTTOM,
@@ -93,18 +92,14 @@ fun App() {
 
                 // Indicador de carga global
                 if (appState.isLoading) {
-                    Surface(
-                        modifier = Modifier.fillMaxSize(),
-                        color = Color.Transparent,
+                    Box(
+                        modifier = Modifier.fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.2f)),
                     ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize().background(Color.Transparent),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
+                        CircularProgressIndicator(
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.align(Alignment.Center)
+                        )
                     }
                 }
             }

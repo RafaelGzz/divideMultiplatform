@@ -70,10 +70,14 @@ import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.add
 import dividemultiplatform.composeapp.generated.resources.add_expense
 import dividemultiplatform.composeapp.generated.resources.amount
+import dividemultiplatform.composeapp.generated.resources.back
+import dividemultiplatform.composeapp.generated.resources.currency_es_mx
+import dividemultiplatform.composeapp.generated.resources.dollar_sign
 import dividemultiplatform.composeapp.generated.resources.indicate_percentages
 import dividemultiplatform.composeapp.generated.resources.indicate_quantities
 import dividemultiplatform.composeapp.generated.resources.one_person
 import dividemultiplatform.composeapp.generated.resources.paid_by
+import dividemultiplatform.composeapp.generated.resources.percent_sign
 import dividemultiplatform.composeapp.generated.resources.remaining_x
 import dividemultiplatform.composeapp.generated.resources.select_who_pays
 import dividemultiplatform.composeapp.generated.resources.split_method
@@ -135,7 +139,7 @@ class GroupExpensePropertiesScreen(
                             ) {
                                 Icon(
                                     Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Back",
+                                    contentDescription = stringResource(Res.string.back),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }
@@ -166,7 +170,7 @@ class GroupExpensePropertiesScreen(
                     DivideTextField(
                         label = stringResource(Res.string.amount),
                         keyboardType = KeyboardType.Number,
-                        prefix = { Text(text = "$", style = MaterialTheme.typography.bodyMedium) },
+                        prefix = { Text(text = stringResource(Res.string.dollar_sign), style = MaterialTheme.typography.bodyMedium) },
                         input = vm.amount,
                         error = vm.amountError,
                         onValueChange = { input ->
@@ -334,7 +338,7 @@ class GroupExpensePropertiesScreen(
                                         Text(
                                             stringResource(
                                                 Res.string.x_per_person,
-                                                formatCurrency(vm.amountPerPerson, "es-MX")
+                                                formatCurrency(vm.amountPerPerson, stringResource(Res.string.currency_es_mx))
                                             ),
                                             style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.primary)
                                         )
@@ -357,8 +361,8 @@ class GroupExpensePropertiesScreen(
                                         Text(
                                             stringResource(
                                                 Res.string.x_of_y,
-                                                "$percentageSum%",
-                                                "100%"
+                                                percentageSum.toString() + stringResource(Res.string.percent_sign),
+                                                "100" + stringResource(Res.string.percent_sign)
                                             ),
                                             style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.primary)
                                         )
@@ -366,7 +370,7 @@ class GroupExpensePropertiesScreen(
                                             Text(
                                                 stringResource(
                                                     Res.string.remaining_x,
-                                                    "$remainingPercentage%"
+                                                    remainingPercentage.toString() + stringResource(Res.string.percent_sign)
                                                 ),
                                                 style = MaterialTheme.typography.bodySmall
                                             )
@@ -374,7 +378,7 @@ class GroupExpensePropertiesScreen(
                                             Text(
                                                 stringResource(
                                                     Res.string.x_exceeded,
-                                                    "$exceeded%"
+                                                    exceeded.toString() + stringResource(Res.string.percent_sign)
                                                 ),
                                                 style = MaterialTheme.typography.bodySmall.copy(
                                                     color = MaterialTheme.colorScheme.error
@@ -392,8 +396,8 @@ class GroupExpensePropertiesScreen(
                                         Text(
                                             stringResource(
                                                 Res.string.x_of_y,
-                                                "$$quantitiesSum",
-                                                "$$amount"
+                                                stringResource(Res.string.dollar_sign) + quantitiesSum.toString(),
+                                                stringResource(Res.string.dollar_sign) + amount.toString()
                                             ),
                                             style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.primary)
                                         )
@@ -401,14 +405,14 @@ class GroupExpensePropertiesScreen(
                                             Text(
                                                 stringResource(
                                                     Res.string.remaining_x,
-                                                    "$$remainingQuantity"
+                                                    stringResource(Res.string.dollar_sign) + remainingQuantity.toString()
                                                 ),
                                                 style = MaterialTheme.typography.bodySmall
                                             )
                                         else Text(
                                             stringResource(
                                                 Res.string.x_exceeded,
-                                                "$$exceeded"
+                                                stringResource(Res.string.dollar_sign) + exceeded.toString()
                                             ),
                                             style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.error)
                                         )
@@ -423,7 +427,7 @@ class GroupExpensePropertiesScreen(
                                 FriendItem(
                                     headline = friend.name,
                                     supporting = when (vm.splitMethod) {
-                                        SplitMethod.PERCENTAGES -> "$" + (amount * friendQuantity / 100).toTwoDecimals()
+                                        SplitMethod.PERCENTAGES -> stringResource(Res.string.dollar_sign) + (amount * friendQuantity / 100).toTwoDecimals()
 
                                         else -> ""
                                     },
@@ -489,7 +493,7 @@ class GroupExpensePropertiesScreen(
                                                         .padding(vertical = 10.dp)
                                                 )
                                                 Text(
-                                                    text = "%",
+                                                    text = stringResource(Res.string.percent_sign),
                                                     style = MaterialTheme.typography.labelMedium.copy(
                                                         color = MaterialTheme.colorScheme.onSurface
                                                     )
@@ -502,7 +506,7 @@ class GroupExpensePropertiesScreen(
                                                 ), verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 Text(
-                                                    text = "$",
+                                                    text = stringResource(Res.string.dollar_sign),
                                                     style = MaterialTheme.typography.labelMedium.copy(
                                                         color = MaterialTheme.colorScheme.onSurface
                                                     )

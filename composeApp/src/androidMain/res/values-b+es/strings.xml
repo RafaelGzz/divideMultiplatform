@@ -6,4 +6,27 @@
     <string name="two_people_must_pay">Al menos dos personas deben pagar</string>
     <string name="percentages_sum_must_be_100">Suma de porcentajes debe ser 100%</string>
     <string name="quantities_sum_must_be_amount">Suma de cantidades debe ser igual a %1$s</string>
+    <string name="email_required">El correo es requerido</string>
+    <string name="email_not_valid">El correo no es válido</string>
+    <string name="password_required">La contraseña es requerida</string>
+    <string name="email_address_required">El correo electrónico es requerido</string>
+    <string name="invalid_email_address">Dirección de correo inválida</string>
+    <string name="username_empty">El nombre de usuario no puede estar vacío</string>
+    <string name="username_requirements">El nombre de usuario debe tener entre 3 y 20 caracteres y solo puede contener letras, números, guiones bajos y guiones</string>
+    <string name="password_min_length">La contraseña debe tener al menos 8 caracteres</string>
+    <string name="password_requirements">La contraseña debe contener al menos un número, una letra mayúscula, una letra minúscula y un carácter especial</string>
+    <string name="passwords_not_match">Las contraseñas no coinciden</string>
+    <string name="something_went_wrong">Algo salió mal</string>
+    <string name="title_required">El título es requerido</string>
+    <string name="amount_required">La cantidad es requerida</string>
+    <string name="invalid_amount">Cantidad inválida</string>
+    <string name="amount_must_be_greater">La cantidad debe ser mayor que 0</string>
+    <string name="unknown_error">Error desconocido</string>
+    <string name="error_deleting_payment">Error al eliminar el pago</string>
+    <string name="email_password_invalid">El correo o la contraseña no son válidos</string>
+    <string name="email_already_in_use">El correo ya está en uso por otra cuenta</string>
+    <string name="failed_to_login">No se pudo iniciar sesión</string>
+    <string name="unusual_activity">Actividad inusual detectada. Inténtalo de nuevo más tarde.</string>
+    <string name="email_not_verified">Correo electrónico no verificado</string>
+    <string name="verification_email_sent">Correo de verificación enviado</string>
 </resources>

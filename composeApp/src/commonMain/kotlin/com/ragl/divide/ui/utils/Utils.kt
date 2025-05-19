@@ -65,6 +65,29 @@ expect class Strings{
     fun getPercentagesSum(): String
     fun getTwoMustPay(): String
     fun getSumMustBe(amount: String): String
+    fun getEmailRequired(): String
+    fun getEmailNotValid(): String
+    fun getPasswordRequired(): String
+    fun getEmailAddressRequired(): String
+    fun getInvalidEmailAddress(): String
+    fun getUsernameEmpty(): String
+    fun getUsernameRequirements(): String
+    fun getPasswordMinLength(): String
+    fun getPasswordRequirements(): String
+    fun getPasswordsNotMatch(): String
+    fun getSomethingWentWrong(): String
+    fun getTitleRequired(): String
+    fun getAmountRequired(): String
+    fun getInvalidAmount(): String
+    fun getAmountMustBeGreater(): String
+    fun getUnknownError(): String
+    fun getErrorDeletingPayment(): String
+    fun getEmailPasswordInvalid(): String
+    fun getEmailAlreadyInUse(): String
+    fun getFailedToLogin(): String
+    fun getEmailNotVerified(): String
+    fun getVerificationEmailSent(): String
+    fun getUnusualActivity(): String
 }
 
 fun Double.toTwoDecimals(): Double {
@@ -355,4 +378,24 @@ private fun DefaultProfileIcon(
             )
             .padding(size.dp / 4)
     )
+}
+
+@Composable
+fun Header(
+    title: String
+) {
+    Box(
+        modifier = Modifier
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 20.dp)
+                .align(Alignment.Center)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineMedium
+            )
+        }
+    }
 }

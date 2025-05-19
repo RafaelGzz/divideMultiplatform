@@ -3,9 +3,12 @@ package com.ragl.divide.ui.screens.signIn
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
+import cafe.adriel.voyager.core.model.ScreenModel
+import com.ragl.divide.ui.utils.Strings
 
-class LogInViewModel: ViewModel() {
+class LogInViewModel(
+    private val strings: Strings
+): ScreenModel {
     var email by mutableStateOf("")
         private set
     var emailError by mutableStateOf("")
@@ -28,13 +31,13 @@ class LogInViewModel: ViewModel() {
     private fun validateEmail(): Boolean {
         val emailPattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+"
         return if (email.isBlank()) {
-            emailError = "Email is required"
+            emailError = strings.getEmailRequired()
             false
         } else if (email.matches(emailPattern.toRegex())) {
             emailError = ""
             true
         } else {
-            emailError = "Email is not valid"
+            emailError = strings.getEmailNotValid()
             false
         }
     }
@@ -44,7 +47,7 @@ class LogInViewModel: ViewModel() {
             passwordError = ""
             return true
         } else {
-            passwordError = "Password is required"
+            passwordError = strings.getPasswordRequired()
             return false
         }
     }

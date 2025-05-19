@@ -9,6 +9,7 @@ import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.Payment
 import com.ragl.divide.data.models.User
 import com.ragl.divide.data.repositories.GroupRepository
+import com.ragl.divide.ui.utils.Strings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -16,7 +17,8 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
 class GroupPaymentPropertiesViewModel(
-    private val groupRepository: GroupRepository
+    private val groupRepository: GroupRepository,
+    private val strings: Strings
 ) : ScreenModel {
 
     private val _group = MutableStateFlow(Group())
@@ -73,17 +75,17 @@ class GroupPaymentPropertiesViewModel(
 
     fun validateAmount(): Boolean {
         if (amount.isEmpty()) {
-            this.amountError = "Amount is required"
+            this.amountError = strings.getAmountRequired()
             return false
         }
 
         val amountDouble = amount.toDoubleOrNull() ?: run {
-            this.amountError = "Invalid amount"
+            this.amountError = strings.getInvalidAmount()
             return false
         }
 
         if (amountDouble <= 0) {
-            this.amountError = "Amount must be greater than 0"
+            this.amountError = strings.getAmountMustBeGreater()
             return false
         }
 
