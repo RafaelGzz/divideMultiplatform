@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -83,6 +84,7 @@ import dividemultiplatform.composeapp.generated.resources.add_friends_to_group
 import dividemultiplatform.composeapp.generated.resources.add_group
 import dividemultiplatform.composeapp.generated.resources.cancel
 import dividemultiplatform.composeapp.generated.resources.configuration
+import dividemultiplatform.composeapp.generated.resources.debt_or_credit_error
 import dividemultiplatform.composeapp.generated.resources.delete
 import dividemultiplatform.composeapp.generated.resources.delete_group
 import dividemultiplatform.composeapp.generated.resources.delete_group_message
@@ -111,6 +113,7 @@ class GroupPropertiesScreen(private val groupId: String? = null) : Screen {
             if (groupId != null) {
                 val group = userViewModel.getGroupById(groupId)
                 viewModel.setGroup(group)
+                viewModel.setCurrentUserId(userViewModel.getUUID())
             }
         }
 
@@ -164,7 +167,11 @@ class GroupPropertiesScreen(private val groupId: String? = null) : Screen {
                 enter = fadeIn(animationSpec = tween(500)),
                 exit = ExitTransition.None
             ) {
-                if (!showFriendSelection) {
+                AnimatedVisibility(
+                    visible = !showFriendSelection,
+                    enter = fadeIn(animationSpec = tween(300)),
+                    exit = fadeOut(animationSpec = tween(300))
+                ) {
                     Scaffold(
                         topBar = {
                             CenterAlignedTopAppBar(
@@ -211,6 +218,32 @@ class GroupPropertiesScreen(private val groupId: String? = null) : Screen {
                                         modifier = Modifier.padding(vertical = 12.dp)
                                     )
                                 }
+                            else if (isUpdate)
+                                Button(
+                                    onClick = {
+                                        userViewModel.showLoading()
+                                        viewModel.saveGroup(
+                                            onSuccess = {
+                                                userViewModel.addGroup(it)
+                                                navigator.pop()
+                                            },
+                                            onError = {
+                                                userViewModel.handleError(Exception(it))
+                                            })
+                                        userViewModel.hideLoading()
+                                    },
+                                    shape = ShapeDefaults.Medium,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .navigationBarsPadding()
+                                        .padding(horizontal = 16.dp)
+                                ) {
+                                    Text(
+                                        text = stringResource(Res.string.update),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        modifier = Modifier.padding(vertical = 12.dp)
+                                    )
+                                }
                         }
                     ) { paddingValues ->
                         if (showImagePicker) {
@@ -241,7 +274,9 @@ class GroupPropertiesScreen(private val groupId: String? = null) : Screen {
                                         TextButton(onClick = {
                                             userViewModel.showLoading()
                                             dialogEnabled = false
-                                            viewModel.deleteGroup(onDeleteGroup)
+                                            viewModel.deleteGroup(onDeleteGroup){
+                                                userViewModel.handleError(Exception(it))
+                                            }
                                             userViewModel.hideLoading()
                                         }) {
                                             Text(stringResource(Res.string.delete))
@@ -410,7 +445,6 @@ class GroupPropertiesScreen(private val groupId: String? = null) : Screen {
                                     val isSelected = selectedFriends.contains(friend.uuid)
                                     FriendItem(
                                         headline = friend.name,
-                                        supporting = friend.email,
                                         photoUrl = friend.photoUrl,
                                         colors = if (isSelected) selectedColors else defaultColors,
                                         onClick = {
@@ -433,19 +467,10 @@ class GroupPropertiesScreen(private val groupId: String? = null) : Screen {
                                 viewModel.members.forEach { member ->
                                     FriendItem(
                                         headline = member.name,
-                                        supporting = member.email,
                                         photoUrl = member.photoUrl,
                                         colors = defaultColors
                                     )
                                 }
-//                        FriendItem(
-//                            modifier = Modifier
-//                                .padding(vertical = 4.dp),
-//                            headline = stringResource(Res.string.add_friends_to_group),
-//                            colors = selectedColors,
-//                            icon = Icons.Filled.GroupAdd,
-//                            onClick = { showFriendSelection = true }
-//                        )
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -497,6 +522,10 @@ class GroupPropertiesScreen(private val groupId: String? = null) : Screen {
                                         modifier = Modifier.padding(start = 12.dp)
                                     )
                                 }
+                                
+                                // Verificar si el usuario tiene deudas o si le deben en el grupo
+                                val hasDebtsOrCredits = viewModel.hasUserDebtOrCredit(uuid)
+                                
                                 OutlinedButton(
                                     onClick = {
                                         isDeleteDialog = false
@@ -504,12 +533,15 @@ class GroupPropertiesScreen(private val groupId: String? = null) : Screen {
                                     },
                                     shape = ShapeDefaults.Medium,
                                     colors = ButtonDefaults.outlinedButtonColors(
-                                        contentColor = MaterialTheme.colorScheme.error
+                                        contentColor = MaterialTheme.colorScheme.error,
+                                        disabledContentColor = MaterialTheme.colorScheme.error.copy(alpha = 0.38f)
                                     ),
                                     border = BorderStroke(
                                         2.dp,
-                                        MaterialTheme.colorScheme.error
+                                        if (hasDebtsOrCredits) MaterialTheme.colorScheme.error.copy(alpha = 0.38f) 
+                                        else MaterialTheme.colorScheme.error
                                     ),
+                                    enabled = !hasDebtsOrCredits,
                                     modifier = Modifier
                                         .padding(top = 8.dp)
                                         .fillMaxWidth()
@@ -533,10 +565,13 @@ class GroupPropertiesScreen(private val groupId: String? = null) : Screen {
                                     shape = ShapeDefaults.Medium,
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = MaterialTheme.colorScheme.errorContainer,
-                                        contentColor = MaterialTheme.colorScheme.error
+                                        contentColor = MaterialTheme.colorScheme.error,
+                                        disabledContainerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.38f),
+                                        disabledContentColor = MaterialTheme.colorScheme.error.copy(alpha = 0.38f)
                                     ),
+                                    enabled = !hasDebtsOrCredits,
                                     modifier = Modifier
-                                        .padding(top = 8.dp, bottom = 16.dp)
+                                        .padding(top = 8.dp, bottom = 8.dp)
                                         .fillMaxWidth()
                                 ) {
                                     Icon(
@@ -550,35 +585,27 @@ class GroupPropertiesScreen(private val groupId: String? = null) : Screen {
                                         modifier = Modifier.padding(vertical = 12.dp)
                                     )
                                 }
-                            }
-                            if (isUpdate)
-                                Button(
-                                    onClick = {
-                                        userViewModel.showLoading()
-                                        viewModel.saveGroup(
-                                            onSuccess = {
-                                                userViewModel.addGroup(it)
-                                                navigator.pop()
-                                            },
-                                            onError = {
-                                                userViewModel.handleError(Exception(it))
-                                            })
-                                        userViewModel.hideLoading()
-                                    },
-                                    shape = ShapeDefaults.Medium,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                ) {
+                                
+                                // Mensaje explicativo si los botones están deshabilitados
+                                if (hasDebtsOrCredits) {
                                     Text(
-                                        text = stringResource(Res.string.update),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        modifier = Modifier.padding(vertical = 12.dp)
+                                        text = stringResource(Res.string.debt_or_credit_error),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.padding(bottom = 12.dp)
                                     )
                                 }
+                                
+                            }
                         }
 
                     }
-                } else {
+                }
+                AnimatedVisibility(
+                    visible = showFriendSelection,
+                    enter = fadeIn(animationSpec = tween(300)),
+                    exit = fadeOut(animationSpec = tween(300))
+                ) {
                     FriendSelectionScreen(
                         friends = friends,
                         selectedFriends = selectedFriends,
@@ -709,7 +736,6 @@ class GroupPropertiesScreen(private val groupId: String? = null) : Screen {
                         if (!isFriendInGroup)
                             FriendItem(
                                 headline = friend.name,
-                                supporting = friend.email,
                                 photoUrl = friend.photoUrl,
                                 colors = friendItemColors,
                                 onClick = { onFriendClick(friend.uuid) }

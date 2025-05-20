@@ -160,4 +160,5 @@
     <string name="verification_email_sent">Verification email sent. Please check your inbox</string>
     <string name="resend_verification">Resend verification email</string>
     <string name="verify_email">Verify email</string>
+    <string name="debt_or_credit_error">You cannot leave or delete the group while having debts or credits</string>
 </resources>

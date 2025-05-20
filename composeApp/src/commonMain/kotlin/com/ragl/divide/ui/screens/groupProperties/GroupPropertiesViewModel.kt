@@ -46,6 +46,26 @@ class GroupPropertiesViewModel(
     // Almacena la ruta del archivo de imagen seleccionado
     private var selectedImagePath: String? = null
 
+    private var currentUserId: String = ""
+
+    fun hasUserDebtOrCredit(userId: String = currentUserId): Boolean {
+        if (userId.isEmpty()) return false
+        
+        val currentDebts = _group.value.currentDebts
+        
+        val userDebts = currentDebts[userId]
+        if (userDebts != null && userDebts.any { it.value > 0.01 }) {
+            return true
+        }
+        
+        val userCredits = currentDebts.filter { it.key != userId }
+            .any { (_, debtMap) -> 
+                debtMap.containsKey(userId) && debtMap[userId]!! > 0.01 
+            }
+            
+        return userCredits
+    }
+
     fun updateSimplifyDebts(simplify: Boolean) {
         _group.update {
             it.copy(simplifyDebts = simplify)
@@ -91,6 +111,10 @@ class GroupPropertiesViewModel(
         }
     }
 
+    fun setCurrentUserId(userId: String) {
+        currentUserId = userId
+    }
+
     private fun updateMembers(members: List<User>) {
         this.members = members
     }
@@ -98,11 +122,15 @@ class GroupPropertiesViewModel(
     fun leaveGroup(onSuccessful: () -> Unit, onError: (String) -> Unit) {
         screenModelScope.launch {
             try {
+                if (hasUserDebtOrCredit()) {
+                    onError(strings.getDebtOrCreditError())
+                    return@launch
+                }
                 groupRepository.leaveGroup(_group.value.id)
                 onSuccessful()
             } catch (e: Exception) {
                 logMessage("GroupDetailsViewModel", e.toString())
-                onError(e.message ?: "An error occurred")
+                onError(e.message ?: strings.getUnknownError())
             }
         }
     }
@@ -159,9 +187,13 @@ class GroupPropertiesViewModel(
         }
     }
 
-    fun deleteGroup(onDelete: () -> Unit) {
+    fun deleteGroup(onDelete: () -> Unit, onError: (String) -> Unit) {
         screenModelScope.launch {
             try {
+                if (hasUserDebtOrCredit()) {
+                    onError(strings.getDebtOrCreditError())
+                    return@launch
+                }
                 _isLoading.update { true }
                 groupRepository.deleteGroup(
                     _group.value.id,
@@ -171,6 +203,7 @@ class GroupPropertiesViewModel(
                 onDelete()
             } catch (e: Exception) {
                 logMessage("GroupDetailsViewModel", e.toString())
+                onError(e.message ?: strings.getUnknownError())
             }
         }
     }

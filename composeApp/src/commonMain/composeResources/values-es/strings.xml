@@ -160,4 +160,5 @@
     <string name="verification_email_sent">Correo de verificación enviado. Por favor, revisa tu bandeja de entrada</string>
     <string name="resend_verification">Reenviar correo de verificación</string>
     <string name="verify_email">Verificar correo electrónico</string>
+    <string name="debt_or_credit_error">No puedes salir o borrar el grupo mientras tengas deudas o créditos</string>
 </resources>

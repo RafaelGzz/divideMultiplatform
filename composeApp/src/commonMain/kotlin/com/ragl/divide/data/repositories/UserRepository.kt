@@ -6,6 +6,8 @@ import com.ragl.divide.data.models.User
 import dev.gitlive.firebase.auth.FirebaseAuth
 import dev.gitlive.firebase.auth.FirebaseUser
 import dev.gitlive.firebase.database.FirebaseDatabase
+import dev.gitlive.firebase.storage.File
+import dev.gitlive.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
 
@@ -28,11 +30,14 @@ interface UserRepository {
     suspend fun leaveGroup(groupId: String, userId: String)
     suspend fun sendEmailVerification()
     suspend fun isEmailVerified(): Boolean
+    suspend fun saveProfilePhoto(photo: File): String
+    suspend fun getProfilePhoto(userId: String): String
 }
 
 class UserRepositoryImpl(
     private val auth: FirebaseAuth,
-    private val database: FirebaseDatabase
+    private val database: FirebaseDatabase,
+    private val storage: FirebaseStorage
 ) : UserRepository {
     init {
         database.reference("users")
@@ -107,6 +112,28 @@ class UserRepositoryImpl(
         } else {
             user.isEmailVerified
         }
+    }
+
+    override suspend fun saveProfilePhoto(photo: File): String {
+        val userId = getFirebaseUser()?.uid ?: throw Exception("User not signed in")
+        
+        // Guardar la imagen en Firebase Storage en la ruta userPictures/$userId.jpg
+        val photoRef = storage.reference("userPictures/$userId.jpg")
+        photoRef.putFile(photo)
+        
+        // Obtener la URL de descarga de la imagen
+        val downloadUrl = photoRef.getDownloadUrl()
+        
+        // Actualizar el campo photoUrl del usuario en la base de datos
+        val userRef = database.reference("users/$userId")
+        userRef.child("photoUrl").setValue(downloadUrl)
+        
+        return downloadUrl
+    }
+    
+    override suspend fun getProfilePhoto(userId: String): String {
+        val storageRef = storage.reference("userPictures/$userId.jpg")
+        return storageRef.getDownloadUrl()
     }
 
     override suspend fun getExpense(id: String): Expense {

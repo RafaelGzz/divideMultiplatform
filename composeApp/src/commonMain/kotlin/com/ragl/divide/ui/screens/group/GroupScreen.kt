@@ -111,7 +111,7 @@ class GroupScreen(private val groupId: String) : Screen {
         val groupState by viewModel.group.collectAsState()
         val isLoading by viewModel.isLoading.collectAsState()
 
-        val hasExpenses = remember(groupState.expenses) { groupState.expenses.isNotEmpty() }
+        val hasExpensesOrPayments = remember(groupState) { groupState.expenses.isNotEmpty() || groupState.payments.isNotEmpty() }
 
         val addExpenseClick = {
             navigator.push(GroupExpensePropertiesScreen(groupId, viewModel.members))
@@ -130,7 +130,7 @@ class GroupScreen(private val groupId: String) : Screen {
                 )
             },
             floatingActionButton = {
-                if (hasExpenses)
+                if (hasExpensesOrPayments)
                     CustomFloatingActionButton(
                         fabIcon = Icons.Filled.Add,
                         onAddExpenseClick = addExpenseClick,
@@ -148,49 +148,48 @@ class GroupScreen(private val groupId: String) : Screen {
             ) {
 
                 Spacer(modifier = Modifier.height(8.dp))
-                if (!hasExpenses) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(
-                                text = stringResource(Res.string.group_no_expenses),
-                                style = MaterialTheme.typography.labelSmall,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(
-                                onClick = addExpenseClick,
-                                shape = ShapeDefaults.Medium,
-                                contentPadding = PaddingValues(horizontal = 12.dp),
-                                modifier = Modifier
-                                    .height(60.dp)
-                                    .align(Alignment.CenterHorizontally)
-                            ) {
-                                Icon(Icons.Filled.Add, contentDescription = null)
-                                Spacer(modifier = Modifier.width(8.dp))
+                if (!isLoading) {
+                    // Mostrar las deudas actuales antes de la lista de gastos
+                    CurrentDebtsView(
+                        currentDebts = groupState.currentDebts,
+                        currentUserId = viewModel.currentUserId,
+                        members = viewModel.members
+                    )
+                    if (!hasExpensesOrPayments) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text(
-                                    text = stringResource(Res.string.add_expense),
-                                    maxLines = 1,
-                                    softWrap = true,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier
+                                    text = stringResource(Res.string.group_no_expenses),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth()
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Button(
+                                    onClick = addExpenseClick,
+                                    shape = ShapeDefaults.Medium,
+                                    contentPadding = PaddingValues(horizontal = 12.dp),
+                                    modifier = Modifier
+                                        .height(60.dp)
+                                        .align(Alignment.CenterHorizontally)
+                                ) {
+                                    Icon(Icons.Filled.Add, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = stringResource(Res.string.add_expense),
+                                        maxLines = 1,
+                                        softWrap = true,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                }
                             }
                         }
-                    }
-                } else {
-                    if (!isLoading) {
-                        // Mostrar las deudas actuales antes de la lista de gastos
-                        CurrentDebtsView(
-                            currentDebts = groupState.currentDebts,
-                            currentUserId = viewModel.currentUserId,
-                            members = viewModel.members
-                        )
-
+                    } else {
                         ExpenseListView(
                             expensesAndPayments = viewModel.expensesAndPayments,
                             modifier = Modifier.weight(1f),
@@ -209,13 +208,13 @@ class GroupScreen(private val groupId: String) : Screen {
                             },
                             members = viewModel.members
                         )
-                    } else {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
-                        }
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
                     }
                 }
             }
@@ -583,7 +582,11 @@ private fun GroupExpenseItem(
 
                 is Payment -> {
                     Text(
-                        stringResource(Res.string.x_paid_y, members.find { it.uuid == expenseOrPayment.from }?.name ?: "",  members.find { it.uuid == expenseOrPayment.to }?.name ?: ""),
+                        stringResource(
+                            Res.string.x_paid_y,
+                            members.find { it.uuid == expenseOrPayment.from }?.name ?: "",
+                            members.find { it.uuid == expenseOrPayment.to }?.name ?: ""
+                        ),
                         //"${members.find { it.uuid == expenseOrPayment.from }?.name} paid ${members.find { it.uuid == expenseOrPayment.to }?.name}",
                         softWrap = true,
                         overflow = TextOverflow.Ellipsis,

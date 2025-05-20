@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -83,7 +84,8 @@ class SignInScreen : Screen {
         val strings: Strings = koinInject()
         var showResendButton by remember { mutableStateOf(false) }
         Scaffold(
-            backgroundColor = MaterialTheme.colorScheme.surface
+            backgroundColor = MaterialTheme.colorScheme.surface,
+            modifier = Modifier.statusBarsPadding()
         ) { pv ->
             Column(Modifier.fillMaxSize().padding(pv)) {
                 Spacer(modifier = Modifier.height(40.dp))

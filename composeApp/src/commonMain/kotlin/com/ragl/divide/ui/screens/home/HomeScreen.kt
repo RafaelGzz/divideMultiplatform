@@ -268,7 +268,8 @@ class HomeScreen : Screen {
                                             }
                                         },
                                         isDarkMode = isDarkMode,
-                                        onChangeDarkMode = userViewModel::changeDarkMode
+                                        onChangeDarkMode = userViewModel::changeDarkMode,
+                                        userViewModel = userViewModel
                                     )
                                 }
                             }

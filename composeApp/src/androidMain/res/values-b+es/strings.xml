@@ -29,4 +29,5 @@
     <string name="unusual_activity">Actividad inusual detectada. Inténtalo de nuevo más tarde.</string>
     <string name="email_not_verified">Correo electrónico no verificado</string>
     <string name="verification_email_sent">Correo de verificación enviado</string>
+    <string name="debt_or_credit_error">No puedes salir o borrar el grupo mientras tengas deudas o créditos</string>
 </resources>

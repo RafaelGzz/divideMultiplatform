@@ -181,4 +181,14 @@ actual class Strings {
         val bundle = NSBundle.mainBundle
         return bundle.localizedStringForKey("unusual_activity", "", null)
     }
+
+    actual fun getDebtOrCreditError(): String {
+        val bundle = NSBundle.mainBundle
+        return bundle.localizedStringForKey("debt_or_credit_error", "", null)
+    }
+    
+    actual fun getCouldNotProcessImage(): String {
+        val bundle = NSBundle.mainBundle
+        return bundle.localizedStringForKey("could_not_process_image", "", null)
+    }
 }

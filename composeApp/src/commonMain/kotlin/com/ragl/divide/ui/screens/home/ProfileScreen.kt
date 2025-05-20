@@ -1,6 +1,7 @@
 package com.ragl.divide.ui.screens.home
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,14 +14,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -39,10 +38,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ragl.divide.data.models.User
+import com.ragl.divide.ui.components.ImagePicker
+import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.utils.Header
 import com.ragl.divide.ui.utils.ProfileImage
 import compose.icons.FontAwesomeIcons
@@ -69,10 +69,14 @@ fun ProfileBody(
     user: User,
     onSignOut: () -> Unit,
     isDarkMode: String?,
-    onChangeDarkMode: (Boolean?) -> Unit
+    onChangeDarkMode: (Boolean?) -> Unit,
+    userViewModel: UserViewModel? = null
 ) {
     val allowNotifications = remember { mutableStateOf(true) }
     var isSignOutDialogVisible by remember { mutableStateOf(false) }
+    var showImagePicker by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
     LazyColumn {
         if (isSignOutDialogVisible) {
             item {
@@ -109,6 +113,51 @@ fun ProfileBody(
                 )
             }
         }
+
+        // ImagePicker (cuando showImagePicker es true)
+        if (showImagePicker && userViewModel != null) {
+            item {
+                ImagePicker(
+                    onImageSelected = { imagePath ->
+                        userViewModel.updateProfileImage(
+                            imagePath,
+                            onSuccess = {
+                                showImagePicker = false
+                            },
+                            onError = { error ->
+                                errorMessage = error
+                                showImagePicker = false
+                            }
+                        )
+                    },
+                    onDismiss = { showImagePicker = false }
+                )
+            }
+        }
+
+        // Mostrar error si existe
+        if (errorMessage != null) {
+            item {
+                AlertDialog(
+                    onDismissRequest = { errorMessage = null },
+                    title = {
+                        Text("Error", style = MaterialTheme.typography.titleLarge)
+                    },
+                    text = {
+                        Text(errorMessage!!, style = MaterialTheme.typography.bodyMedium)
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { errorMessage = null }) {
+                            Text("OK")
+                        }
+                    },
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    textContentColor = MaterialTheme.colorScheme.onErrorContainer,
+                )
+            }
+        }
+
         item {
             Header(
                 title = stringResource(Res.string.bar_item_profile_text)
@@ -120,18 +169,9 @@ fun ProfileBody(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    if (user.photoUrl.isNotEmpty()) {
-                        ProfileImage(user.photoUrl)
-                    } else {
-                        Icon(
-                            Icons.Filled.Person,
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(52.dp)
-                                .padding(12.dp)
-                                .clip(CircleShape)
-                        )
-                    }
+                    ProfileImage(user.photoUrl, modifier = Modifier.clickable {
+                        showImagePicker = true
+                    })
                     Column {
                         Text(
                             user.name,

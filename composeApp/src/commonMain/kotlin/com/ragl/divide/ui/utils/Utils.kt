@@ -88,6 +88,8 @@ expect class Strings{
     fun getEmailNotVerified(): String
     fun getVerificationEmailSent(): String
     fun getUnusualActivity(): String
+    fun getDebtOrCreditError(): String
+    fun getCouldNotProcessImage(): String
 }
 
 fun Double.toTwoDecimals(): Double {
@@ -339,7 +341,6 @@ fun ProfileImage(
             supporting = supporting
         )
     }
-    
     // Usamos un Box para mostrar un indicador de carga mientras se carga la imagen
     Box(
         modifier = modifier

@@ -29,4 +29,6 @@
     <string name="unusual_activity">Unusual activity detected. Try again later.</string>
     <string name="email_not_verified">Email not verified</string>
     <string name="verification_email_sent">Verification email sent</string>
+    <string name="debt_or_credit_error">You cannot leave or delete the group while having debts or credits</string>
+    <string name="could_not_process_image">Could not process the image</string>
 </resources>

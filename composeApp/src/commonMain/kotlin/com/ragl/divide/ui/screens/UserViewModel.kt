@@ -13,6 +13,7 @@ import com.ragl.divide.data.repositories.GroupRepository
 import com.ragl.divide.data.repositories.PreferencesRepository
 import com.ragl.divide.data.repositories.UserRepository
 import com.ragl.divide.data.services.GroupExpenseService
+import com.ragl.divide.ui.screens.groupProperties.PlatformImageUtils
 import com.ragl.divide.ui.utils.Strings
 import com.ragl.divide.ui.utils.logMessage
 import dev.gitlive.firebase.auth.FirebaseUser
@@ -486,5 +487,30 @@ class UserViewModel(
             hideLoading()
         }
         return res
+    }
+
+    fun updateProfileImage(imagePath: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        screenModelScope.launch {
+            try {
+                showLoading()
+                val imageFile = PlatformImageUtils.createFirebaseFile(imagePath)
+                
+                if (imageFile != null) {
+                    val downloadUrl = userRepository.saveProfilePhoto(imageFile)
+                    _state.update {
+                        it.copy(user = it.user.copy(photoUrl = downloadUrl))
+                    }
+                    onSuccess()
+                } else {
+                    logMessage("UserViewModel", "Could not process image")
+                    onError(strings.getCouldNotProcessImage())
+                }
+            } catch (e: Exception) {
+                logMessage("UserViewModel", e.toString())
+                onError(e.message ?: strings.getUnknownError())
+            } finally {
+                hideLoading()
+            }
+        }
     }
 }

@@ -145,4 +145,12 @@ actual class Strings(private val context: Context) {
     actual fun getVerificationEmailSent(): String {
         return context.getString(R.string.verification_email_sent)
     }
+
+    actual fun getDebtOrCreditError(): String {
+        return context.getString(R.string.debt_or_credit_error)
+    }
+
+    actual fun getCouldNotProcessImage(): String {
+        return context.getString(R.string.could_not_process_image)
+    }
 }
