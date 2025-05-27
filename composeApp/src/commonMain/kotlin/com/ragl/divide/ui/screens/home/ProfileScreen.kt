@@ -52,14 +52,13 @@ import compose.icons.fontawesomeicons.solid.Sun
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.allow_notifications
 import dividemultiplatform.composeapp.generated.resources.bar_item_profile_text
+import dividemultiplatform.composeapp.generated.resources.cancel
 import dividemultiplatform.composeapp.generated.resources.dark_mode
 import dividemultiplatform.composeapp.generated.resources.light_mode
-import dividemultiplatform.composeapp.generated.resources.no
 import dividemultiplatform.composeapp.generated.resources.sign_out
 import dividemultiplatform.composeapp.generated.resources.sign_out_confirmation
 import dividemultiplatform.composeapp.generated.resources.system_default
 import dividemultiplatform.composeapp.generated.resources.theme
-import dividemultiplatform.composeapp.generated.resources.yes
 import org.jetbrains.compose.resources.stringResource
 
 
@@ -87,12 +86,12 @@ fun ProfileBody(
                             isSignOutDialogVisible = false
                             onSignOut()
                         }) {
-                            Text(stringResource(Res.string.yes))
+                            Text(stringResource(Res.string.sign_out))
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { isSignOutDialogVisible = false }) {
-                            Text(stringResource(Res.string.no))
+                            Text(stringResource(Res.string.cancel))
                         }
                     },
                     title = {
@@ -196,8 +195,6 @@ fun ProfileBody(
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
-            NotificationSetting(allowNotifications)
-            Spacer(modifier = Modifier.height(16.dp))
             DarkModeSetting(isDarkMode, onChangeDarkMode)
         }
     }

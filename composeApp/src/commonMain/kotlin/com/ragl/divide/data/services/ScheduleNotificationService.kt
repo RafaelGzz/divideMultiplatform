@@ -8,7 +8,8 @@ expect class ScheduleNotificationService {
         title: String,
         message: String,
         startingDateMillis: Long,
-        frequency: Frequency
+        frequency: Frequency,
+        useSound: Boolean
     )
 
     fun canScheduleExactAlarms(): Boolean

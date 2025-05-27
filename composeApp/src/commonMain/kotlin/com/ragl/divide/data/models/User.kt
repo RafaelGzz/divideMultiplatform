@@ -10,5 +10,7 @@ data class User(
     val photoUrl: String = "",
     val groups: Map<String, String> = emptyMap(),
     val expenses: Map<String, Expense> = emptyMap(),
-    val friends: Map<String, String> = emptyMap()
+    val friends: Map<String, String> = emptyMap(),
+    val friendRequestsReceived: Map<String, String> = emptyMap(),
+    val friendRequestsSent: Map<String, String> = emptyMap()
 )

@@ -7,7 +7,7 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.Payment
-import com.ragl.divide.data.models.User
+import com.ragl.divide.data.models.UserInfo
 import com.ragl.divide.data.repositories.GroupRepository
 import com.ragl.divide.ui.utils.Strings
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,39 +34,46 @@ class GroupPaymentPropertiesViewModel(
         private set
     var amountError by mutableStateOf("")
         private set
-    var from by mutableStateOf(User())
+    var from by mutableStateOf(UserInfo())
         private set
-    var to by mutableStateOf(User())
+    var to by mutableStateOf(UserInfo())
+        private set
+    var members by mutableStateOf(listOf<UserInfo>())
         private set
 
     fun updateAmount(amount: String) {
         this.amount = amount
     }
 
-    fun updateFrom(user: User) {
+    fun updateFrom(user: UserInfo) {
         from = user
     }
 
-    fun updateTo(user: User) {
+    fun updateTo(user: UserInfo) {
         to = user
+    }
+
+    private fun updateMembers(members: List<UserInfo>) {
+        this.members = members
     }
 
     fun setGroupAndPayment(
         group: Group,
         userId: String,
-        members: List<User>,
+        members: List<UserInfo>,
         payment: Payment
     ) {
         screenModelScope.launch {
+            updateMembers(members)
             if (payment.id.isNotEmpty()) {
                 isUpdate.value = true
                 _payment.update { payment }
                 amount = payment.amount.let { if (it == 0.0) "" else it.toString() }
-                from = members.firstOrNull { it.uuid == payment.from } ?: User()
-                to = members.firstOrNull { it.uuid == payment.to } ?: User()
+                from = members.firstOrNull { it.uuid == payment.from } ?: UserInfo()
+                to = members.firstOrNull { it.uuid == payment.to } ?: UserInfo()
             } else {
                 from = members.first { it.uuid == userId }
-                to = members.firstOrNull { it.uuid != userId } ?: User()
+                to = members.firstOrNull { it.uuid != userId } ?: UserInfo()
             }
             _group.update { group }
         }

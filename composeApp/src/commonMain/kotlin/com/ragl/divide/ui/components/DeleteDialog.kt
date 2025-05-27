@@ -6,9 +6,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import dividemultiplatform.composeapp.generated.resources.Res
+import dividemultiplatform.composeapp.generated.resources.cancel
 import dividemultiplatform.composeapp.generated.resources.delete
-import dividemultiplatform.composeapp.generated.resources.no
-import dividemultiplatform.composeapp.generated.resources.yes
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -25,12 +24,12 @@ fun DeleteDialog(
         text = { Text(text, style = MaterialTheme.typography.bodySmall) },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text(stringResource(Res.string.yes))
+                Text(stringResource(Res.string.delete))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(Res.string.no))
+                Text(stringResource(Res.string.cancel))
             }
         },
         containerColor = MaterialTheme.colorScheme.primaryContainer,

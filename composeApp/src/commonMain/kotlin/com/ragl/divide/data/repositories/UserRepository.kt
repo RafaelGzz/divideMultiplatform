@@ -207,6 +207,13 @@ class UserRepositoryImpl(
         }
         amountPaidRef.setValue(amountPaid)
 
+        val paidRef = database.reference("users/${user.uid}/expenses/$expenseId/paid")
+        paidRef.valueEvents.firstOrNull()?.value<Boolean>().let {
+            if (it == true) {
+                paidRef.setValue(false)
+            }
+        }
+
         val paymentsRef = database.reference("users/${user.uid}/expenses/$expenseId/payments")
         paymentsRef.child(paymentId).removeValue()
     }

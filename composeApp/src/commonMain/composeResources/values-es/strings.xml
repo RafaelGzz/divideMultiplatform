@@ -51,7 +51,7 @@
     <string name="movements">Movimientos</string>
     <string name="no_movements_yet">Sin movimientos</string>
     <string name="make_a_payment">Hacer un pago</string>
-    <string name="paid">Pago</string>
+    <string name="paid">Pagado</string>
     <string name="delete">Eliminar</string>
     <string name="delete_expense_confirm">¿Estás seguro de eliminar este gasto?</string>
     <string name="delete_payment_confirm">¿Estás seguro de eliminar este pago?</string>
@@ -63,7 +63,7 @@
     <string name="payment">%1$s (%2$s pago%3$s)</string>
     <string name="amount_must_be_less_than_remaining_balance">Cantidad debe ser menor que el saldo restante</string>
     <string name="select_payment_or_custom">Selecciona una opción de pago o ingresa una cantidad</string>
-    <string name="update">Actualizar</string>
+    <string name="update">Guardar</string>
     <string name="update_expense">Actualizar Gasto</string>
     <string name="amount_must_be_greater_than_0">Cantidad debe ser mayor que 0</string>
     <string name="congratulations">Felicidades</string>
@@ -76,7 +76,7 @@
     <string name="total">Total</string>
     <string name="reminder_permission_title">Permiso de recordatorios</string>
     <string name="reminder_permission_message">Para habilitar recordatorios en sus gastos, debe habilitar el permiso en su dispositivo. Seleccione Divide en la lista de aplicaciones y habilítelo.</string>
-    <string name="search_by_email">Buscar por correo electrónico</string>
+    <string name="search_by_name">Buscar por nombre</string>
     <string name="do_you_want_to_add">Quieres añadir a %1$s?</string>
     <string name="add_friend">Añadir amigo</string>
     <string name="add_friends">Añadir amigos</string>
@@ -139,6 +139,8 @@
     <string name="select_receiver">Select receptor</string>
     <string name="settled">Resuelto</string>
     <string name="pending">Pendiente</string>
+    <string name="pending_expenses">Gastos pendientes</string>
+    <string name="paid_expenses">Gastos pagados</string>
     <string name="x_paid_y">%1$s le pagó a %2$s</string>
     <string name="paid_by_text">Pagado por:</string>
     <string name="debtors">Deudores:</string>
@@ -161,4 +163,21 @@
     <string name="resend_verification">Reenviar correo de verificación</string>
     <string name="verify_email">Verificar correo electrónico</string>
     <string name="debt_or_credit_error">No puedes salir o borrar el grupo mientras tengas deudas o créditos</string>
+    <string name="failed_to_login">No se pudo iniciar sesión</string>
+    <string name="send_friend_request">Enviar solicitud de amistad</string>
+    <string name="send">Enviar</string>
+    <string name="friend_request_sent">Solicitud de amistad enviada</string>
+    <string name="friend_request_accepted">Solicitud de amistad aceptada</string>
+    <string name="friend_request_rejected">Solicitud de amistad rechazada</string>
+    <string name="friend_request_canceled">Solicitud de amistad cancelada</string>
+    <string name="failed_to_send_friend_request">No se pudo enviar la solicitud de amistad</string>
+    <string name="failed_to_accept_friend_request">No se pudo aceptar la solicitud de amistad</string>
+    <string name="failed_to_reject_friend_request">No se pudo rechazar la solicitud de amistad</string>
+    <string name="failed_to_cancel_friend_request">No se pudo cancelar la solicitud de amistad</string>
+    <string name="friend_requests_received">Solicitudes de amistad recibidas</string>
+    <string name="friend_requests_sent">Solicitudes de amistad enviadas</string>
+    <string name="no_friend_requests_received">No tienes solicitudes de amistad</string>
+    <string name="no_friend_requests_sent">No has enviado ninguna solicitud de amistad</string>
+    <string name="accept">Aceptar</string>
+    <string name="reject">Rechazar</string>
 </resources>

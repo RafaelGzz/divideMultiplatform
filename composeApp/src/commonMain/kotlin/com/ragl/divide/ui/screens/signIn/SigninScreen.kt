@@ -11,10 +11,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Scaffold
 import androidx.compose.material.TabRow
 import androidx.compose.material3.Button
@@ -132,15 +131,14 @@ class SignInScreen : Screen {
                         0 -> Login(
                             modifier = Modifier
                                 .padding(horizontal = 16.dp, vertical = 20.dp)
-                                .verticalScroll(rememberScrollState())
                                 .fillMaxHeight(),
                             onLoginButtonClick = { email, password ->
                                 userViewModel.signInWithEmailAndPassword(
-                                    email,
-                                    password,
-                                    { navigator.replace(HomeScreen()) },
-                                    { error ->
-                                        if (error.message == strings.getEmailNotVerified()) {
+                                    email = email,
+                                    password = password,
+                                    onSuccess = { navigator.replace(HomeScreen()) },
+                                    onFail = { error ->
+                                        if (error == strings.getEmailNotVerified()) {
                                             navigator.push(EmailVerificationScreen())
                                         } else {
                                             userViewModel.handleError(error)
@@ -148,10 +146,11 @@ class SignInScreen : Screen {
                                     })
                             },
                             onGoogleSignIn = { result ->
-                                userViewModel.signInWithGoogle(
-                                    result,
-                                    { navigator.replace(HomeScreen()) },
-                                    { userViewModel.handleError(it) })
+                                userViewModel.signInWithGoogle(result) {
+                                    navigator.replace(
+                                        HomeScreen()
+                                    )
+                                }
                             },
                             showResendButton = showResendButton,
                             updateShowResendButton = { showResendButton = it }
@@ -160,20 +159,20 @@ class SignInScreen : Screen {
                         1 -> SignUp(
                             modifier = Modifier
                                 .padding(horizontal = 16.dp, vertical = 20.dp)
-                                .verticalScroll(rememberScrollState())
                                 .fillMaxHeight(),
                             onSignUpButtonClick = { email, password, username ->
                                 userViewModel.signUpWithEmailAndPassword(
-                                    email,
-                                    password,
-                                    username
+                                    email = email,
+                                    password = password,
+                                    name = username
                                 )
                             },
                             onGoogleSignIn = { result ->
-                                userViewModel.signInWithGoogle(
-                                    result,
-                                    { navigator.replace(HomeScreen()) },
-                                    { userViewModel.handleError(it) })
+                                userViewModel.signInWithGoogle(result = result) {
+                                    navigator.replace(
+                                        HomeScreen()
+                                    )
+                                }
                             }
                         )
                     }
@@ -185,7 +184,8 @@ class SignInScreen : Screen {
 
     @Composable
     fun SocialMediaRow(
-        onGoogleSignIn: (Result<FirebaseUser?>) -> Unit
+        onGoogleSignIn: (Result<FirebaseUser?>) -> Unit,
+        showLoading: () -> Unit
     ) {
         Column {
             Spacer(modifier = Modifier.height(20.dp))
@@ -203,10 +203,13 @@ class SignInScreen : Screen {
                 }
             ) {
                 GoogleSignInButton(
-                    onClick = { this.onClick() },
+                    onClick = {
+                        showLoading()
+                        this.onClick()
+                    },
                     text = stringResource(Res.string.connect_with_google),
                     shape = ShapeDefaults.Medium,
-                    modifier = Modifier.height(50.dp).fillMaxWidth()
+                    modifier = Modifier.height(64.dp).fillMaxWidth()
                 )
             }
         }
@@ -221,61 +224,78 @@ class SignInScreen : Screen {
         updateShowResendButton: (Boolean) -> Unit
     ) {
         val vm: LogInViewModel = koinScreenModel<LogInViewModel>()
-        val strings: Strings = koinInject()
         val navigator = LocalNavigator.currentOrThrow
         val userViewModel = navigator.koinNavigatorScreenModel<UserViewModel>()
 
-        Column(
+        LazyColumn(
             modifier = modifier
         ) {
-            DivideTextField(
-                label = stringResource(Res.string.email_address_text),
-                input = vm.email,
-                error = vm.emailError,
-                imeAction = ImeAction.Next,
-                onValueChange = { 
-                    vm.updateEmail(it)
-                    updateShowResendButton(false)
-                },
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            DivideTextField(
-                label = stringResource(Res.string.password_text),
-                input = vm.password,
-                error = vm.passwordError,
-                keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Done,
-                onValueChange = { 
-                    vm.updatePassword(it)
-                    updateShowResendButton(false)
-                },
-                onAction = { if (vm.isFieldsValid()) onLoginButtonClick(vm.email, vm.password) },
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            LoginButton(
-                label = stringResource(Res.string.log_in),
-                onClick = { 
-                    if (vm.isFieldsValid()) {
-                        onLoginButtonClick(vm.email, vm.password)
+            item {
+                DivideTextField(
+                    label = stringResource(Res.string.email_address_text),
+                    input = vm.email,
+                    error = vm.emailError,
+                    imeAction = ImeAction.Next,
+                    onValueChange = {
+                        vm.updateEmail(it)
                         updateShowResendButton(false)
-                    }
-                },
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-            if (showResendButton) {
-                TextButton(
-                    onClick = {
-                        userViewModel.resendVerificationEmail()
                     },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = stringResource(Res.string.resend_verification),
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    capitalizeFirstLetter = false,
+                    validate = { vm.validateEmail() },
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+            item {
+                DivideTextField(
+                    label = stringResource(Res.string.password_text),
+                    input = vm.password,
+                    error = vm.passwordError,
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done,
+                    onValueChange = {
+                        vm.updatePassword(it)
+                        updateShowResendButton(false)
+                    },
+                    validate = { vm.validatePassword() },
+                    onAction = {
+                        if (vm.isFieldsValid()) onLoginButtonClick(
+                            vm.email,
+                            vm.password
+                        )
+                    },
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+            item {
+                LoginButton(
+                    label = stringResource(Res.string.log_in),
+                    onClick = {
+                        if (vm.isFieldsValid()) {
+                            onLoginButtonClick(vm.email, vm.password)
+                            updateShowResendButton(false)
+                        }
+                    },
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+            if (showResendButton) {
+                item {
+                    TextButton(
+                        onClick = {
+                            userViewModel.resendVerificationEmail()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = stringResource(Res.string.resend_verification),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
-            SocialMediaRow(onGoogleSignIn)
+            item {
+                SocialMediaRow(onGoogleSignIn, userViewModel::showLoading)
+            }
         }
     }
 
@@ -286,57 +306,76 @@ class SignInScreen : Screen {
         onGoogleSignIn: (Result<FirebaseUser?>) -> Unit
     ) {
         val vm: SignUpViewModel = koinScreenModel<SignUpViewModel>()
-        Column(
+        val navigator = LocalNavigator.currentOrThrow
+        val userViewModel = navigator.koinNavigatorScreenModel<UserViewModel>()
+        LazyColumn(
             modifier = modifier
         ) {
-            DivideTextField(
-                label = stringResource(Res.string.email_address_text),
-                input = vm.email,
-                error = vm.emailError,
-                imeAction = ImeAction.Next,
-                onValueChange = { vm.updateEmail(it) },
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            DivideTextField(
-                label = stringResource(Res.string.username),
-                input = vm.username,
-                error = vm.usernameError,
-                imeAction = ImeAction.Next,
-                onValueChange = { vm.updateUsername(it) },
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            DivideTextField(
-                label = stringResource(Res.string.password_text),
-                input = vm.password,
-                error = vm.passwordError,
-                keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Next,
-                //isPassword = true,
-                onValueChange = { vm.updatePassword(it) },
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            DivideTextField(
-                label = stringResource(Res.string.confirm_password_text),
-                input = vm.passwordConfirm,
-                error = vm.passwordConfirmError,
-                keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Done,
-                //isPassword = true,
-                onValueChange = { vm.updatePasswordConfirm(it) },
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            LoginButton(
-                label = stringResource(Res.string.sign_up),
-                onClick = {
-                    if (vm.isFieldsValid()) onSignUpButtonClick(
-                        vm.email,
-                        vm.password,
-                        vm.username
-                    )
-                },
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-            SocialMediaRow(onGoogleSignIn)
+            item {
+                DivideTextField(
+                    label = stringResource(Res.string.email_address_text),
+                    input = vm.email,
+                    error = vm.emailError,
+                    imeAction = ImeAction.Next,
+                    onValueChange = { vm.updateEmail(it) },
+                    capitalizeFirstLetter = false,
+                    validate = { vm.validateEmail() },
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+            item {
+                DivideTextField(
+                    label = stringResource(Res.string.username),
+                    input = vm.username,
+                    error = vm.usernameError,
+                    imeAction = ImeAction.Next,
+                    onValueChange = { vm.updateUsername(it) },
+                    validate = { vm.validateUsername() },
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+            item {
+                DivideTextField(
+                    label = stringResource(Res.string.password_text),
+                    input = vm.password,
+                    error = vm.passwordError,
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Next,
+                    //isPassword = true,
+                    onValueChange = { vm.updatePassword(it) },
+                    validate = { vm.validatePassword() },
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+            item {
+                DivideTextField(
+                    label = stringResource(Res.string.confirm_password_text),
+                    input = vm.passwordConfirm,
+                    error = vm.passwordConfirmError,
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done,
+                    //isPassword = true,
+                    onValueChange = { vm.updatePasswordConfirm(it) },
+                    validate = { vm.validatePasswordConfirm() },
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+            item {
+                LoginButton(
+                    label = stringResource(Res.string.sign_up),
+                    onClick = {
+                        if (vm.isFieldsValid()) onSignUpButtonClick(
+                            vm.email,
+                            vm.password,
+                            vm.username
+                        )
+                    },
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+            item {
+                SocialMediaRow(onGoogleSignIn, userViewModel::showLoading)
+            }
         }
     }
 

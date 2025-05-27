@@ -70,15 +70,12 @@ import dividemultiplatform.composeapp.generated.resources.frequency
 import dividemultiplatform.composeapp.generated.resources.get_reminders
 import dividemultiplatform.composeapp.generated.resources.notes
 import dividemultiplatform.composeapp.generated.resources.ok
-import dividemultiplatform.composeapp.generated.resources.payments
 import dividemultiplatform.composeapp.generated.resources.reminder_permission_message
 import dividemultiplatform.composeapp.generated.resources.reminder_permission_title
-import dividemultiplatform.composeapp.generated.resources.select_date
 import dividemultiplatform.composeapp.generated.resources.starting_from
 import dividemultiplatform.composeapp.generated.resources.title
 import dividemultiplatform.composeapp.generated.resources.update
 import dividemultiplatform.composeapp.generated.resources.update_expense
-import kotlinx.datetime.Clock
 import org.jetbrains.compose.resources.stringResource
 
 class ExpensePropertiesScreen(
@@ -100,40 +97,15 @@ class ExpensePropertiesScreen(
 
         var categoryMenuExpanded by remember { mutableStateOf(false) }
         var frequencyMenuExpanded by remember { mutableStateOf(false) }
-        var paymentSuffix by remember { mutableStateOf(Res.string.payments) }
-
 
         var selectDateDialogEnabled by remember { mutableStateOf(false) }
         val scrollState = rememberScrollState()
 
-        var selectedDate: Long by remember { mutableStateOf(Clock.System.now().toEpochMilliseconds()) }
+        var selectedDate = vm.startingDate
 
-//        LaunchedEffect(vm.numberOfPayments) {
-//            paymentSuffix =
-//                if (vm.numberOfPayments == "1") Res.string.payments else Res.string.payments_plural
-//        }
-        val onBackClick: () -> Unit = {
-            navigator.pop()
-        }
         Scaffold(
             topBar = {
-                CenterAlignedTopAppBar(
-                    title = {
-                        Text(
-                            stringResource(if (expenseId == null) Res.string.add_expense else Res.string.update_expense),
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onBackClick) {
-                            Icon(
-                                Icons.Filled.Close,
-                                contentDescription = "Back",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                )
+                AppBar { navigator.pop() }
             }
         ) { paddingValues ->
             Column(
@@ -188,6 +160,7 @@ class ExpensePropertiesScreen(
                     input = vm.title,
                     error = vm.titleError,
                     onValueChange = vm::updateTitle,
+                    validate = vm::validateTitle,
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
 
@@ -253,13 +226,14 @@ class ExpensePropertiesScreen(
                     input = vm.amount,
                     error = vm.amountError,
                     enabled = vm.amountPaid == 0.0,
+                    validate = vm::validateAmount,
                     onValueChange = { input ->
                         if (input.isEmpty()) vm.updateAmount("") else {
                             val formatted = input.replace(",", ".")
                             val parsed = formatted.toDoubleOrNull()
                             parsed?.let {
                                 val decimalPart = formatted.substringAfter(".", "")
-                                if (decimalPart.length <= 2 && parsed <= 999999999.99) {
+                                if (decimalPart.length <= 2 && parsed <= 999999.99) {
                                     vm.updateAmount(input)
                                 }
                             }
@@ -267,24 +241,6 @@ class ExpensePropertiesScreen(
                     },
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
-//                DivideTextField(
-//                    label = stringResource(Res.string.divided_in),
-//                    input = vm.numberOfPayments,
-//                    error = vm.paymentsError,
-//                    keyboardType = KeyboardType.Number,
-//                    suffix = {
-//                        Text(
-//                            stringResource(paymentSuffix),
-//                            style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onPrimaryContainer)
-//                        )
-//                    },
-//                    onValueChange = {
-//                        if (it.all { char -> char.isDigit() }) vm.updatePayments(
-//                            it
-//                        )
-//                    },
-//                    modifier = Modifier.padding(bottom = 12.dp)
-//                )
                 DivideTextField(
                     label = stringResource(Res.string.notes),
                     input = vm.notes,
@@ -338,7 +294,7 @@ class ExpensePropertiesScreen(
                                         focusedIndicatorColor = Color.Transparent,
                                         unfocusedIndicatorColor = Color.Transparent,
                                     ),
-                                    value = vm.frequency.name,
+                                    value = stringResource(vm.frequency.resId),
                                     onValueChange = {},
                                     singleLine = true,
                                     readOnly = true,
@@ -361,7 +317,7 @@ class ExpensePropertiesScreen(
                                         DropdownMenuItem(
                                             text = {
                                                 Text(
-                                                    it.name,
+                                                    stringResource(it.resId),
                                                     style = MaterialTheme.typography.bodyMedium
                                                 )
                                             },
@@ -392,7 +348,7 @@ class ExpensePropertiesScreen(
                                     .height(60.dp)
                             ) {
                                 Text(
-                                    text = formatDate(selectedDate) ?: stringResource(Res.string.select_date),
+                                    text = formatDate(selectedDate),
                                     style = MaterialTheme.typography.bodyLarge,
                                     textAlign = TextAlign.Center
                                 )
@@ -410,7 +366,7 @@ class ExpensePropertiesScreen(
                                 navigator.pop()
                             },
                             onError = {
-                                userViewModel.handleError(Exception(it))
+                                userViewModel.handleError(it)
                             }
                         )
                         userViewModel.hideLoading()
@@ -430,5 +386,27 @@ class ExpensePropertiesScreen(
             }
         }
 
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    private fun AppBar(onBackClick: () -> Unit) {
+        CenterAlignedTopAppBar(
+            title = {
+                Text(
+                    stringResource(if (expenseId == null) Res.string.add_expense else Res.string.update_expense),
+                    style = MaterialTheme.typography.titleLarge
+                )
+            },
+            navigationIcon = {
+                IconButton(onClick = onBackClick) {
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        )
     }
 }

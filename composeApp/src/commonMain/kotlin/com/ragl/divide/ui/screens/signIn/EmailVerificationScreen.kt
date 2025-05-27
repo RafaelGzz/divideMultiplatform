@@ -86,7 +86,7 @@ class EmailVerificationScreen : Screen {
                         if (userViewModel.isEmailVerified()) {
                             navigator.replaceAll(HomeScreen())
                         } else {
-                            userViewModel.handleError(Exception(strings.getEmailNotVerified()))
+                            userViewModel.handleError(strings.getEmailNotVerified())
                         }
                     }
                 },

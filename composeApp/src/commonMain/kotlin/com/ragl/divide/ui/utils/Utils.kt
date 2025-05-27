@@ -18,6 +18,8 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -37,15 +39,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.skydoves.landscapist.coil3.CoilImage
+import com.ragl.divide.ui.components.NetworkImage
+import com.ragl.divide.ui.components.NetworkImageType
 import compose.icons.FontAwesomeIcons
 import compose.icons.fontawesomeicons.Solid
 import compose.icons.fontawesomeicons.solid.Eye
@@ -59,8 +64,8 @@ expect fun formatCurrency(value: Double, local: String): String
 expect fun formatDate(epochMilliseconds: Long, pattern: String = "dd/MM/yyyy hh:mm a"): String
 
 expect class Strings{
-    fun getNotificationTitleString(title: String): String
-    fun getNotificationBodyString(): String
+    fun getAppName(): String
+    fun getNotificationBodyString(title: String): String
     fun getTwoSelected(): String
     fun getPercentagesSum(): String
     fun getTwoMustPay(): String
@@ -90,6 +95,15 @@ expect class Strings{
     fun getUnusualActivity(): String
     fun getDebtOrCreditError(): String
     fun getCouldNotProcessImage(): String
+    fun getFriendRequestSent(): String
+    fun getFriendRequestAccepted(): String
+    fun getFriendRequestRejected(): String
+    fun getFriendRequestCanceled(): String
+    fun getFailedToSendFriendRequest(): String
+    fun getFailedToAcceptFriendRequest(): String
+    fun getFailedToRejectFriendRequest(): String
+    fun getFailedToCancelFriendRequest(): String
+    fun getExpenseAlreadyPaid(): String
 }
 
 fun Double.toTwoDecimals(): Double {
@@ -101,7 +115,7 @@ fun validateQuantity(input: String, updateInput: (String) -> Unit) {
         val parsed = input.toDoubleOrNull()
         parsed?.let {
             val decimalPart = input.substringAfter(".", "")
-            if (decimalPart.length <= 2 && parsed <= 999999999.99) {
+            if (decimalPart.length <= 2 && parsed <= 999999.99) {
                 updateInput(input)
             }
         }
@@ -124,13 +138,17 @@ fun DivideTextField(
     keyboardType: KeyboardType = KeyboardType.Text,
     imeAction: ImeAction = ImeAction.Next,
     autoCorrect: Boolean = true,
+    capitalizeFirstLetter: Boolean = true,
     onValueChange: (String) -> Unit,
-    onAction: () -> Unit = {}
+    onAction: () -> Unit = {},
+    validate: () -> Unit = {}
 ) {
     var passwordVisible by rememberSaveable {
         mutableStateOf(false)
     }
     var icon by remember { mutableStateOf<@Composable (() -> Unit)?>(null) }
+    var isFocused by remember { mutableStateOf(false) }
+
     LaunchedEffect(input) {
         if (input.isNotEmpty()) {
             icon = when (keyboardType) {
@@ -198,7 +216,8 @@ fun DivideTextField(
             keyboardOptions = KeyboardOptions.Default.copy(
                 imeAction = imeAction,
                 keyboardType = keyboardType,
-                autoCorrectEnabled = autoCorrect
+                autoCorrectEnabled = autoCorrect,
+                capitalization = if (capitalizeFirstLetter && keyboardType == KeyboardType.Text) KeyboardCapitalization.Sentences else KeyboardCapitalization.None
             ),
             keyboardActions = KeyboardActions(
                 onDone = { onAction() }
@@ -208,6 +227,12 @@ fun DivideTextField(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(ShapeDefaults.Medium)
+                .onFocusChanged { focusState ->
+                    if (isFocused && !focusState.isFocused) {
+                        validate()
+                    }
+                    isFocused = focusState.isFocused
+                }
         )
         if (!error.isNullOrEmpty())
             Text(
@@ -268,12 +293,13 @@ fun FriendItem(
             headlineContent = {
                 Text(
                     text = headline,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                     color = if (enabled) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary.copy(
                         alpha = 0.5f
                     ),
                     overflow = TextOverflow.Ellipsis,
-                    softWrap = true
+                    softWrap = true,
+                    maxLines = 2
                 )
             },
             supportingContent = supportingContent,
@@ -340,16 +366,13 @@ fun ProfileImage(
             enabled = enabled,
             supporting = supporting
         )
-    }
-    // Usamos un Box para mostrar un indicador de carga mientras se carga la imagen
-    Box(
-        modifier = modifier
-            .clip(CircleShape)
-            .size(size.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        CoilImage(
-            imageModel = { photoUrl },
+    } else {
+        NetworkImage(
+            imageUrl = photoUrl,
+            modifier = modifier
+                .clip(CircleShape)
+                .size(size.dp),
+            type = NetworkImageType.PROFILE
         )
     }
 }
@@ -390,7 +413,7 @@ fun Header(
     ) {
         Column(
             modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 20.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
                 .align(Alignment.Center)
         ) {
             Text(
@@ -399,4 +422,30 @@ fun Header(
             )
         }
     }
+}
+
+@Composable
+fun ActionButton(
+    onClick: () -> Unit,
+    text: String,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    contentDescription: String? = null
+) {
+    ExtendedFloatingActionButton(
+        onClick = onClick,
+        icon = {
+            Icon(
+                icon,
+                contentDescription = contentDescription,
+                modifier = Modifier.size(24.dp)
+            )
+        },
+        text = { Text(text) },
+        containerColor = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary,
+        expanded = true,
+        elevation = FloatingActionButtonDefaults.elevation(0.dp),
+        modifier = modifier
+    )
 }

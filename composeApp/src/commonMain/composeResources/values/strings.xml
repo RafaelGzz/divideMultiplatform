@@ -63,7 +63,7 @@
     <string name="payment">%1$s (%2$s payment%3$s)</string>
     <string name="amount_must_be_less_than_remaining_balance">Amount must be less than remaining balance</string>
     <string name="select_payment_or_custom">Select a payment option or enter a custom amount</string>
-    <string name="update">Update</string>
+    <string name="update">Save</string>
     <string name="update_expense">Update expense</string>
     <string name="amount_must_be_greater_than_0">Amount must be greater than 0</string>
     <string name="congratulations">Congratulations</string>
@@ -76,7 +76,7 @@
     <string name="total">Total</string>
     <string name="reminder_permission_title">Reminder permission</string>
     <string name="reminder_permission_message">In order to enable reminders for your expenses, you need to enable the permission on your device. Please select Divide from the app list and enable it.</string>
-    <string name="search_by_email">Search by email</string>
+    <string name="search_by_name">Search by name</string>
     <string name="do_you_want_to_add">Do you want to add %1$s?</string>
     <string name="add_friend">Add Friend</string>
     <string name="add_friends">Add Friends</string>
@@ -139,6 +139,8 @@
     <string name="select_receiver">Select receiver</string>
     <string name="settled">Settled</string>
     <string name="pending">Pending</string>
+    <string name="pending_expenses">Pending expenses</string>
+    <string name="paid_expenses">Paid expenses</string>
     <string name="x_paid_y">%1$s paid %2$s</string>
     <string name="paid_by_text">Paid by:</string>
     <string name="debtors">Debtors:</string>
@@ -161,4 +163,21 @@
     <string name="resend_verification">Resend verification email</string>
     <string name="verify_email">Verify email</string>
     <string name="debt_or_credit_error">You cannot leave or delete the group while having debts or credits</string>
+    <string name="failed_to_login">Failed to Log in</string>
+    <string name="send_friend_request">Send Friend Request</string>
+    <string name="send">Send</string>
+    <string name="friend_request_sent">Friend request sent successfully</string>
+    <string name="friend_request_accepted">Friend request accepted</string>
+    <string name="friend_request_rejected">Friend request rejected</string>
+    <string name="friend_request_canceled">Friend request canceled</string>
+    <string name="failed_to_send_friend_request">Failed to send friend request</string>
+    <string name="failed_to_accept_friend_request">Failed to accept friend request</string>
+    <string name="failed_to_reject_friend_request">Failed to reject friend request</string>
+    <string name="failed_to_cancel_friend_request">Failed to cancel friend request</string>
+    <string name="friend_requests_received">Friend Requests Received</string>
+    <string name="friend_requests_sent">Friend Requests Sent</string>
+    <string name="no_friend_requests_received">You have no friend requests</string>
+    <string name="no_friend_requests_sent">You haven't sent any friend requests</string>
+    <string name="accept">Accept</string>
+    <string name="reject">Reject</string>
 </resources>

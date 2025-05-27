@@ -44,6 +44,7 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.material)
             implementation(compose.material3)
+            implementation(libs.material3.window.size)
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
@@ -68,8 +69,6 @@ kotlin {
             implementation(libs.voyager.koin)
 
             implementation(libs.kotlinx.serialization.json)
-
-            implementation(libs.messagebarkmp)
 
             api(libs.androidx.datastore)
             api(libs.androidx.datastore.preferences)

@@ -38,6 +38,7 @@ fun App() {
     val userViewModel: UserViewModel = koinInject()
     val darkModeState by userViewModel.isDarkMode.collectAsState()
     val startAtLogin by userViewModel.startAtLogin
+    val isInitializing by userViewModel.isInitializing
     val messageBarState = rememberMessageBarState()
     val errorState by userViewModel.errorState.collectAsState()
     val successState by userViewModel.successState.collectAsState()
@@ -66,8 +67,9 @@ fun App() {
     }
 
     DivideTheme(darkTheme = darkModeState?.toBoolean() ?: isSystemInDarkTheme()) {
-        AnimatedVisibility(visible = loaded, enter = fadeIn()) {
-            Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
+        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
+            // Solo mostrar la UI principal cuando esté cargada Y NO esté inicializando
+            AnimatedVisibility(visible = loaded && !isInitializing, enter = fadeIn()) {
                 ContentWithMessageBar(
                     messageBarState = messageBarState,
                     position = MessageBarPosition.BOTTOM,
@@ -89,18 +91,18 @@ fun App() {
                         FadeTransition(navigator)
                     }
                 }
+            }
 
-                // Indicador de carga global
-                if (appState.isLoading) {
-                    Box(
-                        modifier = Modifier.fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.2f)),
-                    ) {
-                        CircularProgressIndicator(
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.align(Alignment.Center)
-                        )
-                    }
+            // Indicador de carga global
+            if (appState.isLoading || isInitializing || !loaded) {
+                Box(
+                    modifier = Modifier.fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.2f)),
+                ) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
                 }
             }
         }

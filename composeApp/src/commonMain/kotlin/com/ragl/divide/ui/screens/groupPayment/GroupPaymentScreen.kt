@@ -37,7 +37,6 @@ import cafe.adriel.voyager.koin.koinNavigatorScreenModel
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.ragl.divide.data.models.User
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.groupPaymentProperties.GroupPaymentPropertiesScreen
 import com.ragl.divide.ui.utils.FriendItem
@@ -54,8 +53,7 @@ import org.jetbrains.compose.resources.stringResource
 
 class GroupPaymentScreen(
     private val groupId: String,
-    private val paymentId: String,
-    private val members: List<User>
+    private val paymentId: String
 ) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -68,6 +66,7 @@ class GroupPaymentScreen(
         
         LaunchedEffect(groupId, paymentId) {
             val payment = userViewModel.getGroupPaymentById(groupId, paymentId)
+            val members = userViewModel.getGroupMembers(groupId)
             vm.setPayment(payment, groupId, members)
         }
         
@@ -93,7 +92,6 @@ class GroupPaymentScreen(
                                 navigator.push(
                                     GroupPaymentPropertiesScreen(
                                         groupId = groupId,
-                                        members = members,
                                         paymentId = paymentId
                                     )
                                 )
@@ -135,7 +133,7 @@ class GroupPaymentScreen(
                                         navigator.pop()
                                     },
                                     onError = {
-                                        userViewModel.handleError(Exception(it))
+                                        userViewModel.handleError(it)
                                     }
                                 )
                                 userViewModel.hideLoading()

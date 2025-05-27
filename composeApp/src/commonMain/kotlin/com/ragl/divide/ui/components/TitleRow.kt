@@ -21,9 +21,9 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun TitleRow(
-    modifier: Modifier = Modifier,
     buttonStringResource: StringResource,
     labelStringResource: StringResource,
+    modifier: Modifier = Modifier,
     onAddClick: () -> Unit = {}
 ) {
     Row(

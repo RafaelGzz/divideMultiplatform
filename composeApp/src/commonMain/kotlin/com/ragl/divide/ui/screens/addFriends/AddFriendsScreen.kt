@@ -1,6 +1,5 @@
 package com.ragl.divide.ui.screens.addFriends
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -17,9 +16,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,18 +44,17 @@ import cafe.adriel.voyager.koin.koinNavigatorScreenModel
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.ragl.divide.data.models.User
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.utils.DivideTextField
 import com.ragl.divide.ui.utils.FriendItem
 import dividemultiplatform.composeapp.generated.resources.Res
-import dividemultiplatform.composeapp.generated.resources.add
-import dividemultiplatform.composeapp.generated.resources.add_friend
 import dividemultiplatform.composeapp.generated.resources.add_friends
 import dividemultiplatform.composeapp.generated.resources.cancel
 import dividemultiplatform.composeapp.generated.resources.do_you_want_to_add
 import dividemultiplatform.composeapp.generated.resources.no_users_found
-import dividemultiplatform.composeapp.generated.resources.search_by_email
+import dividemultiplatform.composeapp.generated.resources.search_by_name
+import dividemultiplatform.composeapp.generated.resources.send
+import dividemultiplatform.composeapp.generated.resources.send_friend_request
 import org.jetbrains.compose.resources.stringResource
 
 class AddFriendsScreen : Screen {
@@ -71,9 +69,10 @@ class AddFriendsScreen : Screen {
         val state by userViewModel.state.collectAsState()
         
         LaunchedEffect(Unit){
-            viewModel.setCurrentFriends(state.friends.values.toList())
+            viewModel.updateCurrentFriends(state.friends.values.toList())
+            viewModel.updateFriendRequestsSent(state.friendRequestsSent.values.toList())
         }
-        var showAddFriendDialog by remember { mutableStateOf(false) }
+        var showSendRequestDialog by remember { mutableStateOf(false) }
 
         Scaffold(
             topBar = {
@@ -94,28 +93,28 @@ class AddFriendsScreen : Screen {
                 )
             }
         ) { paddingValues ->
-            if (showAddFriendDialog) {
+            if (showSendRequestDialog) {
                 AlertDialog(
-                    onDismissRequest = { showAddFriendDialog = false },
+                    onDismissRequest = { showSendRequestDialog = false },
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.primary,
                     iconContentColor = MaterialTheme.colorScheme.onSurface,
                     confirmButton = {
                         TextButton(onClick = {
-                            showAddFriendDialog = false
-                            viewModel.addFriend(
-                                userViewModel::addFriend
+                            showSendRequestDialog = false
+                            viewModel.sendFriendRequest(
+                                userViewModel::sendFriendRequest
                             )
                         }) {
-                            Text(stringResource(Res.string.add))
+                            Text(stringResource(Res.string.send))
                         }
                     },
                     dismissButton = {
-                        TextButton(onClick = { showAddFriendDialog = false }) {
+                        TextButton(onClick = { showSendRequestDialog = false }) {
                             Text(stringResource(Res.string.cancel))
                         }
                     },
-                    title = { Text(stringResource(Res.string.add_friend), style = MaterialTheme.typography.titleLarge) },
+                    title = { Text(stringResource(Res.string.send_friend_request), style = MaterialTheme.typography.titleLarge) },
                     text = {
                         Text(stringResource(Res.string.do_you_want_to_add, viewModel.selectedUser!!.name), style = MaterialTheme.typography.bodySmall)
                     }
@@ -130,7 +129,7 @@ class AddFriendsScreen : Screen {
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     DivideTextField(
-                        label = stringResource(Res.string.search_by_email),
+                        label = stringResource(Res.string.search_by_name),
                         input = viewModel.searchText,
                         onValueChange = viewModel::updateSearchText,
                         imeAction = ImeAction.Done,
@@ -144,7 +143,7 @@ class AddFriendsScreen : Screen {
                             .height(55.dp),
                         shape = ShapeDefaults.Medium
                     ) {
-                        Icon(Icons.Filled.Search, contentDescription = "Add Friend")
+                        Icon(Icons.Filled.Search, contentDescription = "Search")
                     }
                 }
 
@@ -153,7 +152,15 @@ class AddFriendsScreen : Screen {
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    if (viewModel.users.isEmpty()) {
+                    if (viewModel.isLoading) {
+                        item {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .padding(16.dp)
+                                    .align(Alignment.CenterHorizontally)
+                            )
+                        }
+                    } else if (viewModel.users.isEmpty()) {
                         item {
                             Text(
                                 text = stringResource(Res.string.no_users_found),
@@ -167,7 +174,7 @@ class AddFriendsScreen : Screen {
                             headline = user.name,
                             photoUrl = user.photoUrl,
                             onClick = {
-                                showAddFriendDialog = true
+                                showSendRequestDialog = true
                                 viewModel.updateSelectedUser(user)
                             },
                             colors = CardDefaults.cardColors(
@@ -180,31 +187,4 @@ class AddFriendsScreen : Screen {
             }
         }
     }
-
-    @Composable
-    fun UserItem(user: User, onUserClick: (User) -> Unit) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp)
-                .clickable { onUserClick(user) },
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(16.dp)
-            ) {
-                Text(
-                    text = user.name,
-                    style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.primary)
-                )
-                Text(text = user.email, style = MaterialTheme.typography.bodyMedium)
-            }
-        }
-    }
-    
 }

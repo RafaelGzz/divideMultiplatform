@@ -28,7 +28,7 @@ class LogInViewModel(
     fun isFieldsValid(): Boolean {
         return validateEmail().and(validatePassword())
     }
-    private fun validateEmail(): Boolean {
+    fun validateEmail(): Boolean {
         val emailPattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+"
         return if (email.isBlank()) {
             emailError = strings.getEmailRequired()
@@ -42,7 +42,7 @@ class LogInViewModel(
         }
     }
 
-    private fun validatePassword(): Boolean {
+    fun validatePassword(): Boolean {
         if (password.isNotBlank()) {
             passwordError = ""
             return true

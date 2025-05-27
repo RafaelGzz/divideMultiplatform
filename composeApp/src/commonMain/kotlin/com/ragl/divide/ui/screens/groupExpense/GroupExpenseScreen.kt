@@ -39,7 +39,6 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ragl.divide.data.models.GroupExpense
 import com.ragl.divide.data.models.SplitMethod
-import com.ragl.divide.data.models.User
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.groupExpenseProperties.GroupExpensePropertiesScreen
 import com.ragl.divide.ui.utils.FriendItem
@@ -50,9 +49,9 @@ import dividemultiplatform.composeapp.generated.resources.added_on
 import dividemultiplatform.composeapp.generated.resources.back
 import dividemultiplatform.composeapp.generated.resources.cancel
 import dividemultiplatform.composeapp.generated.resources.currency_es_mx
+import dividemultiplatform.composeapp.generated.resources.debtors
 import dividemultiplatform.composeapp.generated.resources.delete
 import dividemultiplatform.composeapp.generated.resources.delete_expense_confirm
-import dividemultiplatform.composeapp.generated.resources.debtors
 import dividemultiplatform.composeapp.generated.resources.edit
 import dividemultiplatform.composeapp.generated.resources.notes
 import dividemultiplatform.composeapp.generated.resources.owes_x
@@ -62,8 +61,7 @@ import org.jetbrains.compose.resources.stringResource
 
 class GroupExpenseScreen(
     private val groupId: String,
-    private val expenseId: String,
-    private val members: List<User>
+    private val expenseId: String
 ) : Screen {
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -75,6 +73,7 @@ class GroupExpenseScreen(
 
         LaunchedEffect(Unit) {
             val groupExpense = userViewModel.getGroupExpenseById(groupId, expenseId)
+            val members = userViewModel.getGroupMembers(groupId)
             viewModel.setGroupExpense(groupExpense, members)
         }
 
@@ -108,7 +107,6 @@ class GroupExpenseScreen(
                                     navigator.push(
                                         GroupExpensePropertiesScreen(
                                             groupId,
-                                            members,
                                             groupExpenseState.id
                                         )
                                     )
@@ -156,7 +154,7 @@ class GroupExpenseScreen(
                                     userViewModel.removeGroupExpense(groupId, it)
                                     navigator.pop()
                                 }) {
-                                    userViewModel.handleError(Exception(it))
+                                    userViewModel.handleError(it)
                                 }
                                 userViewModel.hideLoading()
                             }) {

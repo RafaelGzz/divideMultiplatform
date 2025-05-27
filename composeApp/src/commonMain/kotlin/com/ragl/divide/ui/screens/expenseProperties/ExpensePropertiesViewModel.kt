@@ -52,13 +52,14 @@ class ExpensePropertiesViewModel(
         private set
     var payments by mutableStateOf(emptyMap<String, Payment>())
         private set
+    var paid by mutableStateOf(false)
+        private set
 
     var reminderPermissionMessageDialogEnabled by mutableStateOf(false)
         private set
 
     fun handleReminderPermissionCheck(checked: Boolean) {
         updateIsRemindersEnabled(false)
-        return
         when (checked) {
             true -> {
                 if (scheduleNotificationService.canScheduleExactAlarms()) {
@@ -86,7 +87,7 @@ class ExpensePropertiesViewModel(
         this.title = title
     }
 
-    private fun validateTitle(): Boolean {
+    fun validateTitle(): Boolean {
         return when (title.trim()) {
             "" -> {
                 this.titleError = strings.getTitleRequired()
@@ -104,9 +105,9 @@ class ExpensePropertiesViewModel(
         this.amount = amount
     }
 
-    private fun validateAmount(): Boolean {
+    fun validateAmount(): Boolean {
         if (amount.isEmpty()) {
-            this.amountError = "Amount is required"
+            this.amountError = strings.getAmountRequired()
             return false
         }
 
@@ -132,30 +133,7 @@ class ExpensePropertiesViewModel(
         this.notes = notes
     }
 
-//    fun updatePayments(payments: String) {
-//        if (payments.isNotEmpty() &&
-//            //payments.isDigitsOnly() &&
-//            payments.toInt() <= 0
-//        ) this.numberOfPayments =
-//            "1"
-//        else this.numberOfPayments = payments
-//    }
-//
-//    private fun validatePayments(): Boolean {
-//        return when (numberOfPayments.trim()) {
-//            "" -> {
-//                this.paymentsError = "Payments is required"
-//                false
-//            }
-//
-//            else -> {
-//                this.paymentsError = ""
-//                true
-//            }
-//        }
-//    }
-
-    fun updateIsRemindersEnabled(isRemindersEnabled: Boolean) {
+    private fun updateIsRemindersEnabled(isRemindersEnabled: Boolean) {
         this.isRemindersEnabled = isRemindersEnabled
     }
 
@@ -189,16 +167,18 @@ class ExpensePropertiesViewModel(
                             startingDate = startingDate,
                             amountPaid = amountPaid,
                             createdAt = if (addedDate == 0L) Clock.System.now().toEpochMilliseconds() else addedDate,
+                            paid = paid
                         )
                     )
                     scheduleNotificationService.cancelNotification(savedExpense.id.takeLast(5).toInt())
                     if (isRemindersEnabled) {
                         scheduleNotificationService.scheduleNotification(
                             id = savedExpense.id.takeLast(5).toInt(),
-                            title = strings.getNotificationTitleString(title),
-                            message = strings.getNotificationBodyString(),
+                            title = strings.getAppName(),
+                            message = strings.getNotificationBodyString(title),
                             startingDateMillis = startingDate,
-                            frequency = frequency
+                            frequency = frequency,
+                            true
                         )
                     }
                     onSuccess(savedExpense)
@@ -225,6 +205,7 @@ class ExpensePropertiesViewModel(
             startingDate = expense.startingDate
             amountPaid = expense.amountPaid
             addedDate = expense.createdAt
+            paid = expense.paid
         }
     }
 }

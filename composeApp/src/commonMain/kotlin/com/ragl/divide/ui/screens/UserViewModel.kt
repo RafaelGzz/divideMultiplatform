@@ -8,6 +8,7 @@ import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.GroupExpense
 import com.ragl.divide.data.models.Payment
 import com.ragl.divide.data.models.User
+import com.ragl.divide.data.models.UserInfo
 import com.ragl.divide.data.repositories.FriendsRepository
 import com.ragl.divide.data.repositories.GroupRepository
 import com.ragl.divide.data.repositories.PreferencesRepository
@@ -17,19 +18,23 @@ import com.ragl.divide.ui.screens.groupProperties.PlatformImageUtils
 import com.ragl.divide.ui.utils.Strings
 import com.ragl.divide.ui.utils.logMessage
 import dev.gitlive.firebase.auth.FirebaseUser
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 
 data class AppState(
     val isLoading: Boolean = false,
     val groups: Map<String, Group> = emptyMap(),
-    val friends: Map<String, User> = emptyMap(),
-    val selectedGroupMembers: List<User> = emptyList(),
-    val user: User = User()
+    val groupMembers: Map<String, List<UserInfo>> = emptyMap(),
+    val friends: Map<String, UserInfo> = emptyMap(),
+    val selectedGroupMembers: List<UserInfo> = emptyList(),
+    val user: User = User(),
+    val friendRequestsReceived: Map<String, UserInfo> = emptyMap(),
+    val friendRequestsSent: Map<String, UserInfo> = emptyMap()
 )
 
 class UserViewModel(
@@ -57,29 +62,43 @@ class UserViewModel(
 
     var startAtLogin = mutableStateOf(true)
         private set
+    var isInitializing = mutableStateOf(true)
+        private set
 
     init {
+        // Recolectar el modo oscuro en segundo plano
         screenModelScope.launch {
             preferencesRepository.darkModeFlow.collect {
                 isDarkMode.value = it
             }
         }
-        runBlocking {
-            if (userRepository.getFirebaseUser() != null) {
-                if (userRepository.isEmailVerified()) {
-                    getUserData()
-                    startAtLogin.value = false
-                } else {
-                    userRepository.signOut()
-                    startAtLogin.value = true
+
+        // Realizar la inicialización en un hilo de fondo sin bloquear
+        screenModelScope.launch(Dispatchers.IO) {
+            try {
+                if (userRepository.getFirebaseUser() != null) {
+                    logMessage("UserViewModel", "User is logged in")
+                    if (userRepository.isEmailVerified()) {
+                        logMessage("UserViewModel", "User is verified")
+                        getUserData()
+                        startAtLogin.value = false
+                    } else {
+                        logMessage("UserViewModel", "User is not verified")
+                        userRepository.signOut()
+                        startAtLogin.value = true
+                    }
                 }
+            } catch (e: Exception) {
+                logMessage("UserViewModel", "Error during initialization: ${e.message}")
+                startAtLogin.value = true
+            } finally {
+                isInitializing.value = false
             }
         }
     }
 
-    fun handleError(e: Exception) {
-        _errorState.value = e.message ?: strings.getUnknownError()
-        logMessage("UserViewModel", "$e")
+    fun handleError(message: String?) {
+        _errorState.value = message ?: strings.getUnknownError()
     }
 
     fun handleSuccess(message: String) {
@@ -114,21 +133,30 @@ class UserViewModel(
             try {
                 val user = userRepository.getUser(userRepository.getFirebaseUser()!!.uid)
                 val groups = groupRepository.getGroups(user.groups)
-                //val expenses = userRepository.getExpenses()
-                val friends = friendsRepository.getFriends(user.friends)
+                val groupMembers = groups.mapValues { (id, group) ->
+                    friendsRepository.getFriends(group.users.values.toList()).values.toList()
+                }
+                val friends = friendsRepository.getFriends(user.friends.keys.toList())
+                val friendRequestsReceived =
+                    friendsRepository.getFriendRequestsReceived(user.friendRequestsReceived)
+                val friendRequestsSent =
+                    friendsRepository.getFriendRequestsSent(user.friendRequestsSent)
+
                 _state.update {
                     it.copy(
                         groups = groups,
+                        groupMembers = groupMembers,
                         friends = friends,
-                        user = user
+                        user = user,
+                        friendRequestsReceived = friendRequestsReceived,
+                        friendRequestsSent = friendRequestsSent
                     )
                 }
-//                logMessage("HomeViewModel", "getUserData: ${user.name}")
             } catch (e: Exception) {
-                e.printStackTrace()
-                logMessage("HomeViewModel", e.message.toString())
+                logMessage("UserViewModel: getUserData", e.message.toString())
+            } finally {
+                hideLoading()
             }
-            hideLoading()
         }
     }
 
@@ -136,7 +164,7 @@ class UserViewModel(
         email: String,
         password: String,
         onSuccess: () -> Unit,
-        onFail: (Exception) -> Unit
+        onFail: (String) -> Unit
     ) {
         screenModelScope.launch {
             try {
@@ -146,9 +174,9 @@ class UserViewModel(
                         getUserData()
                         onSuccess()
                     } else {
-                        onFail(Exception(strings.getEmailNotVerified()))
+                        onFail(strings.getEmailNotVerified())
                     }
-                } else onFail(Exception(strings.getFailedToLogin()))
+                } else onFail(strings.getFailedToLogin())
             } catch (e: Exception) {
                 onFail(handleAuthError(e))
                 logMessage("UserViewModel: signInWithEmailAndPassword", e.message.toString())
@@ -167,7 +195,7 @@ class UserViewModel(
                 if (userRepository.signUpWithEmailAndPassword(email, password, name) != null) {
                     userRepository.signOut()
                     handleSuccess(strings.getVerificationEmailSent())
-                } else handleError(Exception(strings.getFailedToLogin()))
+                } else handleError(strings.getFailedToLogin())
             } catch (e: Exception) {
                 handleError(handleAuthError(e))
                 logMessage("UserViewModel: signUpWithEmailAndPassword", e.message.toString())
@@ -179,13 +207,10 @@ class UserViewModel(
 
     fun signInWithGoogle(
         result: Result<FirebaseUser?>,
-        onSuccess: () -> Unit,
-        onFail: (Exception) -> Unit
+        onSuccess: () -> Unit
     ) {
         screenModelScope.launch {
             try {
-                showLoading()
-
                 val firebaseUser = result.getOrNull()
                 if (firebaseUser != null) {
                     val checkedUser = userRepository.getUser(firebaseUser.uid)
@@ -195,7 +220,7 @@ class UserViewModel(
                     getUserData()
                     onSuccess()
                 } else {
-                    onFail(Exception(strings.getFailedToLogin()))
+                    handleError(strings.getFailedToLogin())
                     logMessage(
                         "UserViewModel: signInWithGoogle",
                         "${result.exceptionOrNull()?.message}"
@@ -203,8 +228,8 @@ class UserViewModel(
                 }
 
             } catch (e: Exception) {
-                onFail(Exception(e.message ?: strings.getUnknownError()))
-                logMessage("UserViewModel", e.message.toString())
+                //handleError(Exception(strings.getFailedToLogin()))
+                logMessage("UserViewModel", "${e.message}")
                 //Log.e("UserViewModel", "signUpWithEmailAndPassword: ", e)
             } finally {
                 hideLoading()
@@ -212,23 +237,23 @@ class UserViewModel(
         }
     }
 
-    private fun handleAuthError(e: Exception): Exception {
+    private fun handleAuthError(e: Exception): String {
         return when {
             e.message?.contains("no user record") == true ||
                     e.message?.contains("password is invalid") == true -> {
-                Exception(strings.getEmailPasswordInvalid())
+                strings.getEmailPasswordInvalid()
             }
 
             e.message?.contains("email address is already in use") == true -> {
-                Exception(strings.getEmailAlreadyInUse())
+                strings.getEmailAlreadyInUse()
             }
 
             e.message?.contains("unusual activity") == true -> {
-                Exception(strings.getUnusualActivity())
+                strings.getUnusualActivity()
             }
 
             else -> {
-                Exception(e.message ?: strings.getUnknownError())
+                e.message ?: strings.getUnknownError()
             }
         }
     }
@@ -255,11 +280,11 @@ class UserViewModel(
         }
     }
 
-    fun paidExpense(expenseId: String) {
+    fun updatePaidExpense(expenseId: String, paid: Boolean) {
         _state.update {
             it.copy(user = it.user.copy(expenses = it.user.expenses.mapValues { expense ->
                 if (expense.key == expenseId) {
-                    expense.value.copy(paid = true)
+                    expense.value.copy(paid = paid)
                 } else {
                     expense.value
                 }
@@ -286,7 +311,7 @@ class UserViewModel(
         }
     }
 
-    fun addFriend(friend: User) {
+    fun addFriend(friend: UserInfo) {
         _state.update {
             it.copy(friends = it.friends + (friend.uuid to friend))
         }
@@ -313,7 +338,8 @@ class UserViewModel(
                 if (expense.key == expenseId) {
                     expense.value.copy(
                         payments = expense.value.payments - paymentId,
-                        amountPaid = expense.value.amountPaid - expense.value.payments[paymentId]!!.amount
+                        amountPaid = expense.value.amountPaid - expense.value.payments[paymentId]!!.amount,
+                        paid = false
                     )
                 } else {
                     expense.value
@@ -418,7 +444,7 @@ class UserViewModel(
     }
 
     fun getUUID(): String {
-        return userRepository.getFirebaseUser()!!.uid
+        return _state.value.user.uuid
     }
 
     fun saveGroupPayment(groupId: String, savedPayment: Payment) {
@@ -459,7 +485,7 @@ class UserViewModel(
                 handleSuccess(strings.getVerificationEmailSent())
                 startCountdown()
             } catch (e: Exception) {
-                handleError(Exception(e.message ?: strings.getUnknownError()))
+                handleError(e.message ?: strings.getUnknownError())
             } finally {
                 hideLoading()
             }
@@ -482,7 +508,7 @@ class UserViewModel(
             showLoading()
             res = userRepository.isEmailVerified()
         } catch (e: Exception) {
-            handleError(Exception(e.message ?: strings.getUnknownError()))
+            handleError(e.message ?: strings.getUnknownError())
         } finally {
             hideLoading()
         }
@@ -494,7 +520,7 @@ class UserViewModel(
             try {
                 showLoading()
                 val imageFile = PlatformImageUtils.createFirebaseFile(imagePath)
-                
+
                 if (imageFile != null) {
                     val downloadUrl = userRepository.saveProfilePhoto(imageFile)
                     _state.update {
@@ -510,6 +536,113 @@ class UserViewModel(
                 onError(e.message ?: strings.getUnknownError())
             } finally {
                 hideLoading()
+            }
+        }
+    }
+
+    fun sendFriendRequest(friend: UserInfo) {
+        screenModelScope.launch {
+            try {
+                showLoading()
+                if (friendsRepository.sendFriendRequest(friend.uuid)) {
+                    _state.update {
+                        it.copy(friendRequestsSent = it.friendRequestsSent + (friend.uuid to friend))
+                    }
+                    handleSuccess(strings.getFriendRequestSent())
+                } else {
+                    handleError(strings.getFailedToSendFriendRequest())
+                }
+            } catch (e: Exception) {
+                handleError(e.message ?: strings.getUnknownError())
+            } finally {
+                hideLoading()
+            }
+        }
+    }
+
+    fun acceptFriendRequest(friend: UserInfo) {
+        screenModelScope.launch {
+            try {
+                showLoading()
+                if (friendsRepository.acceptFriendRequest(friend.uuid)) {
+                    _state.update {
+                        it.copy(
+                            friendRequestsReceived = it.friendRequestsReceived - friend.uuid,
+                            friends = it.friends + (friend.uuid to friend)
+                        )
+                    }
+                    handleSuccess(strings.getFriendRequestAccepted())
+                } else {
+                    handleError(strings.getFailedToAcceptFriendRequest())
+                }
+            } catch (e: Exception) {
+                handleError(e.message ?: strings.getUnknownError())
+            } finally {
+                hideLoading()
+            }
+        }
+    }
+
+    fun rejectFriendRequest(friend: UserInfo) {
+        screenModelScope.launch {
+            try {
+                showLoading()
+                if (friendsRepository.rejectFriendRequest(friend.uuid)) {
+                    _state.update {
+                        it.copy(friendRequestsReceived = it.friendRequestsReceived - friend.uuid)
+                    }
+                    handleSuccess(strings.getFriendRequestRejected())
+                } else {
+                    handleError(strings.getFailedToRejectFriendRequest())
+                }
+            } catch (e: Exception) {
+                handleError(e.message ?: strings.getUnknownError())
+            } finally {
+                hideLoading()
+            }
+        }
+    }
+
+    fun cancelFriendRequest(friend: UserInfo) {
+        screenModelScope.launch {
+            try {
+                showLoading()
+                if (friendsRepository.cancelFriendRequest(friend.uuid)) {
+                    _state.update {
+                        it.copy(friendRequestsSent = it.friendRequestsSent - friend.uuid)
+                    }
+                    handleSuccess(strings.getFriendRequestCanceled())
+                } else {
+                    handleError(strings.getFailedToCancelFriendRequest())
+                }
+            } catch (e: Exception) {
+                handleError(e.message ?: strings.getUnknownError())
+            } finally {
+                hideLoading()
+            }
+        }
+    }
+
+    fun getGroupMembers(groupId: String): List<UserInfo> {
+        return _state.value.groupMembers[groupId] ?: emptyList()
+    }
+
+    fun setGroupMembers(group: Group) {
+        screenModelScope.launch {
+            val currentGroupMembers = _state.value.groupMembers[group.id] ?: emptyList()
+            val currentGroupMembersIds = currentGroupMembers.map { it.uuid }
+            val newGroupUserIds = group.users.values.toList()
+            
+            val missingUserIds = newGroupUserIds.filter { it !in currentGroupMembersIds }
+            if (missingUserIds.isNotEmpty()) {
+                val newGroupMembers = friendsRepository.getFriends(missingUserIds)
+                val updatedGroupMembers = currentGroupMembers + newGroupMembers.values
+                
+                _state.update { state ->
+                    state.copy(
+                        groupMembers = state.groupMembers + (group.id to updatedGroupMembers)
+                    )
+                }
             }
         }
     }

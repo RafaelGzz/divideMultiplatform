@@ -6,7 +6,8 @@ import androidx.compose.runtime.setValue
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.Group
-import com.ragl.divide.data.models.User
+import com.ragl.divide.data.models.UserInfo
+import com.ragl.divide.data.repositories.FriendsRepository
 import com.ragl.divide.data.repositories.GroupRepository
 import com.ragl.divide.ui.utils.Strings
 import com.ragl.divide.ui.utils.logMessage
@@ -21,6 +22,7 @@ import kotlinx.coroutines.launch
  */
 class GroupPropertiesViewModel(
     private val groupRepository: GroupRepository,
+    private val friendsRepository: FriendsRepository,
     private val strings: Strings
 ) : ScreenModel {
 
@@ -31,7 +33,7 @@ class GroupPropertiesViewModel(
     private var _temporaryImagePath = MutableStateFlow<String?>(null)
     val temporaryImagePath = _temporaryImagePath.asStateFlow()
 
-    var members by mutableStateOf<List<User>>(listOf())
+    var members by mutableStateOf<List<UserInfo>>(listOf())
         private set
 
     var nameError by mutableStateOf("")
@@ -48,28 +50,26 @@ class GroupPropertiesViewModel(
 
     private var currentUserId: String = ""
 
+    fun updateSimplifyDebts(simplify: Boolean) {
+        simplifyDebts = simplify
+    }
+
     fun hasUserDebtOrCredit(userId: String = currentUserId): Boolean {
         if (userId.isEmpty()) return false
-        
+
         val currentDebts = _group.value.currentDebts
-        
+
         val userDebts = currentDebts[userId]
         if (userDebts != null && userDebts.any { it.value > 0.01 }) {
             return true
         }
-        
-        val userCredits = currentDebts.filter { it.key != userId }
-            .any { (_, debtMap) -> 
-                debtMap.containsKey(userId) && debtMap[userId]!! > 0.01 
-            }
-            
-        return userCredits
-    }
 
-    fun updateSimplifyDebts(simplify: Boolean) {
-        _group.update {
-            it.copy(simplifyDebts = simplify)
-        }
+        val userCredits = currentDebts.filter { it.key != userId }
+            .any { (_, debtMap) ->
+                debtMap.containsKey(userId) && debtMap[userId]!! > 0.01
+            }
+
+        return userCredits
     }
 
     fun updateName(name: String) {
@@ -83,40 +83,29 @@ class GroupPropertiesViewModel(
         _temporaryImagePath.update { imagePath }
     }
 
-    fun addUser(userId: String) {
-        _group.update {
-            it.copy(users = it.users + (userId to userId))
-        }
-    }
-
-    fun addMember(member: User) {
+    fun addMember(member: UserInfo) {
         this.members += member
     }
 
-    fun removeUser(userId: String) {
-        _group.update {
-            it.copy(users = it.users - userId)
-        }
+    fun removeMember(member: UserInfo) {
+        this.members -= member
     }
 
-    fun setGroup(group: Group) {
+    fun setGroup(group: Group, users: List<UserInfo>) {
         screenModelScope.launch {
             _isLoading.update { true }
             _group.update {
                 group
             }
             simplifyDebts = group.simplifyDebts
-            members = groupRepository.getUsers(_group.value.users.values)
+            members = users
+            //friendsRepository.getFriends(_group.value.users.values.toList()).values.toList()
             _isLoading.update { false }
         }
     }
 
     fun setCurrentUserId(userId: String) {
         currentUserId = userId
-    }
-
-    private fun updateMembers(members: List<User>) {
-        this.members = members
     }
 
     fun leaveGroup(onSuccessful: () -> Unit, onError: (String) -> Unit) {
@@ -154,28 +143,28 @@ class GroupPropertiesViewModel(
             _group.update {
                 it.copy(
                     name = it.name.trim(),
-                    users = it.users + members.associate { member -> member.uuid to member.uuid }
-                        .filter { member -> member.value !in it.users.keys }
+                    users = members.associate { member -> member.uuid to member.uuid },
+                    simplifyDebts = simplifyDebts
                 )
             }
             screenModelScope.launch {
                 try {
                     _isLoading.update { true }
-                    
+
                     // Crear File de Firebase si hay una imagen seleccionada
                     val imageFile = selectedImagePath?.let { path ->
                         PlatformImageUtils.createFirebaseFile(path)
                     }
-                    
+
                     val savedGroup = groupRepository.saveGroup(
                         _group.value,
                         imageFile
                     )
-                    
+
                     // Limpiar imagen temporal después de guardar
                     _temporaryImagePath.update { null }
                     selectedImagePath = null
-                    
+
                     _isLoading.update { false }
                     onSuccess(savedGroup)
                 } catch (e: Exception) {

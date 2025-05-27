@@ -8,6 +8,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import kotlin.random.Random
 
 actual fun logMessage(tag: String, message: String) {
     Log.d(tag, message)
@@ -28,14 +29,29 @@ actual fun formatDate(epochMilliseconds: Long, pattern: String): String {
 }
 
 actual class Strings(private val context: Context) {
-    actual fun getNotificationTitleString(title: String): String {
+
+    actual fun getAppName(): String{
+        return context.getString(R.string.app_name)
+    }
+
+    fun getNotificationTitleString(title: String): String {
         // Obtiene el string desde los recursos y formatea con el parámetro 'title'
         return context.getString(R.string.notification_title, title)
     }
 
-    actual fun getNotificationBodyString(): String {
-        // Obtiene el string para el cuerpo de la notificación
-        return context.getString(R.string.notification_body)
+    actual fun getNotificationBodyString(title: String): String {
+        // Obtiene un mensaje aleatorio de recordatorio de pago
+        val reminderMessages = arrayOf(
+            R.string.notification_reminder_1,
+            R.string.notification_reminder_2,
+            R.string.notification_reminder_3,
+            R.string.notification_reminder_4,
+            R.string.notification_reminder_5,
+            R.string.notification_reminder_6
+        )
+        
+        val randomMessageId = reminderMessages[Random.nextInt(reminderMessages.size)]
+        return context.getString(randomMessageId, title)
     }
 
     actual fun getTwoSelected(): String {
@@ -152,5 +168,41 @@ actual class Strings(private val context: Context) {
 
     actual fun getCouldNotProcessImage(): String {
         return context.getString(R.string.could_not_process_image)
+    }
+    
+    actual fun getFriendRequestSent(): String {
+        return context.getString(R.string.friend_request_sent)
+    }
+    
+    actual fun getFriendRequestAccepted(): String {
+        return context.getString(R.string.friend_request_accepted)
+    }
+    
+    actual fun getFriendRequestRejected(): String {
+        return context.getString(R.string.friend_request_rejected)
+    }
+    
+    actual fun getFriendRequestCanceled(): String {
+        return context.getString(R.string.friend_request_canceled)
+    }
+    
+    actual fun getFailedToSendFriendRequest(): String {
+        return context.getString(R.string.failed_to_send_friend_request)
+    }
+    
+    actual fun getFailedToAcceptFriendRequest(): String {
+        return context.getString(R.string.failed_to_accept_friend_request)
+    }
+    
+    actual fun getFailedToRejectFriendRequest(): String {
+        return context.getString(R.string.failed_to_reject_friend_request)
+    }
+    
+    actual fun getFailedToCancelFriendRequest(): String {
+        return context.getString(R.string.failed_to_cancel_friend_request)
+    }
+
+    actual fun getExpenseAlreadyPaid(): String {
+        return context.getString(R.string.expense_already_paid)
     }
 }

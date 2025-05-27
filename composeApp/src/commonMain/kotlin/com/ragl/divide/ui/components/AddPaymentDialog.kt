@@ -18,12 +18,12 @@ import androidx.compose.ui.unit.dp
 import com.ragl.divide.ui.utils.DivideTextField
 import com.ragl.divide.ui.utils.formatCurrency
 import dividemultiplatform.composeapp.generated.resources.Res
+import dividemultiplatform.composeapp.generated.resources.add
 import dividemultiplatform.composeapp.generated.resources.amount
 import dividemultiplatform.composeapp.generated.resources.amount_must_be_greater_than_0
 import dividemultiplatform.composeapp.generated.resources.amount_must_be_less_than_remaining_balance
 import dividemultiplatform.composeapp.generated.resources.cancel
 import dividemultiplatform.composeapp.generated.resources.make_a_payment
-import dividemultiplatform.composeapp.generated.resources.ok
 import dividemultiplatform.composeapp.generated.resources.remaining_balance
 import org.jetbrains.compose.resources.stringResource
 
@@ -64,7 +64,7 @@ fun AddPaymentDialog(
                             val parsed = formatted.toDoubleOrNull()
                             parsed?.let {
                                 val decimalPart = formatted.substringAfter(".", "")
-                                if (decimalPart.length <= 2 && parsed <= 999999999.99) {
+                                if (decimalPart.length <= 2 && parsed <= 999999.99) {
                                     amount = input
                                 }
                             }
@@ -95,7 +95,7 @@ fun AddPaymentDialog(
                     }
                 }
             ) {
-                Text(text = stringResource(Res.string.ok))
+                Text(text = stringResource(Res.string.add))
             }
         },
         dismissButton = {

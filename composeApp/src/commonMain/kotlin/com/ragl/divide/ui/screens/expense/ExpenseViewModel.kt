@@ -1,13 +1,11 @@
 package com.ragl.divide.ui.screens.expense
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.data.models.Payment
 import com.ragl.divide.data.repositories.UserRepository
+import com.ragl.divide.data.services.ScheduleNotificationService
 import com.ragl.divide.ui.utils.Strings
 import com.ragl.divide.ui.utils.logMessage
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +15,7 @@ import kotlinx.coroutines.launch
 
 class ExpenseViewModel(
     private val userRepository: UserRepository,
+    private val scheduleNotificationService: ScheduleNotificationService,
     private val strings: Strings
 ) : ScreenModel {
 
@@ -66,7 +65,8 @@ class ExpenseViewModel(
                 _expense.update {
                     it.copy(
                         payments = userRepository.getExpensePayments(_expense.value.id),
-                        amountPaid = it.amountPaid - amount
+                        amountPaid = it.amountPaid - amount,
+                        paid = false
                     )
                 }
                 onSuccess()
@@ -86,7 +86,10 @@ class ExpenseViewModel(
                     expensePaid = _expense.value.amountPaid + amount == _expense.value.amount
                 )
                 onSuccess(savedPayment)
-                if (_expense.value.amountPaid + amount == _expense.value.amount) onPaidExpense()
+                if (_expense.value.amountPaid + amount == _expense.value.amount) {
+                    scheduleNotificationService.cancelNotification(_expense.value.id.takeLast(5).toInt())
+                    onPaidExpense()
+                }
                 else _expense.update {
                     it.copy(
                         payments = userRepository.getExpensePayments(_expense.value.id),

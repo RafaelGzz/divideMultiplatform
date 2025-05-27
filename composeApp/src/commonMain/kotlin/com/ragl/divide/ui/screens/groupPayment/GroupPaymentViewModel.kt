@@ -6,7 +6,7 @@ import androidx.compose.runtime.setValue
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.Payment
-import com.ragl.divide.data.models.User
+import com.ragl.divide.data.models.UserInfo
 import com.ragl.divide.data.repositories.GroupRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,22 +19,22 @@ class GroupPaymentViewModel(
     
     private val _payment = MutableStateFlow(Payment())
     val payment = _payment.asStateFlow()
-    
-    var fromUser by mutableStateOf(User())
+
+    var fromUser by mutableStateOf(UserInfo())
         private set
     
-    var toUser by mutableStateOf(User())
+    var toUser by mutableStateOf(UserInfo())
         private set
         
     var groupId by mutableStateOf("")
         private set
     
-    fun setPayment(payment: Payment, groupId: String, members: List<User>) {
+    fun setPayment(payment: Payment, groupId: String, members: List<UserInfo>) {
         screenModelScope.launch {
             _payment.update { payment }
             this@GroupPaymentViewModel.groupId = groupId
-            fromUser = members.firstOrNull { it.uuid == payment.from } ?: User()
-            toUser = members.firstOrNull { it.uuid == payment.to } ?: User()
+            fromUser = members.firstOrNull { it.uuid == payment.from } ?: UserInfo()
+            toUser = members.firstOrNull { it.uuid == payment.to } ?: UserInfo()
         }
     }
     

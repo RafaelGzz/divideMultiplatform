@@ -5,7 +5,7 @@ import androidx.compose.runtime.toMutableStateMap
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.GroupExpense
-import com.ragl.divide.data.models.User
+import com.ragl.divide.data.models.UserInfo
 import com.ragl.divide.data.repositories.GroupRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,15 +18,15 @@ class GroupExpenseViewModel(
     private val _groupExpense = MutableStateFlow(GroupExpense())
     val groupExpense = _groupExpense.asStateFlow()
 
-    private var _sortedDebtors = MutableStateFlow(mutableMapOf<User, Double>())
+    private var _sortedDebtors = MutableStateFlow(mutableMapOf<UserInfo, Double>())
     val sortedDebtors = _sortedDebtors.asStateFlow()
 
-    private var _sortedPaidBy = MutableStateFlow(mutableMapOf<User, Double>())
+    private var _sortedPaidBy = MutableStateFlow(mutableMapOf<UserInfo, Double>())
     val sortedPaidBy = _sortedPaidBy.asStateFlow()
 
-    var members: List<User> = mutableStateListOf()
+    var members: List<UserInfo> = mutableStateListOf()
     
-    fun setGroupExpense(groupExpense: GroupExpense, users: List<User>) {
+    fun setGroupExpense(groupExpense: GroupExpense, users: List<UserInfo>) {
         _groupExpense.update {
             groupExpense
         }

@@ -1,16 +1,21 @@
 package com.ragl.divide.ui.screens.expense
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -21,7 +26,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -51,9 +55,13 @@ import com.ragl.divide.ui.components.DeleteDialog
 import com.ragl.divide.ui.components.TitleRow
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.expenseProperties.ExpensePropertiesScreen
+import com.ragl.divide.ui.utils.Strings
 import com.ragl.divide.ui.utils.formatCurrency
 import com.ragl.divide.ui.utils.formatDate
 import com.ragl.divide.ui.utils.toTwoDecimals
+import compose.icons.FontAwesomeIcons
+import compose.icons.fontawesomeicons.Solid
+import compose.icons.fontawesomeicons.solid.DollarSign
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.added_on
 import dividemultiplatform.composeapp.generated.resources.delete_expense_confirm
@@ -65,6 +73,7 @@ import dividemultiplatform.composeapp.generated.resources.notes
 import dividemultiplatform.composeapp.generated.resources.paid
 import dividemultiplatform.composeapp.generated.resources.total
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 
 class ExpenseScreen(private val expenseId: String) : Screen {
 
@@ -73,6 +82,7 @@ class ExpenseScreen(private val expenseId: String) : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val expenseViewModel = koinScreenModel<ExpenseViewModel>()
         val userViewModel = navigator.koinNavigatorScreenModel<UserViewModel>()
+        val strings = koinInject<Strings>()
 
         // Set the expense in the ViewModel
         LaunchedEffect(Unit) {
@@ -100,7 +110,7 @@ class ExpenseScreen(private val expenseId: String) : Screen {
                             navigator.pop()
                         },
                         onFailure = { error ->
-                            userViewModel.handleError(Exception(error))
+                            userViewModel.handleError(error)
                         }
                     )
                     userViewModel.hideLoading()
@@ -121,10 +131,10 @@ class ExpenseScreen(private val expenseId: String) : Screen {
                             userViewModel.savePayment(expense.id, savedPayment)
                         },
                         onFailure = { error ->
-                            userViewModel.handleError(Exception(error))
+                            userViewModel.handleError(error)
                         },
                         onPaidExpense = {
-                            userViewModel.paidExpense(expense.id)
+                            userViewModel.updatePaidExpense(expense.id, true)
                             navigator.pop()
                             userViewModel.handleSuccess("Felicidades! Terminaste de pagar ${expense.title}!")
                         }
@@ -153,7 +163,7 @@ class ExpenseScreen(private val expenseId: String) : Screen {
                                 userViewModel.deletePayment(expense.id, payment.id)
                             },
                             onFailure = { error ->
-                                userViewModel.handleError(Exception(error))
+                                userViewModel.handleError(error)
                             }
                         )
                     }
@@ -168,7 +178,10 @@ class ExpenseScreen(private val expenseId: String) : Screen {
             onBackClick = { navigator.pop() },
             onEditClick = { navigator.push(ExpensePropertiesScreen(expense.id)) },
             onDeleteClick = { showDeleteDialog = true },
-            onAddPaymentClick = { showAddPaymentDialog = true },
+            onAddPaymentClick = {
+                if (!expense.paid) showAddPaymentDialog = true
+                else userViewModel.handleError(strings.getExpenseAlreadyPaid())
+            },
             onDeletePaymentClick = { payment ->
                 selectedPayment = payment
                 showDeletePaymentDialog = true
@@ -192,6 +205,11 @@ fun ExpenseScreenContent(
     val remainingBalance = remember(expense.amountPaid, expense.amount) {
         (expense.amount - expense.amountPaid).toTwoDecimals()
     }
+
+    val payments = remember(expense.payments) {
+        expense.payments.entries.toList().sortedByDescending { it.value.date }
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -242,27 +260,38 @@ fun ExpenseScreenContent(
                     .padding(16.dp),
                 //verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                if(remainingBalance != expense.amount) {
+                if (expense.paid) {
                     Text(
-                        text = formatCurrency(expense.amount, "es-MX"),
+                        text = stringResource(Res.string.paid),
                         textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.labelLarge.copy(textDecoration = TextDecoration.LineThrough, color = Color.Gray),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Text(
-                        text = formatCurrency(remainingBalance, "es-MX"),
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.headlineLarge.copy(color = MaterialTheme.colorScheme.primary),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                } else {
-                    Text(
-                        text = formatCurrency(expense.amount, "es-MX"),
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.headlineLarge.copy(color = MaterialTheme.colorScheme.primary),
+                        style = MaterialTheme.typography.labelLarge.copy(color = MaterialTheme.colorScheme.primary),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
+                if (remainingBalance != expense.amount && !expense.paid) {
+                Text(
+                    text = formatCurrency(expense.amount, "es-MX"),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        textDecoration = TextDecoration.LineThrough,
+                        color = Color.Gray
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    text = formatCurrency(remainingBalance, "es-MX"),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.headlineLarge.copy(color = MaterialTheme.colorScheme.primary),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            } else {
+                Text(
+                    text = formatCurrency(expense.amount, "es-MX"),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.headlineLarge.copy(color = MaterialTheme.colorScheme.primary),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
                 if (expense.notes != "") {
                     Text(
                         text = "${stringResource(Res.string.notes)}:",
@@ -283,7 +312,7 @@ fun ExpenseScreenContent(
                 Text(
                     text = stringResource(
                         Res.string.added_on,
-                        formatDate(expense.createdAt)
+                        formatDate(expense.createdAt, "dd MMM yyyy, hh:mm a")
                     ),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.bodySmall,
@@ -312,42 +341,64 @@ fun ExpenseScreenContent(
                             )
                         }
                     }
-                    items(
-                        expense.payments.entries.toList().sortedBy { it.value.date },
-                        key = { it.key }) {
+                    itemsIndexed(
+                        payments,
+                        key = { _, entry -> entry.key }) { i, payment ->
                         ListItem(
                             colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.primaryContainer),
                             leadingContent = {
-                                Text(
-                                    stringResource(Res.string.paid),
-                                    style = MaterialTheme.typography.labelLarge.copy(color = MaterialTheme.colorScheme.onSurface)
+
+                                Icon(
+                                    FontAwesomeIcons.Solid.DollarSign,
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    contentDescription = "Money icon",
+                                    modifier = Modifier
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primary)
+                                        .padding(12.dp)
+                                        .size(24.dp)
                                 )
                             },
                             headlineContent = {
                                 Text(
-                                    formatCurrency(it.value.amount, "es-MX")
+                                    formatCurrency(payment.value.amount, "es-MX"),
+                                    style = MaterialTheme.typography.bodyMedium
                                 )
                             },
                             supportingContent = {
                                 Text(
-                                    formatDate(it.value.date),
-                                    style = MaterialTheme.typography.labelSmall
+                                    formatDate(payment.value.date, "MMM dd"),
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = Color.Gray
+                                    )
                                 )
                             },
                             trailingContent = {
                                 IconButton(
-                                    onClick = { onDeletePaymentClick(it.value) },
+                                    onClick = { onDeletePaymentClick(payment.value) },
                                     colors = IconButtonDefaults.iconButtonColors(
-                                        containerColor = MaterialTheme.colorScheme.primary,
-                                        contentColor = MaterialTheme.colorScheme.onPrimary
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        contentColor = MaterialTheme.colorScheme.error
                                     )
                                 ) {
-                                    Icon(Icons.Filled.Delete, contentDescription = "Delete payment")
+                                    Icon(
+                                        Icons.Outlined.Delete,
+                                        contentDescription = "Delete payment"
+                                    )
                                 }
                             },
                             modifier = Modifier
-                                .padding(vertical = 4.dp)
-                                .clip(ShapeDefaults.Medium)
+                                .padding(vertical = 1.dp)
+                                .clip(
+                                    if (i == 0) RoundedCornerShape(
+                                        topStart = 16.dp,
+                                        topEnd = 16.dp,
+                                        bottomEnd = 2.dp,
+                                        bottomStart = 2.dp
+                                    ) else {
+                                        RoundedCornerShape(2.dp)
+                                    }
+                                )
                         )
                     }
                     if (expense.payments.isNotEmpty())
@@ -363,12 +414,20 @@ fun ExpenseScreenContent(
                                 headlineContent = {
                                     Text(
                                         formatCurrency(expense.amountPaid, "es-MX"),
+                                        style = MaterialTheme.typography.bodyMedium,
                                         modifier = Modifier.padding(vertical = 16.dp)
                                     )
                                 },
                                 modifier = Modifier
-                                    .padding(vertical = 4.dp)
-                                    .clip(ShapeDefaults.Medium)
+                                    .padding(vertical = 1.dp)
+                                    .clip(
+                                        RoundedCornerShape(
+                                            topStart = 2.dp,
+                                            topEnd = 2.dp,
+                                            bottomEnd = 16.dp,
+                                            bottomStart = 16.dp
+                                        )
+                                    )
                             )
                         }
                 }

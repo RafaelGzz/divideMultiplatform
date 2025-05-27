@@ -4,12 +4,12 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,15 +18,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Badge
+import androidx.compose.material.BadgedBox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -50,9 +51,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -67,6 +68,8 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.getCategoryIcon
+import com.ragl.divide.ui.components.NetworkImage
+import com.ragl.divide.ui.components.NetworkImageType
 import com.ragl.divide.ui.components.TitleRow
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.addFriends.AddFriendsScreen
@@ -77,29 +80,27 @@ import com.ragl.divide.ui.screens.groupProperties.GroupPropertiesScreen
 import com.ragl.divide.ui.screens.signIn.SignInScreen
 import com.ragl.divide.ui.utils.Header
 import com.ragl.divide.ui.utils.formatCurrency
+import com.ragl.divide.ui.utils.formatDate
 import com.ragl.divide.ui.utils.toTwoDecimals
-import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.coil3.CoilImage
 import compose.icons.FontAwesomeIcons
 import compose.icons.fontawesomeicons.Solid
 import compose.icons.fontawesomeicons.solid.DollarSign
 import compose.icons.fontawesomeicons.solid.User
-import compose.icons.fontawesomeicons.solid.UserPlus
 import compose.icons.fontawesomeicons.solid.Users
 import dividemultiplatform.composeapp.generated.resources.Res
-import dividemultiplatform.composeapp.generated.resources.add
-import dividemultiplatform.composeapp.generated.resources.add_friends
+import dividemultiplatform.composeapp.generated.resources.add_expense
+import dividemultiplatform.composeapp.generated.resources.add_group
 import dividemultiplatform.composeapp.generated.resources.app_name
 import dividemultiplatform.composeapp.generated.resources.bar_item_friends_text
 import dividemultiplatform.composeapp.generated.resources.bar_item_home_text
 import dividemultiplatform.composeapp.generated.resources.bar_item_profile_text
-import dividemultiplatform.composeapp.generated.resources.compose_multiplatform
+import dividemultiplatform.composeapp.generated.resources.paid_expenses
+import dividemultiplatform.composeapp.generated.resources.pending_expenses
 import dividemultiplatform.composeapp.generated.resources.you_have_no_expenses
 import dividemultiplatform.composeapp.generated.resources.you_have_no_groups
 import dividemultiplatform.composeapp.generated.resources.your_expenses
 import dividemultiplatform.composeapp.generated.resources.your_groups
 import org.jetbrains.compose.resources.StringResource
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 class HomeScreen : Screen {
@@ -111,7 +112,6 @@ class HomeScreen : Screen {
         val userViewModel = navigator.koinNavigatorScreenModel<UserViewModel>()
         val state by userViewModel.state.collectAsState()
 
-        // Use remember with state.friends as key to prevent unnecessary recompositions
         val friends = remember(state.friends) {
             state.friends.values.toList().sortedBy { it.name.lowercase() }
         }
@@ -121,6 +121,7 @@ class HomeScreen : Screen {
         val groups = remember(state.groups) {
             state.groups.values.toList().sortedBy { it.name.lowercase() }
         }
+        val friendRequests = state.friendRequestsReceived.values.toList()
 
         val tabs: List<Pair<StringResource, ImageVector>> = listOf(
             Pair(Res.string.bar_item_home_text, FontAwesomeIcons.Solid.DollarSign),
@@ -160,14 +161,39 @@ class HomeScreen : Screen {
                                     onClick = { selectedTabIndex = index },
                                     colors = NavigationBarItemDefaults.colors(
                                         selectedIconColor = MaterialTheme.colorScheme.onPrimary,
-                                        indicatorColor = MaterialTheme.colorScheme.primary
+                                        indicatorColor = MaterialTheme.colorScheme.primary,
                                     ),
                                     icon = {
-                                        Icon(
-                                            pair.second,
-                                            contentDescription = stringResource(pair.first),
-                                            modifier = Modifier.size(24.dp)
-                                        )
+                                        if (pair.first == Res.string.bar_item_friends_text && friendRequests.isNotEmpty()) {
+                                            BadgedBox(
+                                                badge = {
+                                                    Badge {
+                                                        Text(
+                                                            "${friendRequests.size}",
+                                                            style = MaterialTheme.typography.labelSmall,
+                                                            color = Color.White,
+                                                            modifier = Modifier.semantics {
+                                                                contentDescription =
+                                                                    "${friendRequests.size} friend requests"
+                                                            })
+                                                    }
+                                                },
+                                                modifier = Modifier.semantics {
+                                                    contentDescription = "Friend requests"
+                                                }
+                                            ) {
+                                                Icon(
+                                                    pair.second,
+                                                    contentDescription = stringResource(pair.first),
+                                                    modifier = Modifier.size(24.dp)
+                                                )
+                                            }
+                                        } else
+                                            Icon(
+                                                pair.second,
+                                                contentDescription = stringResource(pair.first),
+                                                modifier = Modifier.size(24.dp)
+                                            )
                                     },
                                     label = {
                                         Text(
@@ -177,32 +203,6 @@ class HomeScreen : Screen {
                                     }
                                 )
                             }
-                        }
-                    },
-                    floatingActionButton = {
-                        AnimatedVisibility(
-                            visible = selectedTabIndex == 1,
-                            enter = fadeIn(animationSpec = tween(300)),
-                            exit = ExitTransition.None
-                        ) {
-                            ExtendedFloatingActionButton(
-                                text = { Text(stringResource(Res.string.add_friends)) },
-                                icon = {
-                                    Icon(
-                                        FontAwesomeIcons.Solid.UserPlus,
-                                        contentDescription = stringResource(Res.string.add_friends),
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                },
-                                onClick = {
-                                    navigator.push(AddFriendsScreen())
-                                },
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary,
-                                elevation = FloatingActionButtonDefaults.elevation(0.dp),
-                                modifier = Modifier
-                                    .padding(vertical = 8.dp)
-                            )
                         }
                     }
                 ) { paddingValues ->
@@ -238,7 +238,9 @@ class HomeScreen : Screen {
                                             navigator.push(ExpensePropertiesScreen())
                                         },
                                         onAddGroupClick = {
-                                            navigator.push(GroupPropertiesScreen())
+                                            if (state.friends.isNotEmpty())
+                                                navigator.push(GroupPropertiesScreen())
+                                            else userViewModel.handleError("Add friends to create a group.")
                                         },
                                         onExpenseClick = {
                                             navigator.push(ExpenseScreen(it))
@@ -253,7 +255,17 @@ class HomeScreen : Screen {
                                     enter = fadeIn(animationSpec = tween(500)),
                                     exit = ExitTransition.None
                                 ) {
-                                    FriendsBody(friends = friends)
+                                    FriendsBody(
+                                        friends = friends,
+                                        friendRequestsReceived = friendRequests,
+                                        friendRequestsSent = state.friendRequestsSent.values.toList(),
+                                        onAddFriendClick = {
+                                            navigator.push(AddFriendsScreen())
+                                        },
+                                        onAcceptFriendRequest = userViewModel::acceptFriendRequest,
+                                        onRejectFriendRequest = userViewModel::rejectFriendRequest,
+                                        onCancelFriendRequest = userViewModel::cancelFriendRequest
+                                    )
                                 }
                                 AnimatedVisibility(
                                     visible = selectedTabIndex == 2,
@@ -280,6 +292,7 @@ class HomeScreen : Screen {
         }
     }
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     private fun HomeBody(
         expenses: List<Expense>,
@@ -297,207 +310,290 @@ class HomeScreen : Screen {
             }
             item {
                 TitleRow(
-                    labelStringResource = Res.string.your_expenses,
-                    buttonStringResource = Res.string.add,
-                    onAddClick = onAddExpenseClick,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .padding(bottom = 20.dp)
-                )
-
-                ExpensesRow(
-                    expenses = expenses,
-                    onExpenseClick = { onExpenseClick(it) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                TitleRow(
-                    labelStringResource = Res.string.your_groups,
-                    buttonStringResource = Res.string.add,
+                    Res.string.add_group,
+                    Res.string.your_groups,
                     onAddClick = onAddGroupClick,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 20.dp, horizontal = 16.dp)
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
                 )
             }
-            if (groups.isEmpty())
+
+            if (groups.isEmpty()) {
                 item {
-                    Text(
-                        text = stringResource(Res.string.you_have_no_groups),
-                        style = MaterialTheme.typography.labelSmall,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    EmptyStateMessage(message = stringResource(Res.string.you_have_no_groups))
                 }
-            else items(groups, key = { it.id }) { group ->
-                Row(
-                    modifier = Modifier.Companion
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .padding(bottom = 8.dp)
-                        .clip(ShapeDefaults.Medium)
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                        .clickable { onGroupClick(group.id) },
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (group.image.isNotBlank()) {
-                        CoilImage(
-                            imageModel = { group.image },
-                            imageOptions = ImageOptions(
-                                contentScale = ContentScale.Crop
-                            ),
-                            loading = {
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                                }
-                            },
-                            failure = {
-                                Image(
-                                    painter = painterResource(resource = Res.drawable.compose_multiplatform),
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.Companion
-                                        .size(100.dp)
-                                        .clip(
-                                            RoundedCornerShape(
-                                                topStart = 16.dp,
-                                                bottomStart = 16.dp
-                                            )
-                                        )
-                                        .background(MaterialTheme.colorScheme.primary)
-                                )
-                            },
-                            modifier = Modifier.Companion
-                                .size(100.dp)
-                                .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
-                        )
-                    } else {
-                        Image(
-                            painter = painterResource(resource = Res.drawable.compose_multiplatform),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.Companion
-                                .size(100.dp)
-                                .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
-                                .background(MaterialTheme.colorScheme.primary)
+            } else
+                item {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(vertical = 16.dp)
+                    ) {
+                        item {
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                        items(groups) { group ->
+                            GroupCard(
+                                group = group,
+                                modifier = Modifier.size(140.dp).clip(ShapeDefaults.Medium)
+                            ) { onGroupClick(group.id) }
+                        }
+                        item {
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                    }
+                }
+
+            item {
+                TitleRow(
+                    Res.string.add_expense,
+                    Res.string.your_expenses,
+                    onAddClick = onAddExpenseClick,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+
+            if (expenses.isEmpty()) {
+                item {
+                    EmptyStateMessage(message = stringResource(Res.string.you_have_no_expenses))
+                }
+            } else {
+                val (paid, unpaid) = expenses.partition { it.paid }
+                if (unpaid.isNotEmpty()) {
+                    item {
+                        Text(
+                            stringResource(Res.string.pending_expenses),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp).padding(top = 16.dp, bottom = 4.dp)
                         )
                     }
-                    Text(
-                        text = group.name,
-                        style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onPrimaryContainer),
-                        modifier = Modifier.Companion
-                            .padding(16.dp)
-                            .fillMaxWidth()
-                    )
+                    itemsIndexed(unpaid, key = { _, e -> e.id }) { i, expense ->
+                        ExpenseCard(
+                            expense = expense,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 1.dp)
+                                .clip(
+                                    if (i == 0) RoundedCornerShape(
+                                        topStart = 16.dp,
+                                        topEnd = 16.dp,
+                                        bottomEnd = 2.dp,
+                                        bottomStart = 2.dp
+                                    ) else {
+                                        if (i == unpaid.lastIndex)
+                                            RoundedCornerShape(
+                                                topStart = 2.dp,
+                                                topEnd = 2.dp,
+                                                bottomEnd = 16.dp,
+                                                bottomStart = 16.dp
+                                            )
+                                        else RoundedCornerShape(2.dp)
+                                    }
+                                )
+                                .background(MaterialTheme.colorScheme.primaryContainer)
+                                .clickable {
+                                    onExpenseClick(expense.id)
+                                }
+                        )
+                    }
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+                if (paid.isNotEmpty()) {
+                    item {
+                        Text(
+                            stringResource(Res.string.paid_expenses),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                        )
+                    }
+                    itemsIndexed(paid, key = { _, e -> e.id }) { i, expense ->
+                        ExpenseCard(
+                            expense = expense,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 1.dp)
+                                .clip(
+                                    if (i == 0) RoundedCornerShape(
+                                        topStart = 16.dp,
+                                        topEnd = 16.dp,
+                                        bottomEnd = 2.dp,
+                                        bottomStart = 2.dp
+                                    ) else {
+                                        if (i == paid.lastIndex)
+                                            RoundedCornerShape(
+                                                topStart = 2.dp,
+                                                topEnd = 2.dp,
+                                                bottomEnd = 16.dp,
+                                                bottomStart = 16.dp
+                                            )
+                                        else RoundedCornerShape(2.dp)
+                                    }
+                                )
+                                .background(MaterialTheme.colorScheme.primaryContainer)
+                                .clickable {
+                                    onExpenseClick(expense.id)
+                                }
+                        )
+                    }
                 }
             }
+            item {
+                Spacer(modifier = Modifier.height(20.dp))
+            }
         }
-
     }
 
     @Composable
-    private fun ExpensesRow(
+    private fun GroupCard(
+        group: Group,
         modifier: Modifier = Modifier,
-        expenses: List<Expense>,
-        onExpenseClick: (String) -> Unit
+        onGroupClick: () -> Unit
     ) {
-        val unpaidExpenses = expenses.filter { !it.paid }
+        Box(
+            modifier = modifier
+                .background(MaterialTheme.colorScheme.primaryContainer)
+                .clickable { onGroupClick() }
+        ) {
+            // Imagen de fondo
+            NetworkImage(
+                imageUrl = group.image,
+                modifier = Modifier.fillMaxSize(),
+                type = NetworkImageType.GROUP
+            )
 
-        if (unpaidExpenses.isEmpty()) {
-            EmptyStateMessage(message = stringResource(Res.string.you_have_no_expenses))
-        } else {
-            LazyRow(
-                modifier = modifier,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                item {
-                    Spacer(Modifier.width(8.dp))
-                }
-                items(unpaidExpenses, key = { it.id }) { expense ->
-                    ExpenseCard(expense = expense, onClick = { onExpenseClick(expense.id) })
-                }
-                item {
-                    Spacer(Modifier.width(8.dp))
-                }
-            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.5f)
+                            ),
+                            startY = 80f,
+                        )
+                    )
+            )
+
+            Text(
+                text = group.name,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    textAlign = TextAlign.Center,
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold
+                ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 12.dp)
+            )
         }
     }
 
     @Composable
-    private fun ExpenseCard(expense: Expense, onClick: () -> Unit) {
-
+    private fun ExpenseCard(
+        expense: Expense,
+        modifier: Modifier = Modifier
+    ) {
         val remainingBalance = remember(expense.amountPaid, expense.amount) {
             (expense.amount - expense.amountPaid).toTwoDecimals()
         }
-        Row(
-            modifier = Modifier
-                .height(80.dp)
-                .clip(ShapeDefaults.Medium)
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .clickable(onClick = onClick)
-                .semantics { contentDescription = "Expense: ${expense.title}" },
-            verticalAlignment = Alignment.CenterVertically,
+
+//        val percentagePaid = remember(expense.amountPaid, expense.amount) {
+//            if (expense.amount > 0) {
+//                (expense.amountPaid / expense.amount * 100).toInt()
+//            } else {
+//                0
+//            }
+//        }
+
+        val paid = expense.paid
+
+        Column(
+            modifier = modifier
+                .semantics { contentDescription = "Expense: ${expense.title}" }
+                .padding(16.dp)
         ) {
-            Icon(
-                getCategoryIcon(expense.category),
-                tint = MaterialTheme.colorScheme.primary,
-                contentDescription = expense.category.toString(),
-                modifier = Modifier
-                    .padding(horizontal = 12.dp)
-                    .size(24.dp)
-            )
-            Column(
-                modifier = Modifier
-                    .padding(end = 16.dp)
-                    .widthIn(max = 120.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = expense.title,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        fontWeight = FontWeight.Normal
-                    ),
-                    softWrap = true,
-                    overflow = TextOverflow.Ellipsis,
-                    maxLines = 1
+                Icon(
+                    getCategoryIcon(expense.category),
+                    tint = if (paid) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.onPrimary,
+                    contentDescription = expense.category.toString(),
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(if (paid) Color.Gray else MaterialTheme.colorScheme.primary)
+                        .padding(12.dp)
+                        .size(24.dp)
                 )
-                Spacer(modifier = Modifier.height(2.dp))
-                if (expense.amountPaid != 0.0) {
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.Start
+                ) {
                     Text(
-                        text = formatCurrency(expense.amount, "es-MX"),
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            textDecoration = TextDecoration.LineThrough,
+                        text = expense.title,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = if (paid) Color.Gray else MaterialTheme.colorScheme.onPrimaryContainer,
+                        ),
+                        softWrap = true,
+                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 1,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    Text(
+                        text = formatDate(expense.createdAt, "MMM dd"),
+                        style = MaterialTheme.typography.bodySmall.copy(
                             color = Color.Gray
-                        ),
-                        softWrap = true,
-                        overflow = TextOverflow.Ellipsis,
-                        maxLines = 1
+                        )
                     )
-                    Text(
-                        text = formatCurrency(remainingBalance, "es-MX"),
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Normal
-                        ),
-                        softWrap = true,
-                        overflow = TextOverflow.Ellipsis,
-                        maxLines = 1
-                    )
-                } else {
-                    Text(
-                        text = formatCurrency(expense.amount, "es-MX"),
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Normal
-                        ),
-                        softWrap = true,
-                        overflow = TextOverflow.Ellipsis,
-                        maxLines = 1
-                    )
+//                        Text(
+//                            text = stringResource(Res.string.s_paid, "$percentagePaid%"),
+//                            style = MaterialTheme.typography.bodySmall.copy(
+//                                color = when {
+//                                    paid -> Color.Gray
+//                                    percentagePaid == 100 -> MaterialTheme.colorScheme.primary
+//                                    percentagePaid >= 50 -> Color(0xFF22BB33) // Verde
+//                                    percentagePaid >= 25 -> Color(0xFFFFAA00) // Ámbar
+//                                    else -> Color(0xFFFF6666) // Rojo claro
+//                                }
+//                            ),
+//                        )
+
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    if (expense.amountPaid != 0.0 && !paid) {
+                        Text(
+                            text = formatCurrency(remainingBalance, "es-MX"),
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = formatCurrency(expense.amount, "es-MX"),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                textDecoration = TextDecoration.LineThrough,
+                                color = Color.Gray
+                            )
+                        )
+                    } else
+                        Text(
+                            text = formatCurrency(expense.amount, "es-MX"),
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = if (paid) Color.Gray else MaterialTheme.colorScheme.primary,
+                            )
+                        )
                 }
             }
         }

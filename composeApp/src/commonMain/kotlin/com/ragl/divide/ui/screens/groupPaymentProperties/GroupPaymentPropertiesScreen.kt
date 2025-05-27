@@ -45,7 +45,7 @@ import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ragl.divide.data.models.Payment
-import com.ragl.divide.data.models.User
+import com.ragl.divide.data.models.UserInfo
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.utils.DivideTextField
 import dividemultiplatform.composeapp.generated.resources.Res
@@ -61,7 +61,6 @@ import org.jetbrains.compose.resources.stringResource
 
 class GroupPaymentPropertiesScreen(
     private val groupId: String,
-    private val members: List<User>,
     private val paymentId: String? = null
 ) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -76,18 +75,19 @@ class GroupPaymentPropertiesScreen(
             val uuid = userViewModel.getUUID()
             val payment =
                 paymentId?.let { userViewModel.getGroupPaymentById(groupId, it) } ?: Payment()
+            val members = userViewModel.getGroupMembers(groupId)
             vm.setGroupAndPayment(group, uuid, members, payment)
         }
 
         var fromMenuExpanded by remember { mutableStateOf(false) }
         var toMenuExpanded by remember { mutableStateOf(false) }
 
-        val sortedMembers = remember {
-            members.sortedWith(compareBy({ it.name.lowercase() }))
+        val sortedMembers = remember(vm.members) {
+            vm.members.sortedWith(compareBy { it.name.lowercase() })
         }
 
         LaunchedEffect(vm.from) {
-            vm.updateTo(sortedMembers.firstOrNull { it.uuid != vm.from.uuid } ?: User())
+            vm.updateTo(sortedMembers.firstOrNull { it.uuid != vm.from.uuid } ?: UserInfo())
         }
 
         Scaffold(
@@ -126,13 +126,14 @@ class GroupPaymentPropertiesScreen(
                     prefix = { Text(text = "$", style = MaterialTheme.typography.bodyMedium) },
                     label = stringResource(Res.string.amount),
                     error = vm.amountError,
+                    validate = vm::validateAmount,
                     onValueChange = { input ->
                         if (input.isEmpty()) vm.updateAmount("") else {
                             val formatted = input.replace(",", ".")
                             val parsed = formatted.toDoubleOrNull()
                             parsed?.let {
                                 val decimalPart = formatted.substringAfter(".", "")
-                                if (decimalPart.length <= 2 && parsed <= 999999999.99) {
+                                if (decimalPart.length <= 2 && parsed <= 999999.99) {
                                     vm.updateAmount(input)
                                 }
                             }
@@ -267,7 +268,7 @@ class GroupPaymentPropertiesScreen(
                                         navigator.pop()
                                     },
                                     onError = {
-                                        userViewModel.handleError(Exception(it))
+                                        userViewModel.handleError(it)
                                     }
                                 )
                                 userViewModel.hideLoading()

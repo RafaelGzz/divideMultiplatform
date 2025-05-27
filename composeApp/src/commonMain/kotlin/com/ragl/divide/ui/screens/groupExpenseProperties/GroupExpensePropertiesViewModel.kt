@@ -9,7 +9,7 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.GroupExpense
 import com.ragl.divide.data.models.SplitMethod
-import com.ragl.divide.data.models.User
+import com.ragl.divide.data.models.UserInfo
 import com.ragl.divide.data.repositories.GroupRepository
 import com.ragl.divide.ui.utils.Strings
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,7 +39,7 @@ class GroupExpensePropertiesViewModel(
         private set
     var amountError by mutableStateOf("")
         private set
-    var payer by mutableStateOf(User())
+    var payer by mutableStateOf(UserInfo())
         private set
     var splitMethod by mutableStateOf(SplitMethod.EQUALLY)
         private set
@@ -52,6 +52,9 @@ class GroupExpensePropertiesViewModel(
     var amountPerPerson by mutableDoubleStateOf(0.0)
         private set
 
+    var members by mutableStateOf<List<UserInfo>>(listOf())
+        private set
+
     fun updateTitle(title: String) {
         this.title = title
     }
@@ -60,7 +63,7 @@ class GroupExpensePropertiesViewModel(
         this.amount = amount
     }
 
-    fun updatePayer(user: User) {
+    fun updatePayer(user: UserInfo) {
         payer = user
     }
 
@@ -84,13 +87,18 @@ class GroupExpensePropertiesViewModel(
         this.selectedMembers = selectedMembers
     }
 
+    private fun updateMembers(members: List<UserInfo>) {
+        this.members = members
+    }
+
     fun setGroupAndExpense(
         group: Group,
         userId: String,
-        members: List<User>,
+        members: List<UserInfo>,
         expense: GroupExpense
     ) {
         screenModelScope.launch {
+            updateMembers(members)
             if (expense.id.isNotEmpty()) {
                 isUpdate.value = true
                 _expense.update { expense }

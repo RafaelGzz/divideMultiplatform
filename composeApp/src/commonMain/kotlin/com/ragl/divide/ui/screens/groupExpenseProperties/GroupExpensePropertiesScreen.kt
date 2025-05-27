@@ -58,7 +58,6 @@ import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ragl.divide.data.models.SplitMethod
-import com.ragl.divide.data.models.User
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.utils.DivideTextField
 import com.ragl.divide.ui.utils.FriendItem
@@ -94,7 +93,6 @@ import org.koin.compose.koinInject
 
 class GroupExpensePropertiesScreen(
     private val groupId: String,
-    private val members: List<User>,
     private val expenseId: String? = null
 ) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -108,16 +106,16 @@ class GroupExpensePropertiesScreen(
         LaunchedEffect(groupId, expenseId) {
             val group = userViewModel.getGroupById(groupId)
             val uuid = userViewModel.getUUID()
+            val members = userViewModel.getGroupMembers(groupId)
             val expense = userViewModel.getGroupExpenseById(groupId, expenseId)
             vm.setGroupAndExpense(group, uuid, members, expense)
         }
 
-        val userId = vm.userId
         var paidByMenuExpanded by remember { mutableStateOf(false) }
         var methodMenuExpanded by remember { mutableStateOf(false) }
 
-        val sortedMembers = remember {
-            members.sortedWith(compareBy({ it.uuid != userId }, { it.name.lowercase() }))
+        val sortedMembers = remember(vm.members) {
+            vm.members.sortedWith(compareBy({ it.uuid != vm.userId }, { it.name.lowercase() }))
         }
 
         Box(
@@ -163,6 +161,7 @@ class GroupExpensePropertiesScreen(
                         input = vm.title,
                         error = vm.titleError,
                         onValueChange = vm::updateTitle,
+                        validate = vm::validateTitle,
                         modifier = Modifier
                             .padding(horizontal = 16.dp)
                             .padding(bottom = 12.dp)
@@ -170,9 +169,15 @@ class GroupExpensePropertiesScreen(
                     DivideTextField(
                         label = stringResource(Res.string.amount),
                         keyboardType = KeyboardType.Number,
-                        prefix = { Text(text = stringResource(Res.string.dollar_sign), style = MaterialTheme.typography.bodyMedium) },
+                        prefix = {
+                            Text(
+                                text = stringResource(Res.string.dollar_sign),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        },
                         input = vm.amount,
                         error = vm.amountError,
+                        validate = vm::validateAmount,
                         onValueChange = { input ->
                             validateQuantity(input, vm::updateAmount)
                             vm.updateAmountPerPerson(
@@ -338,7 +343,10 @@ class GroupExpensePropertiesScreen(
                                         Text(
                                             stringResource(
                                                 Res.string.x_per_person,
-                                                formatCurrency(vm.amountPerPerson, stringResource(Res.string.currency_es_mx))
+                                                formatCurrency(
+                                                    vm.amountPerPerson,
+                                                    stringResource(Res.string.currency_es_mx)
+                                                )
                                             ),
                                             style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.primary)
                                         )
@@ -370,7 +378,9 @@ class GroupExpensePropertiesScreen(
                                             Text(
                                                 stringResource(
                                                     Res.string.remaining_x,
-                                                    remainingPercentage.toString() + stringResource(Res.string.percent_sign)
+                                                    remainingPercentage.toString() + stringResource(
+                                                        Res.string.percent_sign
+                                                    )
                                                 ),
                                                 style = MaterialTheme.typography.bodySmall
                                             )
@@ -486,7 +496,7 @@ class GroupExpensePropertiesScreen(
                                                     singleLine = true,
                                                     cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                                                     modifier = Modifier
-                                                        .width(60.dp)
+                                                        .width(80.dp)
                                                         .height(40.dp)
                                                         .clip(ShapeDefaults.Medium)
                                                         .background(MaterialTheme.colorScheme.primaryContainer)
@@ -530,7 +540,7 @@ class GroupExpensePropertiesScreen(
                                                     singleLine = true,
                                                     cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                                                     modifier = Modifier
-                                                        .width(60.dp)
+                                                        .width(80.dp)
                                                         .height(40.dp)
                                                         .clip(ShapeDefaults.Medium)
                                                         .background(MaterialTheme.colorScheme.primaryContainer)
@@ -547,32 +557,32 @@ class GroupExpensePropertiesScreen(
                                         when (vm.splitMethod) {
                                             SplitMethod.EQUALLY -> {
                                                 if (vm.selectedMembers.size < 2) {
-                                                    userViewModel.handleError(Exception(strings.getTwoSelected()))
+                                                    userViewModel.handleError(strings.getTwoSelected())
                                                     return@Button
                                                 }
                                             }
 
                                             SplitMethod.PERCENTAGES -> {
                                                 if (vm.percentages.values.sum() != 100) {
-                                                    userViewModel.handleError(Exception(strings.getPercentagesSum()))
+                                                    userViewModel.handleError(strings.getPercentagesSum())
                                                     return@Button
                                                 } else if (vm.percentages.values.any { it == 100 }) {
-                                                    userViewModel.handleError(Exception(strings.getTwoMustPay()))
+                                                    userViewModel.handleError(strings.getTwoMustPay())
                                                     return@Button
                                                 }
                                             }
 
                                             SplitMethod.CUSTOM -> {
                                                 if (vm.quantities.values.any { it == vm.amount.toDouble() }) {
-                                                    userViewModel.handleError(Exception(strings.getTwoMustPay()))
+                                                    userViewModel.handleError(strings.getTwoMustPay())
                                                     return@Button
                                                 } else if (vm.quantities.values.sum() != (vm.amount.toDouble())) {
                                                     userViewModel.handleError(
-                                                        Exception(
-                                                            strings.getSumMustBe(
-                                                                vm.amount
-                                                            )
+
+                                                        strings.getSumMustBe(
+                                                            vm.amount
                                                         )
+
                                                     )
                                                     return@Button
                                                 }
@@ -587,7 +597,7 @@ class GroupExpensePropertiesScreen(
                                                 )
                                                 navigator.pop()
                                             },
-                                            onError = { userViewModel.handleError(Exception(it)) }
+                                            onError = { userViewModel.handleError(it) }
                                         )
                                         userViewModel.hideLoading()
                                     }

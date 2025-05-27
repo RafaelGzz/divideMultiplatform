@@ -46,7 +46,7 @@ class SignUpViewModel(
         return validateEmail().and(validateUsername().and(validatePassword().and(validatePasswordConfirm())))
     }
 
-    private fun validateEmail(): Boolean {
+    fun validateEmail(): Boolean {
         val emailPattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+"
         return if (email.isEmpty()) {
             emailError = strings.getEmailAddressRequired()
@@ -60,7 +60,7 @@ class SignUpViewModel(
         }
     }
 
-    private fun validateUsername(): Boolean {
+    fun validateUsername(): Boolean {
         val usernamePattern = "(?!.*[.]{2,})^[a-zA-Z0-9.\\-_]{3,20}\$"
 
         return if (username.isEmpty()) {
@@ -75,7 +75,7 @@ class SignUpViewModel(
         }
     }
 
-    private fun validatePassword(): Boolean {
+    fun validatePassword(): Boolean {
         val passwordPattern = "^(?=.*\\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z\\d]).{8,}\$"
         if (password.isBlank()) {
             passwordError = strings.getPasswordRequired()
@@ -95,7 +95,7 @@ class SignUpViewModel(
         return true
     }
 
-    private fun validatePasswordConfirm(): Boolean {
+    fun validatePasswordConfirm(): Boolean {
         passwordConfirmError = if (passwordConfirm.isNotBlank() && passwordConfirm == password) {
             ""
         } else {
