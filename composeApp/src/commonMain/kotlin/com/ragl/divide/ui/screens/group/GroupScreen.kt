@@ -1,40 +1,31 @@
 package com.ragl.divide.ui.screens.group
 
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -42,55 +33,31 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.fastForEachIndexed
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinNavigatorScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ragl.divide.data.models.Group
-import com.ragl.divide.data.models.GroupExpense
-import com.ragl.divide.data.models.Payment
-import com.ragl.divide.data.models.UserInfo
-import com.ragl.divide.data.models.getCategoryIcon
+import com.ragl.divide.data.models.GroupEvent
 import com.ragl.divide.ui.components.NetworkImage
 import com.ragl.divide.ui.components.NetworkImageType
+import com.ragl.divide.ui.components.TitleRow
 import com.ragl.divide.ui.screens.UserViewModel
-import com.ragl.divide.ui.screens.groupExpense.GroupExpenseScreen
-import com.ragl.divide.ui.screens.groupExpenseProperties.GroupExpensePropertiesScreen
-import com.ragl.divide.ui.screens.groupPayment.GroupPaymentScreen
-import com.ragl.divide.ui.screens.groupPaymentProperties.GroupPaymentPropertiesScreen
+import com.ragl.divide.ui.screens.event.EventScreen
+import com.ragl.divide.ui.screens.eventProperties.EventPropertiesScreen
 import com.ragl.divide.ui.screens.groupProperties.GroupPropertiesScreen
-import com.ragl.divide.ui.utils.formatCurrency
 import com.ragl.divide.ui.utils.formatDate
-import compose.icons.FontAwesomeIcons
-import compose.icons.fontawesomeicons.Solid
-import compose.icons.fontawesomeicons.solid.DollarSign
 import dividemultiplatform.composeapp.generated.resources.Res
-import dividemultiplatform.composeapp.generated.resources.add_expense
-import dividemultiplatform.composeapp.generated.resources.group_no_expenses
-import dividemultiplatform.composeapp.generated.resources.make_a_payment
-import dividemultiplatform.composeapp.generated.resources.paid_by
-import dividemultiplatform.composeapp.generated.resources.pending
-import dividemultiplatform.composeapp.generated.resources.settled
-import dividemultiplatform.composeapp.generated.resources.x_paid_y
-import org.jetbrains.compose.resources.stringResource
+import dividemultiplatform.composeapp.generated.resources.add_event
+import dividemultiplatform.composeapp.generated.resources.events
 
 class GroupScreen(
     private val groupId: String
@@ -117,58 +84,25 @@ class GroupScreen(
                 group = groupState,
                 onBackClick = { navigator.pop() },
                 onEditClick = { navigator.push(GroupPropertiesScreen(groupId)) })
-        }, floatingActionButton = {
-            CustomFloatingActionButton(
-                fabIcon = Icons.Filled.Add,
-                onAddExpenseClick = {
-                    navigator.push(GroupExpensePropertiesScreen(groupId))
-                },
-                onAddPaymentClick = {
-                    navigator.push(GroupPaymentPropertiesScreen(groupId))
-                },
-            )
         }) { paddingValues ->
 
             Column(
                 modifier = Modifier.padding(paddingValues).padding(horizontal = 16.dp)
                     .fillMaxSize().background(MaterialTheme.colorScheme.background)
             ) {
-                if (!hasExpensesOrPayments) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = stringResource(Res.string.group_no_expenses),
-                            style = MaterialTheme.typography.labelSmall,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
+                EventsSection(
+                    events = viewModel.events,
+                    onEventClick = { eventId ->
+                        navigator.push(EventScreen(groupId, eventId))
+                    },
+                    onAddEventClick = {
+                        navigator.push(
+                            EventPropertiesScreen(
+                                groupId
+                            )
                         )
-
                     }
-                } else {
-                    ExpenseListView(
-                        expensesAndPayments = viewModel.expensesAndPayments,
-                        getPaidByNames = viewModel::getPaidByNames,
-                        onExpenseClick = {
-                            navigator.push(
-                                GroupExpenseScreen(
-                                    groupId, it
-                                )
-                            )
-                        },
-                        onPaymentClick = { paymentId ->
-                            navigator.push(
-                                GroupPaymentScreen(
-                                    groupId, paymentId
-                                )
-                            )
-                        },
-                        members = viewModel.members,
-                        currentDebts = groupState.currentDebts,
-                        currentUserId = uuid,
-                    )
-                }
+                )
             }
         }
     }
@@ -224,394 +158,108 @@ private fun GroupImageAndTitleRow(group: Group, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun CustomFloatingActionButton(
-    onFabClick: () -> Unit = {},
-    fabIcon: ImageVector,
-    onAddExpenseClick: () -> Unit,
-    onAddPaymentClick: () -> Unit,
-) {
-    var isExpanded by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (isExpanded) 1f else 0f,
-        animationSpec = spring(dampingRatio = 2f),
-        label = "scale"
-    )
-    val rotation by animateFloatAsState(
-        targetValue = if (isExpanded) 315f else 0f,
-        animationSpec = spring(dampingRatio = 3f),
-        label = "rotation"
-    )
-
-    Column {
-        // ExpandedBox over the FAB
-        Column(
-            modifier = Modifier.offset(
-                x = animateDpAsState(
-                    targetValue = if (isExpanded) 0.dp else 60.dp,
-                    animationSpec = spring(dampingRatio = 2f),
-                    label = "x"
-                ).value, y = animateDpAsState(
-                    targetValue = if (isExpanded) 0.dp else 100.dp,
-                    animationSpec = spring(dampingRatio = 2f),
-                    label = "y"
-                ).value
-            ).scale(scale)
-        ) {
-            // Customize the content of the expanded box as needed
-            Button(
-                onClick = { onAddExpenseClick() },
-                shape = ShapeDefaults.Medium,
-                contentPadding = PaddingValues(horizontal = 12.dp),
-                modifier = Modifier.height(60.dp).align(Alignment.End)
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(Res.string.add_expense),
-                    maxLines = 1,
-                    softWrap = true,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(
-                onClick = { onAddPaymentClick() },
-                shape = ShapeDefaults.Medium,
-                contentPadding = PaddingValues(horizontal = 12.dp),
-                modifier = Modifier.height(60.dp).align(Alignment.End)
-            ) {
-                Icon(
-                    FontAwesomeIcons.Solid.DollarSign,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(Res.string.make_a_payment),
-                    maxLines = 1,
-                    softWrap = true,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        FloatingActionButton(
-            onClick = {
-                onFabClick()
-                isExpanded = !isExpanded
-            },
-            shape = ShapeDefaults.Medium,
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.align(Alignment.End)
-        ) {
-            Icon(
-                imageVector = fabIcon,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp).rotate(rotation)
-            )
-        }
-    }
-}
-
-@Composable
-private fun ExpenseListView(
-    modifier: Modifier = Modifier,
-    expensesAndPayments: List<Any>,
-    getPaidByNames: (List<String>) -> String,
-    members: List<UserInfo>,
-    onExpenseClick: (String) -> Unit,
-    onPaymentClick: (String) -> Unit,
-    currentDebts: Map<String, Map<String, Double>>,
-    currentUserId: String,
-) {
-    val expensesByMonth = expensesAndPayments.groupBy {
-        when (it) {
-            is GroupExpense -> {
-                formatDate(it.createdAt, "MMMM yyyy")
-            }
-
-            is Payment -> {
-                formatDate(it.date, "MMMM yyyy")
-            }
-
-            else -> ""
-        }
-    }
-    LazyColumn(
-        modifier = modifier
-    ) {
-        item {
-            CurrentDebtsView(
-                currentDebts = currentDebts,
-                currentUserId = currentUserId,
-                members = members,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-        }
-        items(expensesByMonth.keys.toList().sorted()) { month ->
-            MonthSection(
-                month = month,
-                expensesAndPayments = expensesByMonth[month] ?: emptyList(),
-                getPaidByNames = getPaidByNames,
-                members = members,
-                onExpenseClick = onExpenseClick,
-                onPaymentClick = onPaymentClick
-            )
-        }
-        item {
-            Spacer(Modifier.height(70.dp))
-        }
-    }
-}
-
-@Composable
-private fun MonthSection(
-    month: String,
-    expensesAndPayments: List<Any>,
-    getPaidByNames: (List<String>) -> String,
-    members: List<UserInfo>,
-    onExpenseClick: (String) -> Unit,
-    onPaymentClick: (String) -> Unit
+private fun EventsSection(
+    events: List<GroupEvent>,
+    onEventClick: (String) -> Unit,
+    onAddEventClick: () -> Unit
 ) {
     Column {
-        Text(
-            text = month,
-            style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.padding(vertical = 8.dp)
+        TitleRow(
+            buttonStringResource = Res.string.add_event,
+            labelStringResource = Res.string.events,
+            onAddClick = onAddEventClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 20.dp, bottom = 10.dp)
         )
-        Column(
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            expensesAndPayments.sortedByDescending {
-                when (it) {
-                    is GroupExpense -> it.createdAt
-                    is Payment -> it.date
-                    else -> null
-                }
-            }.fastForEachIndexed { i, item ->
 
-                GroupExpenseItem(
-                    item = item,
-                    getPaidByNames = getPaidByNames,
-                    members = members,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(
-                            if (i == 0) RoundedCornerShape(
-                                topStart = 16.dp,
-                                topEnd = 16.dp,
-                                bottomEnd = 2.dp,
-                                bottomStart = 2.dp
-                            ) else {
-                                if (i == expensesAndPayments.lastIndex)
-                                    RoundedCornerShape(
-                                        topStart = 2.dp,
-                                        topEnd = 2.dp,
-                                        bottomEnd = 16.dp,
-                                        bottomStart = 16.dp
-                                    )
-                                else RoundedCornerShape(2.dp)
-                            }
-
-                        )
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                        .clickable {
-                            when (item) {
-                                is GroupExpense -> onExpenseClick(item.id)
-                                is Payment -> onPaymentClick(item.id)
-                            }
-                        },
+        if (events.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No hay eventos creados",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+        } else {
+            LazyVerticalGrid(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                columns = GridCells.Fixed(2),
+            ) {
+                items(events) { event ->
+                    EventItem(
+                        event = event,
+                        onClick = { onEventClick(event.id) },
+                        modifier = Modifier.padding(4.dp)
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun GroupExpenseItem(
-    item: Any,
-    getPaidByNames: (List<String>) -> String,
-    members: List<UserInfo>,
+private fun EventItem(
+    event: GroupEvent,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.primary,
+    contentColor: Color = MaterialTheme.colorScheme.onPrimary
 ) {
-    val formattedDate = formatDate(
-        if (item is GroupExpense) item.createdAt else (item as Payment).date,
-        "MMM\ndd"
-    )
-
-    val isSettled = when (item) {
-        is GroupExpense -> item.settled
-        is Payment -> item.settled
-        else -> false
-    }
-
-    Row(
-        modifier = modifier.padding(vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            formattedDate, style = MaterialTheme.typography.bodySmall.copy(
-                color = MaterialTheme.colorScheme.onPrimaryContainer, textAlign = TextAlign.Center
-            ), modifier = Modifier.padding(start = 16.dp)
-        )
-
-        Icon(
-            if (item is GroupExpense) getCategoryIcon(item.category) else FontAwesomeIcons.Solid.DollarSign,
-            tint = MaterialTheme.colorScheme.primary,
-            contentDescription = null,
-            modifier = Modifier.padding(start = 12.dp).size(24.dp)
-        )
-
-        Column(
-            modifier = Modifier.fillMaxHeight().weight(1f).padding(horizontal = 12.dp),
-            verticalArrangement = Arrangement.Center
-        ) {
-            when (item) {
-                is GroupExpense -> {
-                    Text(
-                        text = item.title,
-                        maxLines = 2,
-                        softWrap = true,
-                        overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        ),
-                    )
-
-                    Text(
-                        text = stringResource(Res.string.paid_by) + " " + getPaidByNames(
-                            item.payers.keys.toList()
-                        ),
-                        maxLines = 1,
-                        softWrap = true,
-                        overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = Color.Gray,
-                        ),
-                    )
-                }
-
-                is Payment -> {
-                    Text(
-                        stringResource(
-                            Res.string.x_paid_y,
-                            members.find { it.uuid == item.from }?.name ?: "",
-                            members.find { it.uuid == item.to }?.name ?: ""
-                        ),
-                        //"${members.find { it.uuid == expenseOrPayment.from }?.name} paid ${members.find { it.uuid == expenseOrPayment.to }?.name}",
-                        softWrap = true,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        ),
-                    )
-                }
-            }
-        }
-
-        Column(
-            horizontalAlignment = Alignment.End,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(end = 12.dp)
-        ) {
-            Text(
-                text = formatCurrency(
-                    when (item) {
-                        is GroupExpense -> item.amount
-                        is Payment -> item.amount
-                        else -> 0.0
-                    }, "es-MX"
-                ), style = MaterialTheme.typography.bodyMedium.copy(
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    fontWeight = FontWeight.Normal
-                ), softWrap = true, overflow = TextOverflow.Ellipsis, maxLines = 1
-            )
-            if (item is GroupExpense) {
-                if (isSettled) {
-                    Text(
-                        text = stringResource(Res.string.settled),
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                            fontWeight = FontWeight.Medium
-                        ),
-                        modifier = Modifier.padding(top = 4.dp).background(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            shape = ShapeDefaults.Small
-                        ).padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                } else {
-                    Text(
-                        text = stringResource(Res.string.pending),
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
-                            fontWeight = FontWeight.Medium
-                        ),
-                        modifier = Modifier.padding(top = 4.dp).background(
-                            MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
-                            shape = ShapeDefaults.Small
-                        ).padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CurrentDebtsView(
-    currentDebts: Map<String, Map<String, Double>>,
-    currentUserId: String,
-    members: List<UserInfo>,
-    modifier: Modifier = Modifier
-) {
-    if (currentDebts.isEmpty()) return
-
-    // Filtrar deudas del usuario actual
-    val userDebts = currentDebts[currentUserId] ?: emptyMap()
-    val userOwed =
-        currentDebts.filter { it.key != currentUserId }.mapValues { it.value[currentUserId] ?: 0.0 }
-            .filter { it.value > 0.01 }
-
-    if (userDebts.isEmpty() && userOwed.isEmpty()) return
-
     Column(
         modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(containerColor)
+            .clickable(onClick = onClick)
+            .padding(12.dp),
     ) {
-        // Si el usuario debe dinero a alguien
-        userDebts.forEach { (toUserId, amount) ->
-            if (amount > 0.01) {
-                val toUser = members.find { it.uuid == toUserId }
-                Text(
-                    buildAnnotatedString {
-                        append("Debes ")
-                        withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
-                            append(formatCurrency(amount, "es-MX"))
-                        }
-                        append(" a ${toUser?.name ?: "Desconocido"}")
-                    }, style = MaterialTheme.typography.bodyMedium
+        Icon(
+            imageVector = Icons.Default.DateRange,
+            contentDescription = null,
+            tint = containerColor,
+            modifier = Modifier
+                .size(40.dp)
+                .background(
+                    contentColor,
+                    CircleShape
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-            }
-        }
+                .padding(8.dp)
+        )
 
-        // Si alguien debe dinero al usuario
-        userOwed.forEach { (fromUserId, amount) ->
-            val fromUser = members.find { it.uuid == fromUserId }
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            text = event.title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = contentColor
+        )
+        Text(
+            text = formatDate(event.createdAt, "dd MMM yyyy"),
+            style = MaterialTheme.typography.bodySmall,
+            color = contentColor.copy(alpha = 0.5f)
+        )
+
+        if (event.settled) {
             Text(
-                buildAnnotatedString {
-                    append("${fromUser?.name ?: "Desconocido"} te debe ")
-                    withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
-                        append(formatCurrency(amount, "es-MX"))
-                    }
-                }, style = MaterialTheme.typography.bodyMedium
+                text = "Liquidado",
+                style = MaterialTheme.typography.bodySmall,
+                color = containerColor,
+                modifier = Modifier
+                    .background(
+                        contentColor.copy(alpha = 0.1f),
+                        RoundedCornerShape(4.dp)
+                    )
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
             )
-            Spacer(modifier = Modifier.height(4.dp))
         }
     }
 }

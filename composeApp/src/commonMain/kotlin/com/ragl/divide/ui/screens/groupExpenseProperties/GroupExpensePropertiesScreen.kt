@@ -37,7 +37,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -47,7 +46,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -93,7 +91,8 @@ import org.koin.compose.koinInject
 
 class GroupExpensePropertiesScreen(
     private val groupId: String,
-    private val expenseId: String? = null
+    private val expenseId: String? = null,
+    private val eventId: String? = null
 ) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -103,12 +102,14 @@ class GroupExpensePropertiesScreen(
         val userViewModel = navigator.koinNavigatorScreenModel<UserViewModel>()
         val strings = koinInject<Strings>()
 
-        LaunchedEffect(groupId, expenseId) {
+        LaunchedEffect(groupId, expenseId, eventId) {
             val group = userViewModel.getGroupById(groupId)
             val uuid = userViewModel.getUUID()
             val members = userViewModel.getGroupMembers(groupId)
-            val expense = userViewModel.getGroupExpenseById(groupId, expenseId)
-            vm.setGroupAndExpense(group, uuid, members, expense)
+            val expense = userViewModel.getGroupExpenseById(groupId, expenseId, eventId)
+            val event = userViewModel.getEventById(groupId, eventId)
+
+            vm.setGroupAndExpense(group, uuid, members, expense, event)
         }
 
         var paidByMenuExpanded by remember { mutableStateOf(false) }
@@ -204,12 +205,12 @@ class GroupExpensePropertiesScreen(
                             expanded = paidByMenuExpanded,
                             onExpandedChange = { paidByMenuExpanded = !paidByMenuExpanded }) {
                             TextField(
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent,
-                                ),
+//                                colors = TextFieldDefaults.colors(
+//                                    focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+//                                    unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+//                                    focusedIndicatorColor = Color.Transparent,
+//                                    unfocusedIndicatorColor = Color.Transparent,
+//                                ),
                                 value = vm.payer.name,
                                 textStyle = MaterialTheme.typography.bodyMedium,
                                 onValueChange = {},
@@ -224,8 +225,8 @@ class GroupExpensePropertiesScreen(
                             ExposedDropdownMenu(
                                 expanded = paidByMenuExpanded,
                                 onDismissRequest = { paidByMenuExpanded = false },
-                                modifier = Modifier
-                                    .background(color = MaterialTheme.colorScheme.primaryContainer)
+//                                modifier = Modifier
+//                                    .background(color = MaterialTheme.colorScheme.primaryContainer)
                             ) {
                                 sortedMembers.forEach {
                                     DropdownMenuItem(
@@ -238,7 +239,7 @@ class GroupExpensePropertiesScreen(
                                             vm.updatePayer(it)
                                             paidByMenuExpanded = false
                                         },
-                                        modifier = Modifier.background(color = MaterialTheme.colorScheme.primaryContainer)
+//                                        modifier = Modifier.background(color = MaterialTheme.colorScheme.primaryContainer)
                                     )
                                 }
                             }
@@ -266,12 +267,12 @@ class GroupExpensePropertiesScreen(
                                         methodMenuExpanded = !methodMenuExpanded
                                     }) {
                                     TextField(
-                                        colors = TextFieldDefaults.colors(
-                                            focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                            unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                            focusedIndicatorColor = Color.Transparent,
-                                            unfocusedIndicatorColor = Color.Transparent,
-                                        ),
+//                                        colors = TextFieldDefaults.colors(
+//                                            focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+//                                            unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+//                                            focusedIndicatorColor = Color.Transparent,
+//                                            unfocusedIndicatorColor = Color.Transparent,
+//                                        ),
                                         value = stringResource(vm.splitMethod.resId),
                                         textStyle = MaterialTheme.typography.bodyMedium,
                                         onValueChange = {},
@@ -291,7 +292,7 @@ class GroupExpensePropertiesScreen(
                                         expanded = methodMenuExpanded,
                                         onDismissRequest = { methodMenuExpanded = false },
                                         modifier = Modifier
-                                            .background(color = MaterialTheme.colorScheme.primaryContainer)
+//                                            .background(color = MaterialTheme.colorScheme.primaryContainer)
                                     ) {
                                         SplitMethod.entries.forEach {
                                             DropdownMenuItem(
@@ -313,7 +314,7 @@ class GroupExpensePropertiesScreen(
 
                                                     methodMenuExpanded = false
                                                 },
-                                                modifier = Modifier.background(color = MaterialTheme.colorScheme.primaryContainer)
+//                                                modifier = Modifier.background(color = MaterialTheme.colorScheme.primaryContainer)
                                             )
                                         }
                                     }
@@ -490,7 +491,7 @@ class GroupExpensePropertiesScreen(
                                                     },
                                                     textStyle = MaterialTheme.typography.bodyMedium.copy(
                                                         textAlign = TextAlign.Center,
-                                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                                        color = MaterialTheme.colorScheme.onSurface
                                                     ),
                                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                                     singleLine = true,
@@ -499,7 +500,7 @@ class GroupExpensePropertiesScreen(
                                                         .width(80.dp)
                                                         .height(40.dp)
                                                         .clip(ShapeDefaults.Medium)
-                                                        .background(MaterialTheme.colorScheme.primaryContainer)
+                                                        .background(MaterialTheme.colorScheme.surfaceContainer)
                                                         .padding(vertical = 10.dp)
                                                 )
                                                 Text(
@@ -534,7 +535,7 @@ class GroupExpensePropertiesScreen(
                                                     },
                                                     textStyle = MaterialTheme.typography.bodyMedium.copy(
                                                         textAlign = TextAlign.Center,
-                                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                                        color = MaterialTheme.colorScheme.onSurface
                                                     ),
                                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                                     singleLine = true,
@@ -543,7 +544,7 @@ class GroupExpensePropertiesScreen(
                                                         .width(80.dp)
                                                         .height(40.dp)
                                                         .clip(ShapeDefaults.Medium)
-                                                        .background(MaterialTheme.colorScheme.primaryContainer)
+                                                        .background(MaterialTheme.colorScheme.surfaceContainer)
                                                         .padding(vertical = 10.dp)
                                                 )
                                             }
@@ -577,13 +578,7 @@ class GroupExpensePropertiesScreen(
                                                     userViewModel.handleError(strings.getTwoMustPay())
                                                     return@Button
                                                 } else if (vm.quantities.values.sum() != (vm.amount.toDouble())) {
-                                                    userViewModel.handleError(
-
-                                                        strings.getSumMustBe(
-                                                            vm.amount
-                                                        )
-
-                                                    )
+                                                    userViewModel.handleError(strings.getSumMustBe(vm.amount))
                                                     return@Button
                                                 }
                                             }
@@ -595,11 +590,14 @@ class GroupExpensePropertiesScreen(
                                                     groupId,
                                                     groupExpense
                                                 )
+                                                userViewModel.hideLoading()
                                                 navigator.pop()
                                             },
-                                            onError = { userViewModel.handleError(it) }
+                                            onError = { 
+                                                userViewModel.handleError(it) 
+                                                userViewModel.hideLoading()
+                                            }
                                         )
-                                        userViewModel.hideLoading()
                                     }
                                 },
                                 shape = ShapeDefaults.Medium,

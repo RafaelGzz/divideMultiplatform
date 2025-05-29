@@ -1,6 +1,5 @@
 package com.ragl.divide.ui.screens.expenseProperties
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -34,7 +33,6 @@ import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,7 +42,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -141,18 +138,18 @@ class ExpensePropertiesScreen(
                         title = {
                             Text(
                                 text = stringResource(Res.string.reminder_permission_title),
-                                style = MaterialTheme.typography.titleLarge
+//                                style = MaterialTheme.typography.titleLarge
                             )
                         },
                         text = {
                             Text(
                                 text = stringResource(Res.string.reminder_permission_message),
-                                style = MaterialTheme.typography.bodyLarge
+//                                style = MaterialTheme.typography.bodyLarge
                             )
                         },
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        titleContentColor = MaterialTheme.colorScheme.primary,
-                        textContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+//                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+//                        titleContentColor = MaterialTheme.colorScheme.primary,
+//                        textContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
                 DivideTextField(
@@ -178,12 +175,12 @@ class ExpensePropertiesScreen(
                     onExpandedChange = { categoryMenuExpanded = !categoryMenuExpanded }
                 ) {
                     TextField(
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                        ),
+//                        colors = TextFieldDefaults.colors(
+//                            focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+//                            unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+//                            focusedIndicatorColor = Color.Transparent,
+//                            unfocusedIndicatorColor = Color.Transparent,
+//                        ),
                         value = vm.category.name,
                         onValueChange = {},
                         singleLine = true,
@@ -199,7 +196,7 @@ class ExpensePropertiesScreen(
                         expanded = categoryMenuExpanded,
                         onDismissRequest = { categoryMenuExpanded = false },
                         modifier = Modifier
-                            .background(color = MaterialTheme.colorScheme.primaryContainer)
+//                            .background(color = MaterialTheme.colorScheme.surfaceContainer)
                             .clip(CircleShape)
                     ) {
                         Category.entries.forEach {
@@ -214,7 +211,7 @@ class ExpensePropertiesScreen(
                                     vm.updateCategory(it)
                                     categoryMenuExpanded = false
                                 },
-                                modifier = Modifier.background(color = MaterialTheme.colorScheme.primaryContainer)
+//                                modifier = Modifier.background(color = MaterialTheme.colorScheme.primaryContainer)
                             )
                         }
                     }
@@ -288,12 +285,12 @@ class ExpensePropertiesScreen(
                                 }
                             ) {
                                 TextField(
-                                    colors = TextFieldDefaults.colors(
-                                        focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                        unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                        focusedIndicatorColor = Color.Transparent,
-                                        unfocusedIndicatorColor = Color.Transparent,
-                                    ),
+//                                    colors = TextFieldDefaults.colors(
+//                                        focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+//                                        unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+//                                        focusedIndicatorColor = Color.Transparent,
+//                                        unfocusedIndicatorColor = Color.Transparent,
+//                                    ),
                                     value = stringResource(vm.frequency.resId),
                                     onValueChange = {},
                                     singleLine = true,
@@ -310,8 +307,8 @@ class ExpensePropertiesScreen(
                                 ExposedDropdownMenu(
                                     expanded = frequencyMenuExpanded,
                                     onDismissRequest = { frequencyMenuExpanded = false },
-                                    modifier = Modifier
-                                        .background(color = MaterialTheme.colorScheme.primaryContainer)
+//                                    modifier = Modifier
+//                                        .background(color = MaterialTheme.colorScheme.primaryContainer)
                                 ) {
                                     Frequency.entries.forEach {
                                         DropdownMenuItem(
@@ -325,7 +322,7 @@ class ExpensePropertiesScreen(
                                                 vm.updateFrequency(it)
                                                 frequencyMenuExpanded = false
                                             },
-                                            modifier = Modifier.background(color = MaterialTheme.colorScheme.primaryContainer)
+//                                            modifier = Modifier.background(color = MaterialTheme.colorScheme.primaryContainer)
                                         )
                                     }
                                 }
@@ -363,13 +360,14 @@ class ExpensePropertiesScreen(
                         vm.saveExpense(
                             onSuccess = {
                                 userViewModel.saveExpense(it)
+                                userViewModel.hideLoading()
                                 navigator.pop()
                             },
                             onError = {
+                                userViewModel.hideLoading()
                                 userViewModel.handleError(it)
                             }
                         )
-                        userViewModel.hideLoading()
                     },
                     shape = ShapeDefaults.Medium,
                     modifier = Modifier

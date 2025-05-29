@@ -32,8 +32,8 @@ fun DeleteDialog(
                 Text(stringResource(Res.string.cancel))
             }
         },
-        containerColor = MaterialTheme.colorScheme.primaryContainer,
-        titleContentColor = MaterialTheme.colorScheme.primary,
-        textContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+//        containerColor = MaterialTheme.colorScheme.primaryContainer,
+//        titleContentColor = MaterialTheme.colorScheme.primary,
+//        textContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
     )
 }

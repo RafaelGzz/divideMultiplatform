@@ -84,6 +84,9 @@
     <string name="select_group_members">Selecciona miembros del grupo</string>
     <string name="group_members">Miembros del grupo</string>
     <string name="delete_group">Eliminar Grupo</string>
+    <string name="delete_event">Eliminar Evento</string>
+    <string name="events">Eventos</string>
+    <string name="add_event">Añadir Evento</string>
     <string name="leave_group">Salir del Grupo</string>
     <string name="delete_group_message">¿Estás seguro de eliminar este Grupo?\nESTA ACCIÓN NO SE PUEDE DESHACER</string>
     <string name="leave_group_message">¿Estás seguro de salir del Grupo?</string>
@@ -162,7 +165,9 @@
     <string name="verification_email_sent">Correo de verificación enviado. Por favor, revisa tu bandeja de entrada</string>
     <string name="resend_verification">Reenviar correo de verificación</string>
     <string name="verify_email">Verificar correo electrónico</string>
-    <string name="debt_or_credit_error">No puedes salir o borrar el grupo mientras tengas deudas o créditos</string>
+    <string name="cannot_leave_group">No puedes salir del grupo mientras tengas deudas o créditos</string>
+    <string name="cannot_delete_group">No puedes eliminar el grupo mientras existan deudas o créditos</string>
+    <string name="cannot_delete_event">No puedes eliminar el evento mientras existan deudas o créditos</string>
     <string name="failed_to_login">No se pudo iniciar sesión</string>
     <string name="send_friend_request">Enviar solicitud de amistad</string>
     <string name="send">Enviar</string>

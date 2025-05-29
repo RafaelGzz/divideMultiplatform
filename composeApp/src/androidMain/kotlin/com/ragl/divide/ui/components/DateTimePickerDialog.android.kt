@@ -60,9 +60,6 @@ actual fun DateTimePickerDialog(
     if (!showTimePicker) {
         DatePickerDialog(
             onDismissRequest = onDismissRequest,
-            colors = DatePickerDefaults.colors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            ),
             confirmButton = {
                 TextButton(onClick = { showTimePicker = true }) {
                     Text(stringResource(Res.string.ok))
@@ -123,8 +120,7 @@ actual fun DateTimePickerDialog(
                         containerColor = Color.Transparent
                     )
                 )
-            },
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+            }
         )
     }
 }

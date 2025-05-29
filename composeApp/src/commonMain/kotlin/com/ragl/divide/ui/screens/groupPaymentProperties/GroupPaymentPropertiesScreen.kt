@@ -3,7 +3,6 @@ package com.ragl.divide.ui.screens.groupPaymentProperties
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,7 +26,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,7 +34,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
@@ -44,7 +41,6 @@ import cafe.adriel.voyager.koin.koinNavigatorScreenModel
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.ragl.divide.data.models.Payment
 import com.ragl.divide.data.models.UserInfo
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.utils.DivideTextField
@@ -61,7 +57,8 @@ import org.jetbrains.compose.resources.stringResource
 
 class GroupPaymentPropertiesScreen(
     private val groupId: String,
-    private val paymentId: String? = null
+    private val paymentId: String? = null,
+    private val eventId: String? = null
 ) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -70,13 +67,12 @@ class GroupPaymentPropertiesScreen(
         val vm = koinScreenModel<GroupPaymentPropertiesViewModel>()
         val userViewModel = navigator.koinNavigatorScreenModel<UserViewModel>()
 
-        LaunchedEffect(groupId, paymentId) {
+        LaunchedEffect(groupId, paymentId, eventId) {
             val group = userViewModel.getGroupById(groupId)
-            val uuid = userViewModel.getUUID()
-            val payment =
-                paymentId?.let { userViewModel.getGroupPaymentById(groupId, it) } ?: Payment()
             val members = userViewModel.getGroupMembers(groupId)
-            vm.setGroupAndPayment(group, uuid, members, payment)
+            val payment = userViewModel.getGroupPaymentById(groupId, paymentId, eventId)
+            val event = userViewModel.getEventById(groupId, eventId)
+            vm.setGroupAndPayment(group, members, payment, event)
         }
 
         var fromMenuExpanded by remember { mutableStateOf(false) }
@@ -140,7 +136,7 @@ class GroupPaymentPropertiesScreen(
                         }
                     },
                     modifier = Modifier
-                        .padding(horizontal = 16.dp)
+                        .padding(horizontal = 16.dp).padding(bottom = 20.dp)
                 )
 
                 // Solo mostrar selectores si la cantidad es válida
@@ -167,12 +163,6 @@ class GroupPaymentPropertiesScreen(
                             onExpandedChange = { fromMenuExpanded = !fromMenuExpanded }
                         ) {
                             TextField(
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent,
-                                ),
                                 value = vm.from.name,
                                 textStyle = MaterialTheme.typography.bodyMedium,
                                 onValueChange = {},
@@ -187,8 +177,6 @@ class GroupPaymentPropertiesScreen(
                             ExposedDropdownMenu(
                                 expanded = fromMenuExpanded,
                                 onDismissRequest = { fromMenuExpanded = false },
-                                modifier = Modifier
-                                    .background(color = MaterialTheme.colorScheme.primaryContainer)
                             ) {
                                 sortedMembers.forEach { user ->
                                     DropdownMenuItem(
@@ -197,7 +185,6 @@ class GroupPaymentPropertiesScreen(
                                             vm.updateFrom(user)
                                             fromMenuExpanded = false
                                         },
-                                        modifier = Modifier.background(color = MaterialTheme.colorScheme.primaryContainer)
                                     )
                                 }
                             }
@@ -217,12 +204,6 @@ class GroupPaymentPropertiesScreen(
                             onExpandedChange = { toMenuExpanded = !toMenuExpanded }
                         ) {
                             TextField(
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent,
-                                ),
                                 value = vm.to.name,
                                 textStyle = MaterialTheme.typography.bodyMedium,
                                 onValueChange = {},
@@ -236,9 +217,7 @@ class GroupPaymentPropertiesScreen(
                             )
                             ExposedDropdownMenu(
                                 expanded = toMenuExpanded,
-                                onDismissRequest = { toMenuExpanded = false },
-                                modifier = Modifier
-                                    .background(color = MaterialTheme.colorScheme.primaryContainer)
+                                onDismissRequest = { toMenuExpanded = false }
                             ) {
                                 // Filtrar la lista para excluir al emisor (from)
                                 sortedMembers.filter { user -> user.uuid != vm.from.uuid }
@@ -248,8 +227,7 @@ class GroupPaymentPropertiesScreen(
                                             onClick = {
                                                 vm.updateTo(user)
                                                 toMenuExpanded = false
-                                            },
-                                            modifier = Modifier.background(color = MaterialTheme.colorScheme.primaryContainer)
+                                            }
                                         )
                                     }
                             }
@@ -265,13 +243,14 @@ class GroupPaymentPropertiesScreen(
                                 vm.savePayment(
                                     onSuccess = { savedPayment ->
                                         userViewModel.saveGroupPayment(groupId, savedPayment)
+                                        userViewModel.hideLoading()
                                         navigator.pop()
                                     },
                                     onError = {
+                                        userViewModel.hideLoading()
                                         userViewModel.handleError(it)
                                     }
                                 )
-                                userViewModel.hideLoading()
                             },
                             shape = ShapeDefaults.Medium,
                             modifier = Modifier

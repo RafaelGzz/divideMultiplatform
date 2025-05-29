@@ -1,9 +1,12 @@
 package com.ragl.divide.data.repositories
 
+import com.ragl.divide.data.models.ExpenseType
 import com.ragl.divide.data.models.Group
+import com.ragl.divide.data.models.GroupEvent
 import com.ragl.divide.data.models.GroupExpense
 import com.ragl.divide.data.models.Payment
 import com.ragl.divide.data.models.User
+import com.ragl.divide.data.services.GroupEventService
 import com.ragl.divide.data.services.GroupExpenseService
 import dev.gitlive.firebase.database.FirebaseDatabase
 import dev.gitlive.firebase.storage.File
@@ -24,18 +27,24 @@ interface GroupRepository {
     suspend fun leaveGroup(groupId: String)
     suspend fun deleteGroup(groupId: String, image: String)
     suspend fun saveExpense(groupId: String, expense: GroupExpense): GroupExpense
-    suspend fun updateExpense(groupId: String, newExpense: GroupExpense): GroupExpense
     suspend fun deleteExpense(groupId: String, expense: GroupExpense)
     suspend fun savePayment(groupId: String, payment: Payment): Payment
-    suspend fun updatePayment(groupId: String, payment: Payment): Payment
-    suspend fun deletePayment(groupId: String, paymentId: String)
+    suspend fun deletePayment(groupId: String, payment: Payment)
+    suspend fun saveEvent(groupId: String, event: GroupEvent): GroupEvent
+    suspend fun deleteEvent(groupId: String, eventId: String)
+    suspend fun getEvent(groupId: String, eventId: String): GroupEvent
+    suspend fun getEvents(groupId: String): Map<String, GroupEvent>
+    suspend fun saveRecurringExpense(groupId: String, expense: GroupExpense): GroupExpense
+    suspend fun updateRecurringExpense(groupId: String, expense: GroupExpense): GroupExpense
+    suspend fun deleteRecurringExpense(groupId: String, expenseId: String)
 }
 
 class GroupRepositoryImpl(
     private val database: FirebaseDatabase,
     private val storage: FirebaseStorage,
     private val userRepository: UserRepository,
-    private val groupExpenseService: GroupExpenseService
+    private val groupExpenseService: GroupExpenseService,
+    private val groupEventService: GroupEventService
 ) : GroupRepository {
     init {
         //database.reference("groups")
@@ -130,64 +139,144 @@ class GroupRepositoryImpl(
             }
         )
         val groupRef = database.reference("groups/$groupId")
-        groupRef.child("expenses").child(newExpense.id).setValue(newExpense)
+        if (expense.eventId.isNotEmpty()) {
+            groupRef.child("events/${expense.eventId}/expenses").child(newExpense.id)
+                .setValue(newExpense)
+        } else
+            groupRef.child("expenses").child(newExpense.id).setValue(newExpense)
 
-        updateCurrentDebts(groupId)
-        return newExpense
-    }
-
-    override suspend fun updateExpense(groupId: String, newExpense: GroupExpense): GroupExpense {
-        val groupRef = database.reference("groups/$groupId")
-        groupRef.child("expenses").child(newExpense.id).setValue(newExpense)
-
-        updateCurrentDebts(groupId)
+        updateCurrentDebts(groupId, expense.eventId)
         return newExpense
     }
 
     override suspend fun deleteExpense(groupId: String, expense: GroupExpense) {
         val groupRef = database.reference("groups/$groupId")
-        groupRef.child("expenses").child(expense.id).removeValue()
+        if (expense.eventId.isNotEmpty())
+            groupRef.child("events/${expense.eventId}/expenses").child(expense.id).removeValue()
+        else
+            groupRef.child("expenses").child(expense.id).removeValue()
 
-        updateCurrentDebts(groupId)
+        updateCurrentDebts(groupId, expense.eventId)
     }
 
     override suspend fun savePayment(groupId: String, payment: Payment): Payment {
-        val id = "id${Clock.System.now().toEpochMilliseconds()}"
-        val newPayment = payment.copy(id = payment.id.ifEmpty { id })
+        val newPayment = payment.copy(id = payment.id.ifEmpty {
+            "id${Clock.System.now().toEpochMilliseconds()}"
+        })
         val groupRef = database.reference("groups/$groupId")
-        groupRef.child("payments").child(newPayment.id).setValue(newPayment)
+        if (payment.eventId.isNotEmpty())
+            groupRef.child("events/${payment.eventId}/payments").child(newPayment.id)
+                .setValue(newPayment)
+        else
+            groupRef.child("payments").child(newPayment.id).setValue(newPayment)
 
-        updateCurrentDebts(groupId)
+        updateCurrentDebts(groupId, payment.eventId)
         return newPayment
     }
 
-    override suspend fun updatePayment(groupId: String, payment: Payment): Payment {
+    override suspend fun deletePayment(groupId: String, payment: Payment) {
         val groupRef = database.reference("groups/$groupId")
-        groupRef.child("payments").child(payment.id).setValue(payment)
+        if (payment.eventId.isNotEmpty())
+            groupRef.child("events/${payment.eventId}/payments").child(payment.id).removeValue()
+        else
+            groupRef.child("payments").child(payment.id).removeValue()
 
-        updateCurrentDebts(groupId)
-        return payment
+        updateCurrentDebts(groupId, payment.eventId)
     }
 
-    override suspend fun deletePayment(groupId: String, paymentId: String) {
+    override suspend fun saveEvent(groupId: String, event: GroupEvent): GroupEvent {
+        val newEvent = event.copy(
+            id = event.id.ifEmpty { "event${Clock.System.now().toEpochMilliseconds()}" },
+        )
         val groupRef = database.reference("groups/$groupId")
-        groupRef.child("payments").child(paymentId).removeValue()
+        groupRef.child("events").child(newEvent.id).setValue(newEvent)
+        return newEvent
+    }
 
+    override suspend fun getEvent(groupId: String, eventId: String): GroupEvent {
+        val groupRef = database.reference("groups/$groupId")
+        return groupRef.child("events").child(eventId).valueEvents.firstOrNull()
+            ?.value<GroupEvent>() ?: GroupEvent()
+    }
+
+    override suspend fun getEvents(groupId: String): Map<String, GroupEvent> {
+        val events = mutableMapOf<String, GroupEvent>()
+        val groupRef = database.reference("groups/$groupId")
+        val snapshot = groupRef.child("events").valueEvents.firstOrNull()
+        snapshot?.children?.forEach {
+            it.value<GroupEvent>().let { event -> events[event.id] = event }
+        }
+        return events
+    }
+
+    override suspend fun deleteEvent(groupId: String, eventId: String) {
+        val groupRef = database.reference("groups/$groupId")
+        groupRef.child("events").child(eventId).removeValue()
+    }
+
+    override suspend fun saveRecurringExpense(
+        groupId: String,
+        expense: GroupExpense
+    ): GroupExpense {
+        val newExpense = expense.copy(
+            id = expense.id.ifEmpty { "id${Clock.System.now().toEpochMilliseconds()}" },
+            expenseType = ExpenseType.RECURRING
+        )
+        val groupRef = database.reference("groups/$groupId")
+        groupRef.child("recurringExpenses").child(newExpense.id).setValue(newExpense)
+
+        // También actualizar las deudas generales del grupo
+        updateCurrentDebts(groupId)
+
+        return newExpense
+    }
+
+    override suspend fun updateRecurringExpense(
+        groupId: String,
+        expense: GroupExpense
+    ): GroupExpense {
+        val groupRef = database.reference("groups/$groupId")
+        groupRef.child("recurringExpenses").child(expense.id).setValue(expense)
+
+        // También actualizar las deudas generales del grupo
+        updateCurrentDebts(groupId)
+
+        return expense
+    }
+
+    override suspend fun deleteRecurringExpense(groupId: String, expenseId: String) {
+        val groupRef = database.reference("groups/$groupId")
+        groupRef.child("recurringExpenses").child(expenseId).removeValue()
+
+        // También actualizar las deudas generales del grupo
         updateCurrentDebts(groupId)
     }
 
-    private suspend fun updateCurrentDebts(groupId: String) {
+    private suspend fun updateCurrentDebts(groupId: String, eventId: String? = null) {
         val groupRef = database.reference("groups/$groupId")
 
-        val expenses = groupRef.child("expenses").valueEvents.firstOrNull()?.children?.map {
-            it.value<GroupExpense>()
-        } ?: emptyList()
+        val expenses =
+            if (!eventId.isNullOrEmpty())
+                groupRef.child("events/$eventId/expenses").valueEvents.firstOrNull()?.children?.map {
+                    it.value<GroupExpense>()
+                } ?: emptyList()
+            else
+                groupRef.child("expenses").valueEvents.firstOrNull()?.children?.map {
+                    it.value<GroupExpense>()
+                } ?: emptyList()
 
-        val payments = groupRef.child("payments").valueEvents.firstOrNull()?.children?.map {
-            it.value<Payment>()
-        } ?: emptyList()
+        val payments =
+            if (!eventId.isNullOrEmpty())
+                groupRef.child("events/$eventId/payments").valueEvents.firstOrNull()?.children?.map {
+                    it.value<Payment>()
+                } ?: emptyList()
+            else
+                groupRef.child("payments").valueEvents.firstOrNull()?.children?.map {
+                    it.value<Payment>()
+                } ?: emptyList()
 
-        val group = groupRef.valueEvents.firstOrNull()?.value<Group>() ?: return
+        val simplifyDebts =
+            groupRef.child("simplifyDebts").valueEvents.firstOrNull()?.value<Boolean>() ?: false
 
         // Listas para almacenar IDs de gastos y pagos a liquidar
         val expensesToSettle = mutableListOf<String>()
@@ -197,7 +286,7 @@ class GroupRepositoryImpl(
         val currentDebts = groupExpenseService.calculateDebts(
             expenses,
             payments,
-            group.simplifyDebts,
+            simplifyDebts,
             expensesToSettle,
             paymentsToSettle
         )
@@ -222,6 +311,9 @@ class GroupRepositoryImpl(
         }
 
         // Ejecutar todas las actualizaciones en una única transacción
-        groupRef.updateChildren(updates)
+        if (!eventId.isNullOrEmpty())
+            groupRef.child("events/$eventId").updateChildren(updates)
+        else
+            groupRef.updateChildren(updates)
     }
 }

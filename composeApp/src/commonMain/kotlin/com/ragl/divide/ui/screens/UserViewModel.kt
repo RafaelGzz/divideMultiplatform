@@ -5,6 +5,7 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.data.models.Group
+import com.ragl.divide.data.models.GroupEvent
 import com.ragl.divide.data.models.GroupExpense
 import com.ragl.divide.data.models.Payment
 import com.ragl.divide.data.models.User
@@ -211,6 +212,7 @@ class UserViewModel(
     ) {
         screenModelScope.launch {
             try {
+                showLoading()
                 val firebaseUser = result.getOrNull()
                 if (firebaseUser != null) {
                     val checkedUser = userRepository.getUser(firebaseUser.uid)
@@ -348,47 +350,94 @@ class UserViewModel(
         }
     }
 
-    private fun recalculateDebts(groupId: String) {
+    private fun recalculateDebts(groupId: String, eventId: String? = null) {
         val group = _state.value.groups[groupId] ?: return
+        val simplifyDebts = group.simplifyDebts
 
         val expensesToSettle = mutableListOf<String>()
         val paymentsToSettle = mutableListOf<String>()
+
+        val expenses = if (!eventId.isNullOrEmpty())
+            group.events[eventId]?.expenses?.values?.toList() ?: emptyList()
+        else
+            group.expenses.values.toList()
+
+        val payments = if (!eventId.isNullOrEmpty())
+            group.events[eventId]?.payments?.values?.toList() ?: emptyList()
+        else
+            group.payments.values.toList()
+
         val currentDebts = groupExpenseService.calculateDebts(
-            group.expenses.values,
-            group.payments.values,
-            group.simplifyDebts,
+            expenses,
+            payments,
+            simplifyDebts,
             expensesToSettle,
             paymentsToSettle
         )
+
+
         _state.update {
             it.copy(
                 groups = it.groups.mapValues { group ->
                     if (group.key == groupId) {
-                        group.value.copy(
-                            currentDebts = currentDebts,
-                            expenses = if (expensesToSettle.isNotEmpty()) {
-                                group.value.expenses.mapValues { expense ->
-                                    if (expense.key in expensesToSettle) {
-                                        expense.value.copy(settled = true)
-                                    } else {
-                                        expense.value
-                                    }
+                        if (eventId != null)
+                            group.value.copy(
+                                events = group.value.events.mapValues { event ->
+                                    if (event.key == eventId)
+                                        event.value.copy(
+                                            currentDebts = currentDebts,
+                                            expenses = if (expensesToSettle.isNotEmpty()) {
+                                                event.value.expenses.mapValues { expense ->
+                                                    if (expense.key in expensesToSettle) {
+                                                        expense.value.copy(settled = true)
+                                                    } else {
+                                                        expense.value
+                                                    }
+                                                }
+                                            } else {
+                                                event.value.expenses
+                                            },
+                                            payments = if (paymentsToSettle.isNotEmpty()) {
+                                                event.value.payments.mapValues { payment ->
+                                                    if (payment.key in paymentsToSettle) {
+                                                        payment.value.copy(settled = true)
+                                                    } else {
+                                                        payment.value
+                                                    }
+                                                }
+                                            } else {
+                                                event.value.payments
+                                            })
+                                    else
+                                        event.value
                                 }
-                            } else {
-                                group.value.expenses
-                            },
-                            payments = if (paymentsToSettle.isNotEmpty()) {
-                                group.value.payments.mapValues { payment ->
-                                    if (payment.key in paymentsToSettle) {
-                                        payment.value.copy(settled = true)
-                                    } else {
-                                        payment.value
+                            )
+                        else
+                            group.value.copy(
+                                currentDebts = currentDebts,
+                                expenses = if (expensesToSettle.isNotEmpty()) {
+                                    group.value.expenses.mapValues { expense ->
+                                        if (expense.key in expensesToSettle) {
+                                            expense.value.copy(settled = true)
+                                        } else {
+                                            expense.value
+                                        }
                                     }
+                                } else {
+                                    group.value.expenses
+                                },
+                                payments = if (paymentsToSettle.isNotEmpty()) {
+                                    group.value.payments.mapValues { payment ->
+                                        if (payment.key in paymentsToSettle) {
+                                            payment.value.copy(settled = true)
+                                        } else {
+                                            payment.value
+                                        }
+                                    }
+                                } else {
+                                    group.value.payments
                                 }
-                            } else {
-                                group.value.payments
-                            }
-                        )
+                            )
                     } else {
                         group.value
                     }
@@ -402,14 +451,23 @@ class UserViewModel(
             it.copy(
                 groups = it.groups.mapValues { group ->
                     if (group.key == groupId) {
-                        group.value.copy(expenses = group.value.expenses + (expense.id to expense))
+                        if (expense.eventId.isEmpty())
+                            group.value.copy(expenses = group.value.expenses + (expense.id to expense))
+                        else
+                            group.value.copy(events = group.value.events.mapValues { event ->
+                                if (event.key == expense.eventId) {
+                                    event.value.copy(expenses = event.value.expenses + (expense.id to expense))
+                                } else {
+                                    event.value
+                                }
+                            })
                     } else {
                         group.value
                     }
                 }
             )
         }
-        recalculateDebts(groupId)
+        recalculateDebts(groupId, expense.eventId)
     }
 
     fun removeGroupExpense(groupId: String, expense: GroupExpense) {
@@ -417,14 +475,23 @@ class UserViewModel(
             it.copy(
                 groups = it.groups.mapValues { group ->
                     if (group.key == groupId) {
-                        group.value.copy(expenses = group.value.expenses - expense.id)
+                        if (expense.eventId.isEmpty())
+                            group.value.copy(expenses = group.value.expenses - expense.id)
+                        else
+                            group.value.copy(events = group.value.events.mapValues { event ->
+                                if (event.key == expense.eventId) {
+                                    event.value.copy(expenses = event.value.expenses - expense.id)
+                                } else {
+                                    event.value
+                                }
+                            })
                     } else {
                         group.value
                     }
                 }
             )
         }
-        recalculateDebts(groupId)
+        recalculateDebts(groupId, expense.eventId)
     }
 
     fun getExpenseById(expenseId: String): Expense {
@@ -435,12 +502,24 @@ class UserViewModel(
         return _state.value.groups[id] ?: Group()
     }
 
-    fun getGroupExpenseById(groupId: String, expenseId: String?): GroupExpense {
-        return _state.value.groups[groupId]?.expenses?.get(expenseId) ?: GroupExpense()
+    fun getGroupExpenseById(
+        groupId: String,
+        expenseId: String?,
+        eventId: String? = null
+    ): GroupExpense {
+        return if (eventId != null) {
+            _state.value.groups[groupId]?.events?.get(eventId)?.expenses?.get(expenseId)
+                ?: GroupExpense()
+        } else
+            _state.value.groups[groupId]?.expenses?.get(expenseId) ?: GroupExpense()
     }
 
-    fun getGroupPaymentById(groupId: String, paymentId: String?): Payment {
-        return _state.value.groups[groupId]?.payments?.get(paymentId) ?: Payment()
+    fun getGroupPaymentById(groupId: String, paymentId: String?, eventId: String? = null): Payment {
+        return if (eventId != null) {
+            _state.value.groups[groupId]?.events?.get(eventId)?.payments?.get(paymentId)
+                ?: Payment()
+        } else
+            _state.value.groups[groupId]?.payments?.get(paymentId) ?: Payment()
     }
 
     fun getUUID(): String {
@@ -452,29 +531,47 @@ class UserViewModel(
             it.copy(
                 groups = it.groups.mapValues { group ->
                     if (group.key == groupId) {
-                        group.value.copy(payments = group.value.payments + (savedPayment.id to savedPayment))
+                        if (savedPayment.eventId.isEmpty())
+                            group.value.copy(payments = group.value.payments + (savedPayment.id to savedPayment))
+                        else
+                            group.value.copy(events = group.value.events.mapValues { event ->
+                                if (event.key == savedPayment.eventId) {
+                                    event.value.copy(payments = event.value.payments + (savedPayment.id to savedPayment))
+                                } else {
+                                    event.value
+                                }
+                            })
                     } else {
                         group.value
                     }
                 }
             )
         }
-        recalculateDebts(groupId)
+        recalculateDebts(groupId, savedPayment.eventId)
     }
 
-    fun deleteGroupPayment(groupId: String, paymentId: String) {
+    fun deleteGroupPayment(groupId: String, payment: Payment) {
         _state.update {
             it.copy(
                 groups = it.groups.mapValues { group ->
                     if (group.key == groupId) {
-                        group.value.copy(payments = group.value.payments - paymentId)
+                        if (payment.eventId.isEmpty())
+                            group.value.copy(payments = group.value.payments - payment.id)
+                        else
+                            group.value.copy(events = group.value.events.mapValues { event ->
+                                if (event.key == payment.eventId) {
+                                    event.value.copy(payments = event.value.payments - payment.id)
+                                } else {
+                                    event.value
+                                }
+                            })
                     } else {
                         group.value
                     }
                 }
             )
         }
-        recalculateDebts(groupId)
+        recalculateDebts(groupId, payment.eventId)
     }
 
     fun resendVerificationEmail() {
@@ -632,18 +729,55 @@ class UserViewModel(
             val currentGroupMembers = _state.value.groupMembers[group.id] ?: emptyList()
             val currentGroupMembersIds = currentGroupMembers.map { it.uuid }
             val newGroupUserIds = group.users.values.toList()
-            
+
             val missingUserIds = newGroupUserIds.filter { it !in currentGroupMembersIds }
             if (missingUserIds.isNotEmpty()) {
                 val newGroupMembers = friendsRepository.getFriends(missingUserIds)
                 val updatedGroupMembers = currentGroupMembers + newGroupMembers.values
-                
+
                 _state.update { state ->
                     state.copy(
                         groupMembers = state.groupMembers + (group.id to updatedGroupMembers)
                     )
                 }
             }
+        }
+    }
+
+    // Métodos para eventos
+    fun getEventById(groupId: String, eventId: String?): GroupEvent {
+        return _state.value.groups[groupId]?.events?.get(eventId) ?: GroupEvent()
+    }
+
+    fun getEvents(groupId: String): Map<String, GroupEvent> {
+        return _state.value.groups[groupId]?.events ?: emptyMap()
+    }
+
+    fun saveEvent(groupId: String, event: GroupEvent) {
+        _state.update {
+            it.copy(
+                groups = it.groups.mapValues { group ->
+                    if (group.key == groupId) {
+                        group.value.copy(events = group.value.events + (event.id to event))
+                    } else {
+                        group.value
+                    }
+                }
+            )
+        }
+    }
+
+    fun deleteEvent(groupId: String, eventId: String) {
+        _state.update {
+            it.copy(
+                groups = it.groups.mapValues { group ->
+                    if (group.key == groupId) {
+                        group.value.copy(events = group.value.events - eventId)
+                    } else {
+                        group.value
+                    }
+                }
+            )
         }
     }
 }

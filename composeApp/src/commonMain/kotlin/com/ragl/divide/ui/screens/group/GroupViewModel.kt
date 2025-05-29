@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.Group
+import com.ragl.divide.data.models.GroupEvent
 import com.ragl.divide.data.models.UserInfo
 import com.ragl.divide.ui.utils.logMessage
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,9 +25,16 @@ class GroupViewModel() : ScreenModel {
 
     var members by mutableStateOf<List<UserInfo>>(listOf())
         private set
+        
+    var events by mutableStateOf<List<GroupEvent>>(listOf())
+        private set
 
     private fun updateExpensesAndPayments(expensesAndPayments: List<Any>) {
         this.expensesAndPayments = expensesAndPayments
+    }
+    
+    private fun updateEvents(events: List<GroupEvent>) {
+        this.events = events
     }
 
     fun setGroup(group: Group, users: List<UserInfo>) {
@@ -38,6 +46,7 @@ class GroupViewModel() : ScreenModel {
             //}
             _group.update { group }
             updateExpensesAndPayments(group.expenses.values.toList() + group.payments.values.toList())
+            updateEvents(group.events.values.toList())
         }
     }
 

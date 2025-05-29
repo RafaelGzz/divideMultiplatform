@@ -18,6 +18,10 @@ data class GroupExpense(
     val activityLog: Map<String, ActivityLog> = emptyMap(),
     val deleted: Boolean = false,
     val settled: Boolean = false,
+    val expenseType: ExpenseType = ExpenseType.NORMAL,
+    val eventId: String = "", // ID del evento al que pertenece (solo si expenseType es EVENT_BASED)
+    val frequency: Frequency = Frequency.ONCE, // Solo relevante si expenseType es RECURRING
+    val startDate: Long = Clock.System.now().toEpochMilliseconds(), // Para gastos recurrentes
 ): IExpense{
 
     fun calculateDebtsAndPayers(): Pair<Map<String, Double>, Map<String, Double>> {

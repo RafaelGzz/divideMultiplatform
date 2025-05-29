@@ -105,10 +105,7 @@ fun ProfileBody(
                             stringResource(Res.string.sign_out_confirmation),
                             style = MaterialTheme.typography.bodySmall
                         )
-                    },
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.primary,
-                    textContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    }
                 )
             }
         }
@@ -244,8 +241,8 @@ private fun DarkModeSetting(
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            contentColor = MaterialTheme.colorScheme.onSurface
         ),
         shape = RoundedCornerShape(8.dp),
         onClick = { isExpanded.value = !isExpanded.value },

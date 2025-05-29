@@ -6,7 +6,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import com.ragl.divide.data.models.ExpenseType
 import com.ragl.divide.data.models.Group
+import com.ragl.divide.data.models.GroupEvent
 import com.ragl.divide.data.models.GroupExpense
 import com.ragl.divide.data.models.SplitMethod
 import com.ragl.divide.data.models.UserInfo
@@ -54,6 +56,10 @@ class GroupExpensePropertiesViewModel(
 
     var members by mutableStateOf<List<UserInfo>>(listOf())
         private set
+        
+    private var event by mutableStateOf<GroupEvent?>(null)
+    var expenseType by mutableStateOf(ExpenseType.NORMAL)
+        private set
 
     fun updateTitle(title: String) {
         this.title = title
@@ -95,14 +101,26 @@ class GroupExpensePropertiesViewModel(
         group: Group,
         userId: String,
         members: List<UserInfo>,
-        expense: GroupExpense
+        expense: GroupExpense? = null,
+        event: GroupEvent? = null
     ) {
+        this.event = event
+
+        // Si se proporciona un evento, configurar el tipo de gasto
+        expenseType = if (event != null) {
+            ExpenseType.EVENT_BASED
+        } else {
+            ExpenseType.NORMAL
+        }
         screenModelScope.launch {
             updateMembers(members)
-            if (expense.id.isNotEmpty()) {
+            if (expense != null && expense.id.isNotEmpty()) {
                 isUpdate.value = true
                 _expense.update { expense }
                 title = expense.title
+                
+                // Si el gasto tiene un tipo y eventId, establecerlos
+                expenseType = expense.expenseType
                 amount = expense.amount.let { if (it == 0.0) "" else it.toString() }
                 payer = members.firstOrNull { it.uuid == expense.payers.keys.first() }!!
                 splitMethod = expense.splitMethod
@@ -192,8 +210,10 @@ class GroupExpensePropertiesViewModel(
                 val expense = _expense.value.copy(
                     title = title,
                     amount = amount.toDouble(),
+                    expenseType = expenseType,
+                    eventId = if (event != null && expenseType == ExpenseType.EVENT_BASED) event!!.id else "",
                     payers = when (splitMethod) {
-                        SplitMethod.EQUALLY -> mapOf(payer.uuid to if (payer.uuid in selectedMembers) amountPerPerson else 0.0)
+                        SplitMethod.EQUALLY -> mapOf(payer.uuid to if (payer.uuid in selectedMembers) amountPerPerson else amount.toDouble())
                         SplitMethod.PERCENTAGES -> mapOf(payer.uuid to percentages[payer.uuid]!!.toDouble())
                         SplitMethod.CUSTOM -> mapOf(payer.uuid to quantities[payer.uuid]!!)
                     },

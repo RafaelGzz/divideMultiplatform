@@ -29,7 +29,9 @@
     <string name="unusual_activity">Actividad inusual detectada. Inténtalo de nuevo más tarde.</string>
     <string name="email_not_verified">Correo electrónico no verificado</string>
     <string name="verification_email_sent">Correo de verificación enviado</string>
-    <string name="debt_or_credit_error">No puedes salir o borrar el grupo mientras tengas deudas o créditos</string>
+    <string name="cannot_leave_group">No puedes salir del grupo mientras tengas deudas o créditos</string>
+    <string name="cannot_delete_group">No puedes eliminar el grupo mientras existan deudas o créditos</string>
+    <string name="cannot_delete_event">No puedes eliminar el evento mientras existan deudas o créditos</string>
     <string name="could_not_process_image">No se pudo procesar la imagen</string>
     <string name="notification_reminder_1">¡No olvides realizar el pago de tu %1$s! Mantén tus finanzas al día.</string>
     <string name="notification_reminder_2">Recordatorio: Tu pago de %1$s está pendiente. ¡Evita recargos!</string>
@@ -53,4 +55,5 @@
     <string name="accept">Aceptar</string>
     <string name="reject">Rechazar</string>
     <string name="expense_already_paid">Este gasto ya ha sido pagado</string>
+    <string name="no_individual_expenses">No se permiten gastos individuales</string>
 </resources>

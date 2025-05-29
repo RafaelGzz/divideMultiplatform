@@ -184,8 +184,7 @@ class SignInScreen : Screen {
 
     @Composable
     fun SocialMediaRow(
-        onGoogleSignIn: (Result<FirebaseUser?>) -> Unit,
-        showLoading: () -> Unit
+        onGoogleSignIn: (Result<FirebaseUser?>) -> Unit
     ) {
         Column {
             Spacer(modifier = Modifier.height(20.dp))
@@ -204,7 +203,6 @@ class SignInScreen : Screen {
             ) {
                 GoogleSignInButton(
                     onClick = {
-                        showLoading()
                         this.onClick()
                     },
                     text = stringResource(Res.string.connect_with_google),
@@ -294,7 +292,7 @@ class SignInScreen : Screen {
                 }
             }
             item {
-                SocialMediaRow(onGoogleSignIn, userViewModel::showLoading)
+                SocialMediaRow(onGoogleSignIn)
             }
         }
     }
@@ -374,7 +372,7 @@ class SignInScreen : Screen {
                 )
             }
             item {
-                SocialMediaRow(onGoogleSignIn, userViewModel::showLoading)
+                SocialMediaRow(onGoogleSignIn)
             }
         }
     }

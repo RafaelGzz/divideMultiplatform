@@ -3,6 +3,7 @@ package com.ragl.divide
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,6 +31,7 @@ import com.ragl.divide.ui.screens.home.HomeScreen
 import com.ragl.divide.ui.screens.signIn.SignInScreen
 import com.ragl.divide.ui.theme.DivideTheme
 import org.koin.compose.koinInject
+import androidx.compose.foundation.interaction.MutableInteractionSource
 
 @Composable
 fun App() {
@@ -96,12 +98,19 @@ fun App() {
             // Indicador de carga global
             if (appState.isLoading || isInitializing || !loaded) {
                 Box(
-                    modifier = Modifier.fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.2f)),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.2f))
+                        .clickable(
+                            enabled = true,
+                            onClick = {},
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.align(Alignment.Center)
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }

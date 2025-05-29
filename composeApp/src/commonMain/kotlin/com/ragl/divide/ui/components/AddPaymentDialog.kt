@@ -41,9 +41,9 @@ fun AddPaymentDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = .99f),
-        titleContentColor = MaterialTheme.colorScheme.primary,
-        textContentColor = MaterialTheme.colorScheme.onSurface,
+//        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = .99f),
+//        titleContentColor = MaterialTheme.colorScheme.primary,
+//        textContentColor = MaterialTheme.colorScheme.onSurface,
         title = {
             Text(
                 stringResource(Res.string.make_a_payment),

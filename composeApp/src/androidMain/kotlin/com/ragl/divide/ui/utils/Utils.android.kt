@@ -162,8 +162,16 @@ actual class Strings(private val context: Context) {
         return context.getString(R.string.verification_email_sent)
     }
 
-    actual fun getDebtOrCreditError(): String {
-        return context.getString(R.string.debt_or_credit_error)
+    actual fun getCannotDeleteGroup(): String {
+        return context.getString(R.string.cannot_delete_group)
+    }
+
+    actual fun getCannotLeaveGroup(): String {
+        return context.getString(R.string.cannot_leave_group)
+    }
+
+    actual fun getCannotDeleteEvent(): String {
+        return context.getString(R.string.cannot_delete_event)
     }
 
     actual fun getCouldNotProcessImage(): String {
@@ -204,5 +212,9 @@ actual class Strings(private val context: Context) {
 
     actual fun getExpenseAlreadyPaid(): String {
         return context.getString(R.string.expense_already_paid)
+    }
+
+    actual fun getNoIndividualExpenses(): String {
+        return context.getString(R.string.no_individual_expenses)
     }
 }

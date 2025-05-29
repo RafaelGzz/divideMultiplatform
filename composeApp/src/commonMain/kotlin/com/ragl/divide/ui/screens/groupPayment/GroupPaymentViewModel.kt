@@ -39,13 +39,13 @@ class GroupPaymentViewModel(
     }
     
     fun deletePayment(
-        onSuccess: () -> Unit,
+        onSuccess: (Payment) -> Unit,
         onError: (String) -> Unit
     ) {
         screenModelScope.launch {
             try {
-                groupRepository.deletePayment(groupId, _payment.value.id)
-                onSuccess()
+                groupRepository.deletePayment(groupId, _payment.value)
+                onSuccess(_payment.value)
             } catch (e: Exception) {
                 onError(e.message ?: "Error al eliminar el pago")
             }

@@ -1,7 +1,6 @@
 package com.ragl.divide.ui.screens.expense
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,7 +16,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,7 +33,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -89,7 +86,6 @@ class ExpenseScreen(private val expenseId: String) : Screen {
             expenseViewModel.setExpense(userViewModel.getExpenseById(expenseId))
         }
         val expense by expenseViewModel.expense.collectAsState()
-        val isLoading by expenseViewModel.isLoading.collectAsState()
 
         var showDeleteDialog by remember { mutableStateOf(false) }
         var showAddPaymentDialog by remember { mutableStateOf(false) }
@@ -106,14 +102,15 @@ class ExpenseScreen(private val expenseId: String) : Screen {
                         id = expense.id,
                         onSuccess = {
                             userViewModel.removeExpense(expense.id)
+                            userViewModel.hideLoading()
                             showDeleteDialog = false
                             navigator.pop()
                         },
                         onFailure = { error ->
+                            userViewModel.hideLoading()
                             userViewModel.handleError(error)
                         }
                     )
-                    userViewModel.hideLoading()
                 }
             )
         }
@@ -127,10 +124,12 @@ class ExpenseScreen(private val expenseId: String) : Screen {
                     expenseViewModel.addPayment(
                         amount = amount,
                         onSuccess = { savedPayment ->
-                            showAddPaymentDialog = false
                             userViewModel.savePayment(expense.id, savedPayment)
+                            userViewModel.hideLoading()
+                            showAddPaymentDialog = false
                         },
                         onFailure = { error ->
+                            userViewModel.hideLoading()
                             userViewModel.handleError(error)
                         },
                         onPaidExpense = {
@@ -139,7 +138,6 @@ class ExpenseScreen(private val expenseId: String) : Screen {
                             userViewModel.handleSuccess("Felicidades! Terminaste de pagar ${expense.title}!")
                         }
                     )
-                    userViewModel.hideLoading()
                 }
             )
         }
@@ -158,23 +156,23 @@ class ExpenseScreen(private val expenseId: String) : Screen {
                             paymentId = payment.id,
                             amount = payment.amount,
                             onSuccess = {
+                                userViewModel.deletePayment(expense.id, payment.id)
+                                userViewModel.hideLoading()
                                 showDeletePaymentDialog = false
                                 selectedPayment = null
-                                userViewModel.deletePayment(expense.id, payment.id)
                             },
                             onFailure = { error ->
+                                userViewModel.hideLoading()
                                 userViewModel.handleError(error)
                             }
                         )
                     }
-                    userViewModel.hideLoading()
                 }
             )
         }
 
         ExpenseScreenContent(
             expense = expense,
-            isLoading = isLoading,
             onBackClick = { navigator.pop() },
             onEditClick = { navigator.push(ExpensePropertiesScreen(expense.id)) },
             onDeleteClick = { showDeleteDialog = true },
@@ -194,7 +192,6 @@ class ExpenseScreen(private val expenseId: String) : Screen {
 @Composable
 fun ExpenseScreenContent(
     expense: Expense,
-    isLoading: Boolean,
     onBackClick: () -> Unit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
@@ -239,36 +236,25 @@ fun ExpenseScreenContent(
                     }
                 }
             )
-        },
-//        floatingActionButton = {
-//            if (!expense.paid) {
-//                FloatingActionButton(onClick = onAddPaymentClick) {
-//                    Icon(Icons.Default.Add, contentDescription = "Add Payment")
-//                }
-//            }
-//        }
+        }
     ) { paddingValues ->
-        if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp),
+            //verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            if (expense.paid) {
+                Text(
+                    text = stringResource(Res.string.paid),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.labelLarge.copy(color = MaterialTheme.colorScheme.primary),
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(16.dp),
-                //verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                if (expense.paid) {
-                    Text(
-                        text = stringResource(Res.string.paid),
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.labelLarge.copy(color = MaterialTheme.colorScheme.primary),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-                if (remainingBalance != expense.amount && !expense.paid) {
+            if (remainingBalance != expense.amount && !expense.paid) {
                 Text(
                     text = formatCurrency(expense.amount, "es-MX"),
                     textAlign = TextAlign.Center,
@@ -292,146 +278,145 @@ fun ExpenseScreenContent(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
-                if (expense.notes != "") {
-                    Text(
-                        text = "${stringResource(Res.string.notes)}:",
-                        color = MaterialTheme.colorScheme.primary,
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp)
-                    )
-                    Text(
-                        text = expense.notes,
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+            if (expense.notes != "") {
                 Text(
-                    text = stringResource(
-                        Res.string.added_on,
-                        formatDate(expense.createdAt, "dd MMM yyyy, hh:mm a")
-                    ),
+                    text = "${stringResource(Res.string.notes)}:",
+                    color = MaterialTheme.colorScheme.primary,
                     textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 8.dp)
                 )
-                TitleRow(
-                    labelStringResource = Res.string.movements,
-                    buttonStringResource = Res.string.make_a_payment,
-                    onAddClick = onAddPaymentClick,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 20.dp, bottom = 10.dp)
+                Text(
+                    text = expense.notes,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.fillMaxWidth()
                 )
-                LazyColumn {
-                    if (expense.payments.isEmpty()) {
-                        item {
-                            Text(
-                                stringResource(Res.string.no_movements_yet),
-                                textAlign = TextAlign.Center,
-                                style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 20.dp)
-                            )
-                        }
+            }
+            Text(
+                text = stringResource(
+                    Res.string.added_on,
+                    formatDate(expense.createdAt, "dd MMM yyyy, hh:mm a")
+                ),
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+            )
+            TitleRow(
+                labelStringResource = Res.string.movements,
+                buttonStringResource = Res.string.make_a_payment,
+                onAddClick = onAddPaymentClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 20.dp, bottom = 10.dp)
+            )
+            LazyColumn {
+                if (expense.payments.isEmpty()) {
+                    item {
+                        Text(
+                            stringResource(Res.string.no_movements_yet),
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 20.dp)
+                        )
                     }
-                    itemsIndexed(
-                        payments,
-                        key = { _, entry -> entry.key }) { i, payment ->
-                        ListItem(
-                            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                            leadingContent = {
-
+                }
+                itemsIndexed(
+                    payments,
+                    key = { _, entry -> entry.key }) { i, payment ->
+                    ListItem(
+                        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                        leadingContent = {
+                            Icon(
+                                FontAwesomeIcons.Solid.DollarSign,
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                contentDescription = "Money icon",
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary)
+                                    .padding(12.dp)
+                                    .size(24.dp)
+                            )
+                        },
+                        headlineContent = {
+                            Text(
+                                formatCurrency(payment.value.amount, "es-MX"),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        },
+                        supportingContent = {
+                            Text(
+                                formatDate(payment.value.date, "MMM dd"),
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            )
+                        },
+                        trailingContent = {
+                            IconButton(
+                                onClick = { onDeletePaymentClick(payment.value) },
+                                colors = IconButtonDefaults.iconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                                    contentColor = MaterialTheme.colorScheme.error
+                                )
+                            ) {
                                 Icon(
-                                    FontAwesomeIcons.Solid.DollarSign,
-                                    tint = MaterialTheme.colorScheme.onPrimary,
-                                    contentDescription = "Money icon",
-                                    modifier = Modifier
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.primary)
-                                        .padding(12.dp)
-                                        .size(24.dp)
+                                    Icons.Outlined.Delete,
+                                    contentDescription = "Delete payment"
+                                )
+                            }
+                        },
+                        modifier = Modifier
+                            .padding(vertical = 1.dp)
+                            .clip(
+                                if (i == 0) RoundedCornerShape(
+                                    topStart = 16.dp,
+                                    topEnd = 16.dp,
+                                    bottomEnd = 2.dp,
+                                    bottomStart = 2.dp
+                                ) else {
+                                    RoundedCornerShape(2.dp)
+                                }
+                            )
+                    )
+                }
+                if (expense.payments.isNotEmpty())
+                    item {
+                        ListItem(
+                            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                            leadingContent = {
+                                Text(
+                                    stringResource(Res.string.total),
+                                    style = MaterialTheme.typography.labelLarge.copy(color = MaterialTheme.colorScheme.onSurface)
                                 )
                             },
                             headlineContent = {
                                 Text(
-                                    formatCurrency(payment.value.amount, "es-MX"),
-                                    style = MaterialTheme.typography.bodyMedium
+                                    formatCurrency(expense.amountPaid, "es-MX"),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.padding(vertical = 16.dp)
                                 )
-                            },
-                            supportingContent = {
-                                Text(
-                                    formatDate(payment.value.date, "MMM dd"),
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        color = Color.Gray
-                                    )
-                                )
-                            },
-                            trailingContent = {
-                                IconButton(
-                                    onClick = { onDeletePaymentClick(payment.value) },
-                                    colors = IconButtonDefaults.iconButtonColors(
-                                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                        contentColor = MaterialTheme.colorScheme.error
-                                    )
-                                ) {
-                                    Icon(
-                                        Icons.Outlined.Delete,
-                                        contentDescription = "Delete payment"
-                                    )
-                                }
                             },
                             modifier = Modifier
                                 .padding(vertical = 1.dp)
                                 .clip(
-                                    if (i == 0) RoundedCornerShape(
-                                        topStart = 16.dp,
-                                        topEnd = 16.dp,
-                                        bottomEnd = 2.dp,
-                                        bottomStart = 2.dp
-                                    ) else {
-                                        RoundedCornerShape(2.dp)
-                                    }
+                                    RoundedCornerShape(
+                                        topStart = 2.dp,
+                                        topEnd = 2.dp,
+                                        bottomEnd = 16.dp,
+                                        bottomStart = 16.dp
+                                    )
                                 )
                         )
                     }
-                    if (expense.payments.isNotEmpty())
-                        item {
-                            ListItem(
-                                colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                                leadingContent = {
-                                    Text(
-                                        stringResource(Res.string.total),
-                                        style = MaterialTheme.typography.labelLarge.copy(color = MaterialTheme.colorScheme.onSurface)
-                                    )
-                                },
-                                headlineContent = {
-                                    Text(
-                                        formatCurrency(expense.amountPaid, "es-MX"),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        modifier = Modifier.padding(vertical = 16.dp)
-                                    )
-                                },
-                                modifier = Modifier
-                                    .padding(vertical = 1.dp)
-                                    .clip(
-                                        RoundedCornerShape(
-                                            topStart = 2.dp,
-                                            topEnd = 2.dp,
-                                            bottomEnd = 16.dp,
-                                            bottomStart = 16.dp
-                                        )
-                                    )
-                            )
-                        }
-                }
             }
+
         }
     }
 }

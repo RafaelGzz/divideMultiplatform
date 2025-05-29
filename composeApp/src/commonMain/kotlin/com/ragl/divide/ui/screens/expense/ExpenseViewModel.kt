@@ -22,9 +22,6 @@ class ExpenseViewModel(
     private val _expense = MutableStateFlow(Expense())
     val expense = _expense.asStateFlow()
 
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading = _isLoading.asStateFlow()
-
     fun setExpense(expense: Expense) {
         screenModelScope.launch {
             _expense.update {

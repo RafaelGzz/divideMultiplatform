@@ -26,13 +26,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Badge
 import androidx.compose.material.BadgedBox
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
@@ -142,9 +140,6 @@ class HomeScreen : Screen {
             modifier = Modifier
                 .fillMaxSize()
         ) {
-            if (state.isLoading) {
-                CircularProgressIndicator()
-            }
             AnimatedVisibility(
                 visible = !state.isLoading,
                 enter = fadeIn(animationSpec = tween(500)),
@@ -152,17 +147,15 @@ class HomeScreen : Screen {
             ) {
                 Scaffold(
                     bottomBar = {
-                        NavigationBar(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        ) {
+                        NavigationBar {
                             tabs.forEachIndexed { index, pair ->
                                 NavigationBarItem(
                                     selected = selectedTabIndex == index,
                                     onClick = { selectedTabIndex = index },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = MaterialTheme.colorScheme.onPrimary,
-                                        indicatorColor = MaterialTheme.colorScheme.primary,
-                                    ),
+//                                    colors = NavigationBarItemDefaults.colors(
+//                                        selectedIconColor = MaterialTheme.colorScheme.onPrimary,
+//                                        indicatorColor = MaterialTheme.colorScheme.primary,
+//                                    ),
                                     icon = {
                                         if (pair.first == Res.string.bar_item_friends_text && friendRequests.isNotEmpty()) {
                                             BadgedBox(
@@ -220,8 +213,8 @@ class HomeScreen : Screen {
                                     modifier = Modifier.align(Alignment.TopCenter),
                                     state = pullToRefreshState,
                                     isRefreshing = pullLoading,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer
+//                                    color = MaterialTheme.colorScheme.primary,
+//                                    containerColor = MaterialTheme.colorScheme.primaryContainer
                                 )
                             }
                         ) {
@@ -389,7 +382,6 @@ class HomeScreen : Screen {
                                         else RoundedCornerShape(2.dp)
                                     }
                                 )
-                                .background(MaterialTheme.colorScheme.primaryContainer)
                                 .clickable {
                                     onExpenseClick(expense.id)
                                 }
@@ -431,7 +423,6 @@ class HomeScreen : Screen {
                                         else RoundedCornerShape(2.dp)
                                     }
                                 )
-                                .background(MaterialTheme.colorScheme.primaryContainer)
                                 .clickable {
                                     onExpenseClick(expense.id)
                                 }
@@ -503,18 +494,11 @@ class HomeScreen : Screen {
             (expense.amount - expense.amountPaid).toTwoDecimals()
         }
 
-//        val percentagePaid = remember(expense.amountPaid, expense.amount) {
-//            if (expense.amount > 0) {
-//                (expense.amountPaid / expense.amount * 100).toInt()
-//            } else {
-//                0
-//            }
-//        }
-
         val paid = expense.paid
 
         Column(
             modifier = modifier
+                .background(MaterialTheme.colorScheme.surfaceContainer)
                 .semantics { contentDescription = "Expense: ${expense.title}" }
                 .padding(16.dp)
         ) {
@@ -524,11 +508,11 @@ class HomeScreen : Screen {
             ) {
                 Icon(
                     getCategoryIcon(expense.category),
-                    tint = if (paid) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.onPrimary,
+                    tint = if (paid) MaterialTheme.colorScheme.surfaceContainer else MaterialTheme.colorScheme.onPrimary,
                     contentDescription = expense.category.toString(),
                     modifier = Modifier
                         .clip(CircleShape)
-                        .background(if (paid) Color.Gray else MaterialTheme.colorScheme.primary)
+                        .background(if (paid) MaterialTheme.colorScheme.surfaceDim else MaterialTheme.colorScheme.primary)
                         .padding(12.dp)
                         .size(24.dp)
                 )
@@ -540,7 +524,7 @@ class HomeScreen : Screen {
                     Text(
                         text = expense.title,
                         style = MaterialTheme.typography.bodyMedium.copy(
-                            color = if (paid) Color.Gray else MaterialTheme.colorScheme.onPrimaryContainer,
+                            color = if (paid) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                         ),
                         softWrap = true,
                         overflow = TextOverflow.Ellipsis,
@@ -550,22 +534,9 @@ class HomeScreen : Screen {
                     Text(
                         text = formatDate(expense.createdAt, "MMM dd"),
                         style = MaterialTheme.typography.bodySmall.copy(
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     )
-//                        Text(
-//                            text = stringResource(Res.string.s_paid, "$percentagePaid%"),
-//                            style = MaterialTheme.typography.bodySmall.copy(
-//                                color = when {
-//                                    paid -> Color.Gray
-//                                    percentagePaid == 100 -> MaterialTheme.colorScheme.primary
-//                                    percentagePaid >= 50 -> Color(0xFF22BB33) // Verde
-//                                    percentagePaid >= 25 -> Color(0xFFFFAA00) // Ámbar
-//                                    else -> Color(0xFFFF6666) // Rojo claro
-//                                }
-//                            ),
-//                        )
-
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 Column(
@@ -584,14 +555,14 @@ class HomeScreen : Screen {
                             text = formatCurrency(expense.amount, "es-MX"),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 textDecoration = TextDecoration.LineThrough,
-                                color = Color.Gray
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         )
                     } else
                         Text(
                             text = formatCurrency(expense.amount, "es-MX"),
                             style = MaterialTheme.typography.bodyMedium.copy(
-                                color = if (paid) Color.Gray else MaterialTheme.colorScheme.primary,
+                                color = if (paid) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
                             )
                         )
                 }

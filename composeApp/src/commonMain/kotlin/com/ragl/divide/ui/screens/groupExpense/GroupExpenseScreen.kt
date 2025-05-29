@@ -61,7 +61,8 @@ import org.jetbrains.compose.resources.stringResource
 
 class GroupExpenseScreen(
     private val groupId: String,
-    private val expenseId: String
+    private val expenseId: String,
+    private val eventId: String? = null
 ) : Screen {
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -72,8 +73,8 @@ class GroupExpenseScreen(
         val userViewModel = navigator.koinNavigatorScreenModel<UserViewModel>()
 
         LaunchedEffect(Unit) {
-            val groupExpense = userViewModel.getGroupExpenseById(groupId, expenseId)
             val members = userViewModel.getGroupMembers(groupId)
+            val groupExpense = userViewModel.getGroupExpenseById(groupId, expenseId, eventId)
             viewModel.setGroupExpense(groupExpense, members)
         }
 
@@ -107,7 +108,8 @@ class GroupExpenseScreen(
                                     navigator.push(
                                         GroupExpensePropertiesScreen(
                                             groupId,
-                                            groupExpenseState.id
+                                            groupExpenseState.id,
+                                            eventId
                                         )
                                     )
                                 }
@@ -137,13 +139,11 @@ class GroupExpenseScreen(
                         title = {
                             Text(
                                 stringResource(Res.string.delete),
-                                style = MaterialTheme.typography.titleMedium
                             )
                         },
                         text = {
                             Text(
                                 stringResource(Res.string.delete_expense_confirm),
-                                style = MaterialTheme.typography.bodyMedium
                             )
                         },
                         confirmButton = {
@@ -152,11 +152,12 @@ class GroupExpenseScreen(
                                 userViewModel.showLoading()
                                 viewModel.deleteExpense(groupId, {
                                     userViewModel.removeGroupExpense(groupId, it)
+                                    userViewModel.hideLoading()
                                     navigator.pop()
                                 }) {
                                     userViewModel.handleError(it)
+                                    userViewModel.hideLoading()
                                 }
-                                userViewModel.hideLoading()
                             }) {
                                 Text(stringResource(Res.string.delete))
                             }
@@ -165,10 +166,7 @@ class GroupExpenseScreen(
                             TextButton(onClick = { isDeleteDialogEnabled = false }) {
                                 Text(stringResource(Res.string.cancel))
                             }
-                        },
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        titleContentColor = MaterialTheme.colorScheme.primary,
-                        textContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        }
                     )
                 }
                 

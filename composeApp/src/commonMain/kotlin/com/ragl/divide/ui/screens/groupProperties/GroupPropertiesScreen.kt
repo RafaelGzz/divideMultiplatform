@@ -46,7 +46,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -81,8 +80,9 @@ import dividemultiplatform.composeapp.generated.resources.add
 import dividemultiplatform.composeapp.generated.resources.add_friends_to_group
 import dividemultiplatform.composeapp.generated.resources.add_group
 import dividemultiplatform.composeapp.generated.resources.cancel
+import dividemultiplatform.composeapp.generated.resources.cannot_delete_group
+import dividemultiplatform.composeapp.generated.resources.cannot_leave_group
 import dividemultiplatform.composeapp.generated.resources.configuration
-import dividemultiplatform.composeapp.generated.resources.debt_or_credit_error
 import dividemultiplatform.composeapp.generated.resources.delete
 import dividemultiplatform.composeapp.generated.resources.delete_group
 import dividemultiplatform.composeapp.generated.resources.delete_group_message
@@ -114,8 +114,8 @@ class GroupPropertiesScreen(
             if (groupId != null) {
                 val group = userViewModel.getGroupById(groupId)
                 val members = userViewModel.getGroupMembers(groupId)
-                viewModel.setGroup(group, members)
-                viewModel.setCurrentUserId(userViewModel.getUUID())
+                val uuid = userViewModel.getUUID()
+                viewModel.setGroup(group, members, uuid)
             }
         }
 
@@ -128,8 +128,8 @@ class GroupPropertiesScreen(
             contentColor = MaterialTheme.colorScheme.onSurface
         )
         val selectedColors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            contentColor = MaterialTheme.colorScheme.onSurface
         )
         val selectedFriends = remember { mutableStateListOf<UserInfo>() }
 
@@ -140,17 +140,18 @@ class GroupPropertiesScreen(
         var showFriendSelection by remember { mutableStateOf(false) }
         var searchText by remember { mutableStateOf("") }
 
-        var simplifyDebts = viewModel.simplifyDebts
-
         val isUpdate by remember { mutableStateOf(groupId != null) }
 
         val onDeleteGroup = {
             userViewModel.removeGroup(groupId!!)
+            userViewModel.hideLoading()
             navigator.replaceAll(HomeScreen())
         }
 
         val friends: List<UserInfo> = userViewModel.state.value.friends.values.toList()
-        val uuid = userViewModel.getUUID()
+
+        val canLeave = viewModel.canLeaveGroup
+        val canDelete = viewModel.canDeleteGroup
 
         Box {
             if (isLoading) {
@@ -202,11 +203,12 @@ class GroupPropertiesScreen(
                                         viewModel.saveGroup(onSuccess = { group ->
                                             userViewModel.setGroupMembers(group)
                                             userViewModel.addGroup(group)
+                                            userViewModel.hideLoading()
                                             navigator.pop()
                                         }, onError = {
+                                            userViewModel.hideLoading()
                                             userViewModel.handleError(it)
                                         })
-                                        userViewModel.hideLoading()
                                     },
                                     shape = ShapeDefaults.Medium,
                                     modifier = Modifier
@@ -228,12 +230,13 @@ class GroupPropertiesScreen(
                                             onSuccess = {
                                                 userViewModel.setGroupMembers(it)
                                                 userViewModel.addGroup(it)
+                                                userViewModel.hideLoading()
                                                 navigator.pop()
                                             },
                                             onError = {
+                                                userViewModel.hideLoading()
                                                 userViewModel.handleError(it)
                                             })
-                                        userViewModel.hideLoading()
                                     },
                                     shape = ShapeDefaults.Medium,
                                     modifier = Modifier
@@ -278,9 +281,9 @@ class GroupPropertiesScreen(
                                             userViewModel.showLoading()
                                             dialogEnabled = false
                                             viewModel.deleteGroup(onDeleteGroup) {
+                                                userViewModel.hideLoading()
                                                 userViewModel.handleError(it)
                                             }
-                                            userViewModel.hideLoading()
                                         }) {
                                             Text(stringResource(Res.string.delete))
                                         }
@@ -289,10 +292,7 @@ class GroupPropertiesScreen(
                                         TextButton(onClick = { dialogEnabled = false }) {
                                             Text(stringResource(Res.string.cancel))
                                         }
-                                    },
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    titleContentColor = MaterialTheme.colorScheme.primary,
-                                    textContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                    }
                                 )
                             else
                                 AlertDialog(
@@ -315,8 +315,10 @@ class GroupPropertiesScreen(
                                             userViewModel.showLoading()
                                             viewModel.leaveGroup(
                                                 onSuccessful = onDeleteGroup,
-                                                onError = { userViewModel.handleError(it) })
-                                            userViewModel.hideLoading()
+                                                onError = {
+                                                    userViewModel.handleError(it)
+                                                    userViewModel.hideLoading()
+                                                })
                                         }) {
                                             Text(stringResource(Res.string.leave))
                                         }
@@ -325,10 +327,7 @@ class GroupPropertiesScreen(
                                         TextButton(onClick = { dialogEnabled = false }) {
                                             Text(stringResource(Res.string.cancel))
                                         }
-                                    },
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    titleContentColor = MaterialTheme.colorScheme.primary,
-                                    textContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                    }
                                 )
                         }
                         LazyColumn(
@@ -348,7 +347,7 @@ class GroupPropertiesScreen(
                                             .size(80.dp)
                                             .clickable { showImagePicker = true }
                                             .clip(ShapeDefaults.Medium)
-                                            .background(MaterialTheme.colorScheme.primaryContainer),
+                                            .background(MaterialTheme.colorScheme.surfaceContainer),
                                     ) {
                                         if (temporaryImagePath != null) {
                                             // Mostrar la imagen temporal seleccionada
@@ -369,7 +368,7 @@ class GroupPropertiesScreen(
                                             Icon(
                                                 Icons.Filled.Add,
                                                 contentDescription = "Add image button",
-                                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                tint = MaterialTheme.colorScheme.onSurface,
                                                 modifier = Modifier
                                                     .size(32.dp)
                                                     .align(Alignment.Center)
@@ -464,16 +463,16 @@ class GroupPropertiesScreen(
                                             .padding(vertical = 8.dp)
                                     ) {
                                         Switch(
-                                            checked = simplifyDebts,
+                                            checked = viewModel.simplifyDebts,
                                             onCheckedChange = {
                                                 viewModel.updateSimplifyDebts(it)
                                             },
-                                            colors = SwitchDefaults.colors(
-                                                checkedThumbColor = MaterialTheme.colorScheme.primary,
-                                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
-                                                uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                                                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
-                                            )
+//                                            colors = SwitchDefaults.colors(
+//                                                checkedThumbColor = MaterialTheme.colorScheme.primary,
+//                                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+//                                                uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+//                                                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+//                                            )
                                         )
                                         Text(
                                             text = stringResource(Res.string.simplify_debts),
@@ -481,9 +480,6 @@ class GroupPropertiesScreen(
                                             modifier = Modifier.padding(start = 12.dp)
                                         )
                                     }
-
-                                    // Verificar si el usuario tiene deudas o si le deben en el grupo
-                                    val hasDebtsOrCredits = viewModel.hasUserDebtOrCredit(uuid)
 
                                     OutlinedButton(
                                         onClick = {
@@ -499,14 +495,14 @@ class GroupPropertiesScreen(
                                         ),
                                         border = BorderStroke(
                                             2.dp,
-                                            if (hasDebtsOrCredits) MaterialTheme.colorScheme.error.copy(
+                                            if (!canLeave) MaterialTheme.colorScheme.error.copy(
                                                 alpha = 0.38f
                                             )
                                             else MaterialTheme.colorScheme.error
                                         ),
-                                        enabled = !hasDebtsOrCredits,
+                                        enabled = canLeave,
                                         modifier = Modifier
-                                            .padding(top = 8.dp)
+                                            .padding(vertical = 8.dp)
                                             .fillMaxWidth()
                                     ) {
                                         Icon(
@@ -518,6 +514,16 @@ class GroupPropertiesScreen(
                                             text = stringResource(Res.string.leave_group),
                                             style = MaterialTheme.typography.titleMedium,
                                             modifier = Modifier.padding(vertical = 12.dp)
+                                        )
+                                    }
+
+                                    // Mensaje explicativo si los botones están deshabilitados
+                                    if (!canLeave) {
+                                        Text(
+                                            text = stringResource(Res.string.cannot_leave_group),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.padding(bottom = 4.dp)
                                         )
                                     }
                                     Button(
@@ -536,9 +542,9 @@ class GroupPropertiesScreen(
                                                 alpha = 0.38f
                                             )
                                         ),
-                                        enabled = !hasDebtsOrCredits,
+                                        enabled = canDelete,
                                         modifier = Modifier
-                                            .padding(top = 8.dp, bottom = 8.dp)
+                                            .padding(vertical = 8.dp)
                                             .fillMaxWidth()
                                     ) {
                                         Icon(
@@ -554,9 +560,9 @@ class GroupPropertiesScreen(
                                     }
 
                                     // Mensaje explicativo si los botones están deshabilitados
-                                    if (hasDebtsOrCredits) {
+                                    if (!canDelete) {
                                         Text(
-                                            text = stringResource(Res.string.debt_or_credit_error),
+                                            text = stringResource(Res.string.cannot_delete_group),
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.error,
                                             modifier = Modifier.padding(bottom = 12.dp)

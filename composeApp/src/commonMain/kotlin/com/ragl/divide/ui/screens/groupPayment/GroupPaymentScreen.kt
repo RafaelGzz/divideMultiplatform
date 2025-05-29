@@ -53,7 +53,8 @@ import org.jetbrains.compose.resources.stringResource
 
 class GroupPaymentScreen(
     private val groupId: String,
-    private val paymentId: String
+    private val paymentId: String,
+    private val eventId: String? = null
 ) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -65,7 +66,7 @@ class GroupPaymentScreen(
         var showDeleteDialog by remember { mutableStateOf(false) }
         
         LaunchedEffect(groupId, paymentId) {
-            val payment = userViewModel.getGroupPaymentById(groupId, paymentId)
+            val payment = userViewModel.getGroupPaymentById(groupId, paymentId, eventId)
             val members = userViewModel.getGroupMembers(groupId)
             vm.setPayment(payment, groupId, members)
         }
@@ -92,7 +93,8 @@ class GroupPaymentScreen(
                                 navigator.push(
                                     GroupPaymentPropertiesScreen(
                                         groupId = groupId,
-                                        paymentId = paymentId
+                                        paymentId = paymentId,
+                                        eventId = eventId
                                     )
                                 )
                             }) {
@@ -129,14 +131,15 @@ class GroupPaymentScreen(
                                 showDeleteDialog = false
                                 vm.deletePayment(
                                     onSuccess = {
-                                        userViewModel.deleteGroupPayment(groupId, paymentId)
+                                        userViewModel.deleteGroupPayment(groupId, it)
+                                        userViewModel.hideLoading()
                                         navigator.pop()
                                     },
                                     onError = {
+                                        userViewModel.hideLoading()
                                         userViewModel.handleError(it)
                                     }
                                 )
-                                userViewModel.hideLoading()
                             }) {
                                 Text(stringResource(Res.string.delete))
                             }
@@ -145,10 +148,7 @@ class GroupPaymentScreen(
                             TextButton(onClick = { showDeleteDialog = false }) {
                                 Text(stringResource(Res.string.cancel))
                             }
-                        },
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        titleContentColor = MaterialTheme.colorScheme.primary,
-                        textContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        }
                     )
                 }
                 

@@ -50,26 +50,33 @@ class GroupPropertiesViewModel(
 
     private var currentUserId: String = ""
 
+    var canLeaveGroup by mutableStateOf(false)
+    var canDeleteGroup by mutableStateOf(false)
+
     fun updateSimplifyDebts(simplify: Boolean) {
         simplifyDebts = simplify
     }
 
-    fun hasUserDebtOrCredit(userId: String = currentUserId): Boolean {
-        if (userId.isEmpty()) return false
+    private fun canLeaveGroup(): Boolean {
+        if (currentUserId.isEmpty()) return false
 
         val currentDebts = _group.value.currentDebts
 
-        val userDebts = currentDebts[userId]
-        if (userDebts != null && userDebts.any { it.value > 0.01 }) {
-            return true
+        val userDebts = currentDebts[currentUserId]
+        if (userDebts != null) {
+            return false
         }
 
-        val userCredits = currentDebts.filter { it.key != userId }
+        val userCredits = currentDebts.filter { it.key != currentUserId }
             .any { (_, debtMap) ->
-                debtMap.containsKey(userId) && debtMap[userId]!! > 0.01
+                debtMap.containsKey(currentUserId)
             }
 
-        return userCredits
+        return !userCredits
+    }
+
+    fun canDeleteGroup(): Boolean {
+        return _group.value.currentDebts.isEmpty()
     }
 
     fun updateName(name: String) {
@@ -91,28 +98,27 @@ class GroupPropertiesViewModel(
         this.members -= member
     }
 
-    fun setGroup(group: Group, users: List<UserInfo>) {
+    fun setGroup(group: Group, users: List<UserInfo>, userId: String) {
         screenModelScope.launch {
+            currentUserId = userId
             _isLoading.update { true }
             _group.update {
                 group
             }
             simplifyDebts = group.simplifyDebts
             members = users
+            canLeaveGroup = canLeaveGroup()
+            canDeleteGroup = canDeleteGroup()
             //friendsRepository.getFriends(_group.value.users.values.toList()).values.toList()
             _isLoading.update { false }
         }
     }
 
-    fun setCurrentUserId(userId: String) {
-        currentUserId = userId
-    }
-
     fun leaveGroup(onSuccessful: () -> Unit, onError: (String) -> Unit) {
         screenModelScope.launch {
             try {
-                if (hasUserDebtOrCredit()) {
-                    onError(strings.getDebtOrCreditError())
+                if (!canLeaveGroup()) {
+                    onError(strings.getCannotLeaveGroup())
                     return@launch
                 }
                 groupRepository.leaveGroup(_group.value.id)
@@ -176,11 +182,11 @@ class GroupPropertiesViewModel(
         }
     }
 
-    fun deleteGroup(onDelete: () -> Unit, onError: (String) -> Unit) {
+    fun deleteGroup(onSuccess: () -> Unit, onError: (String) -> Unit) {
         screenModelScope.launch {
             try {
-                if (hasUserDebtOrCredit()) {
-                    onError(strings.getDebtOrCreditError())
+                if (!canDeleteGroup()) {
+                    onError(strings.getCannotDeleteGroup())
                     return@launch
                 }
                 _isLoading.update { true }
@@ -189,7 +195,7 @@ class GroupPropertiesViewModel(
                     if (_group.value.image.isNotEmpty()) _group.value.id else ""
                 )
                 _isLoading.update { false }
-                onDelete()
+                onSuccess()
             } catch (e: Exception) {
                 logMessage("GroupDetailsViewModel", e.toString())
                 onError(e.message ?: strings.getUnknownError())

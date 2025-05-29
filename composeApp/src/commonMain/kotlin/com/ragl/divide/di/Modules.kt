@@ -7,9 +7,12 @@ import com.ragl.divide.data.repositories.GroupRepositoryImpl
 import com.ragl.divide.data.repositories.PreferencesRepository
 import com.ragl.divide.data.repositories.UserRepository
 import com.ragl.divide.data.repositories.UserRepositoryImpl
+import com.ragl.divide.data.services.GroupEventService
 import com.ragl.divide.data.services.GroupExpenseService
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.addFriends.AddFriendsViewModel
+import com.ragl.divide.ui.screens.event.EventViewModel
+import com.ragl.divide.ui.screens.eventProperties.EventPropertiesViewModel
 import com.ragl.divide.ui.screens.expense.ExpenseViewModel
 import com.ragl.divide.ui.screens.expenseProperties.ExpensePropertiesViewModel
 import com.ragl.divide.ui.screens.group.GroupViewModel
@@ -54,8 +57,11 @@ val sharedModule = module {
     factoryOf(::GroupPaymentPropertiesViewModel)
     factoryOf(::GroupPaymentViewModel)
     factoryOf(::AddFriendsViewModel)
+    factoryOf(::EventViewModel)
+    factoryOf(::EventPropertiesViewModel)
 
     singleOf(::GroupExpenseService)
+    singleOf(::GroupEventService)
 
     // FIREBASE DEPENDENCIES
     single {

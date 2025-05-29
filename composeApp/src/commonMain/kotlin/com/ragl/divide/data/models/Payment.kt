@@ -12,4 +12,5 @@ data class Payment(
     val createdAt: Long = Clock.System.now().toEpochMilliseconds(),
     val updatedAt: Long = Clock.System.now().toEpochMilliseconds(),
     val settled: Boolean = false,
+    val eventId: String = "",
 )

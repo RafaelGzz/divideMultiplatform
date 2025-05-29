@@ -25,10 +25,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -93,7 +91,9 @@ expect class Strings{
     fun getEmailNotVerified(): String
     fun getVerificationEmailSent(): String
     fun getUnusualActivity(): String
-    fun getDebtOrCreditError(): String
+    fun getCannotDeleteGroup(): String
+    fun getCannotLeaveGroup(): String
+    fun getCannotDeleteEvent(): String
     fun getCouldNotProcessImage(): String
     fun getFriendRequestSent(): String
     fun getFriendRequestAccepted(): String
@@ -104,6 +104,7 @@ expect class Strings{
     fun getFailedToRejectFriendRequest(): String
     fun getFailedToCancelFriendRequest(): String
     fun getExpenseAlreadyPaid(): String
+    fun getNoIndividualExpenses(): String
 }
 
 fun Double.toTwoDecimals(): Double {
@@ -193,19 +194,20 @@ fun DivideTextField(
             modifier = Modifier.padding(bottom = 8.dp)
         )
         TextField(
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                unfocusedPrefixColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                focusedPrefixColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                disabledContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                disabledIndicatorColor = Color.Transparent,
-                disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-                disabledPrefixColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-            ),
+//            colors = TextFieldDefaults.colors(
+//                focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+//                unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+//                focusedIndicatorColor = Color.Transparent,
+//                unfocusedIndicatorColor = Color.Transparent,
+//                unfocusedPrefixColor = MaterialTheme.colorScheme.onPrimaryContainer,
+//                focusedPrefixColor = MaterialTheme.colorScheme.onPrimaryContainer,
+//                disabledContainerColor = MaterialTheme.colorScheme.primaryContainer,
+//                disabledIndicatorColor = Color.Transparent,
+//                disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+//                disabledPrefixColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+//            ),
             enabled = enabled,
+            isError = !error.isNullOrEmpty(),
             prefix = prefix,
             suffix = suffix,
             placeholder = placeholder,
@@ -226,7 +228,7 @@ fun DivideTextField(
             textStyle = MaterialTheme.typography.bodyMedium,
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(ShapeDefaults.Medium)
+//                .clip(ShapeDefaults.Medium)
                 .onFocusChanged { focusState ->
                     if (isFocused && !focusState.isFocused) {
                         validate()
@@ -255,8 +257,8 @@ fun FriendItem(
     photoUrl: String = "",
     enabled: Boolean = true,
     colors: CardColors = CardDefaults.cardColors(
-        containerColor = MaterialTheme.colorScheme.primaryContainer,
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        contentColor = MaterialTheme.colorScheme.onSurface
     ),
     icon: ImageVector = Icons.Filled.Person,
     trailingContent: @Composable (() -> Unit)? = null,
@@ -268,7 +270,7 @@ fun FriendItem(
             Text(
                 text = supporting,
                 style = MaterialTheme.typography.bodySmall.copy(
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )
         }
@@ -294,7 +296,7 @@ fun FriendItem(
                 Text(
                     text = headline,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = if (enabled) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary.copy(
+                    color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary.copy(
                         alpha = 0.5f
                     ),
                     overflow = TextOverflow.Ellipsis,

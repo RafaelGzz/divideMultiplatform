@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.Group
+import com.ragl.divide.data.models.GroupEvent
 import com.ragl.divide.data.models.Payment
 import com.ragl.divide.data.models.UserInfo
 import com.ragl.divide.data.repositories.GroupRepository
@@ -28,7 +29,7 @@ class GroupPaymentPropertiesViewModel(
     val payment = _payment.asStateFlow()
 
     var isUpdate = mutableStateOf(false)
-    var userId by mutableStateOf("")
+    private var userId by mutableStateOf("")
 
     var amount by mutableStateOf("")
         private set
@@ -40,6 +41,8 @@ class GroupPaymentPropertiesViewModel(
         private set
     var members by mutableStateOf(listOf<UserInfo>())
         private set
+
+    private var event by mutableStateOf<GroupEvent?>(null)
 
     fun updateAmount(amount: String) {
         this.amount = amount
@@ -59,25 +62,28 @@ class GroupPaymentPropertiesViewModel(
 
     fun setGroupAndPayment(
         group: Group,
-        userId: String,
         members: List<UserInfo>,
-        payment: Payment
+        payment: Payment? = null,
+        event: GroupEvent? = null
     ) {
+        this.event = event
         screenModelScope.launch {
             updateMembers(members)
-            if (payment.id.isNotEmpty()) {
+            val uuid = members.firstOrNull()?.uuid ?: ""
+
+            if (payment != null && payment.id.isNotEmpty()) {
                 isUpdate.value = true
                 _payment.update { payment }
                 amount = payment.amount.let { if (it == 0.0) "" else it.toString() }
                 from = members.firstOrNull { it.uuid == payment.from } ?: UserInfo()
                 to = members.firstOrNull { it.uuid == payment.to } ?: UserInfo()
             } else {
-                from = members.first { it.uuid == userId }
-                to = members.firstOrNull { it.uuid != userId } ?: UserInfo()
+                from = members.firstOrNull { it.uuid == uuid } ?: UserInfo()
+                to = members.firstOrNull { it.uuid != uuid } ?: UserInfo()
             }
             _group.update { group }
         }
-        this.userId = userId
+        this.userId = members.firstOrNull()?.uuid ?: ""
     }
 
     fun validateAmount(): Boolean {
@@ -110,7 +116,8 @@ class GroupPaymentPropertiesViewModel(
                     amount = amount.toDouble(),
                     from = from.uuid,
                     to = to.uuid,
-                    date = Clock.System.now().toEpochMilliseconds()
+                    date = Clock.System.now().toEpochMilliseconds(),
+                    eventId = if (event != null) event!!.id else ""
                 )
 
                 screenModelScope.launch {

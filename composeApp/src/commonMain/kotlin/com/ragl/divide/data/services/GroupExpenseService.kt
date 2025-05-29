@@ -136,6 +136,7 @@ class GroupExpenseService {
         val simplified = mutableMapOf<String, MutableMap<String, Double>>()
 
         for ((pair, amount) in netDebts) {
+            // Si la deuda neta es insignificante, ignorarla
             if (kotlin.math.abs(amount) < 0.01) continue
 
             val (from, to, amt) = if (amount > 0) {
@@ -152,16 +153,57 @@ class GroupExpenseService {
         do {
             wasSimplified = false
             
-            // Obtener una copia de las personas que deben
+            // Optimización: Buscar caminos directos para simplificar deudas circulares
             val debtors = simplified.keys.toList()
             
             for (debtor in debtors) {
                 val creditors = simplified[debtor]?.keys?.toList() ?: continue
                 
-                // Buscar transferencias potenciales
                 for (creditor in creditors) {
+                    // Caso especial: detectar deudas circulares directas (A debe a B y B debe a A)
+                    val mutualDebt = simplified[creditor]?.get(debtor)
+                    if (mutualDebt != null) {
+                        val debtAmount = simplified[debtor]!![creditor] ?: 0.0
+                        
+                        // Cancelar la menor contra la mayor
+                        val minDebt = kotlin.math.min(debtAmount, mutualDebt)
+                        val remainingDebtorDebt = (debtAmount - minDebt).coerceAtLeast(0.0)
+                        val remainingCreditorDebt = (mutualDebt - minDebt).coerceAtLeast(0.0)
+                        
+                        var changed = false
+                        
+                        // Actualizar o eliminar la deuda del deudor
+                        if (remainingDebtorDebt > 0.01) {
+                            simplified[debtor]!![creditor] = remainingDebtorDebt
+                        } else {
+                            simplified[debtor]!!.remove(creditor)
+                            if (simplified[debtor]!!.isEmpty()) {
+                                simplified.remove(debtor)
+                            }
+                            changed = true
+                        }
+                        
+                        // Actualizar o eliminar la deuda del acreedor
+                        if (remainingCreditorDebt > 0.01) {
+                            simplified[creditor]!![debtor] = remainingCreditorDebt
+                        } else {
+                            simplified[creditor]!!.remove(debtor)
+                            if (simplified[creditor]!!.isEmpty()) {
+                                simplified.remove(creditor)
+                            }
+                            changed = true
+                        }
+                        
+                        if (changed) {
+                            wasSimplified = true
+                            break  // Salir del bucle interno
+                        }
+                        
+                        continue  // Pasar a la siguiente combinación
+                    }
+                    
                     // Si A debe a B y B debe a C, entonces A podría deber directamente a C
-                    val secondaryCreditors = simplified[creditor]?.keys ?: continue
+                    val secondaryCreditors = simplified[creditor]?.keys?.toList() ?: continue
                     
                     for (secondaryCreditor in secondaryCreditors) {
                         // Evitar ciclos
@@ -196,9 +238,34 @@ class GroupExpenseService {
                                 }
                             }
                             
-                            // 3. Crear o aumentar la deuda directa de debtor a secondaryCreditor
-                            simplified.getOrPut(debtor) { mutableMapOf() }[secondaryCreditor] = 
-                                (simplified[debtor]?.get(secondaryCreditor) ?: 0.0) + transferAmount
+                            // 3. Verificar si ya existe una deuda en dirección contraria antes de crear una nueva
+                            val existingReverseDebt = simplified[secondaryCreditor]?.get(debtor) ?: 0.0
+                            if (existingReverseDebt > 0.0) {
+                                // Si existe deuda en dirección contraria, cancelarlas entre sí
+                                val diff = transferAmount - existingReverseDebt
+                                if (diff > 0.01) {
+                                    // debtor sigue debiendo a secondaryCreditor
+                                    simplified.getOrPut(debtor) { mutableMapOf() }[secondaryCreditor] = diff
+                                    // Eliminar la deuda inversa
+                                    simplified[secondaryCreditor]!!.remove(debtor)
+                                    if (simplified[secondaryCreditor]!!.isEmpty()) {
+                                        simplified.remove(secondaryCreditor)
+                                    }
+                                } else if (diff < -0.01) {
+                                    // secondaryCreditor sigue debiendo a debtor, pero menos
+                                    simplified[secondaryCreditor]!![debtor] = -diff
+                                } else {
+                                    // Las deudas se cancelan exactamente
+                                    simplified[secondaryCreditor]!!.remove(debtor)
+                                    if (simplified[secondaryCreditor]!!.isEmpty()) {
+                                        simplified.remove(secondaryCreditor)
+                                    }
+                                }
+                            } else {
+                                // No hay deuda inversa, crear nueva deuda
+                                simplified.getOrPut(debtor) { mutableMapOf() }[secondaryCreditor] = 
+                                    (simplified[debtor]?.get(secondaryCreditor) ?: 0.0) + transferAmount
+                            }
                             
                             wasSimplified = true
                             break  // Salir del bucle interno ya que hemos modificado las colecciones

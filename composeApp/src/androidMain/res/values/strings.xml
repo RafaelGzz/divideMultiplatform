@@ -29,7 +29,9 @@
     <string name="unusual_activity">Unusual activity detected. Try again later.</string>
     <string name="email_not_verified">Email not verified</string>
     <string name="verification_email_sent">Verification email sent</string>
-    <string name="debt_or_credit_error">You cannot leave or delete the group while having debts or credits</string>
+    <string name="cannot_leave_group">You cannot leave the group while having debts or credits</string>
+    <string name="cannot_delete_group">You cannot delete the group while debts or credits exist</string>
+    <string name="cannot_delete_event">You cannot delete the event while debts or credits exist</string>
     <string name="could_not_process_image">Could not process the image</string>
     <string name="notification_reminder_1">Don\'t forget to pay your %1$s! Keep your finances up to date.</string>
     <string name="notification_reminder_2">Reminder: Your %1$s payment is pending. Avoid late fees!</string>
@@ -53,4 +55,5 @@
     <string name="accept">Accept</string>
     <string name="reject">Reject</string>
     <string name="expense_already_paid">This expense has already been paid</string>
+    <string name="no_individual_expenses">No individual expenses allowed</string>
 </resources>
