@@ -408,10 +408,11 @@ private fun DefaultProfileIcon(
 
 @Composable
 fun Header(
-    title: String
+    title: String,
+    modifier: Modifier = Modifier
 ) {
     Box(
-        modifier = Modifier
+        modifier = modifier
     ) {
         Column(
             modifier = Modifier

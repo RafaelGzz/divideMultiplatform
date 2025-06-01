@@ -59,7 +59,7 @@ import com.ragl.divide.data.models.GroupExpense
 import com.ragl.divide.data.models.Payment
 import com.ragl.divide.data.models.UserInfo
 import com.ragl.divide.data.models.getCategoryIcon
-import com.ragl.divide.ui.components.CustomFABGroup
+import com.ragl.divide.ui.components.EventFABGroup
 import com.ragl.divide.ui.components.ExpenseListView
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.eventProperties.EventPropertiesScreen
@@ -104,7 +104,7 @@ class EventScreen(
                 )
             },
             floatingActionButton = {
-                CustomFABGroup(
+                EventFABGroup(
                     onAddExpenseClick = {
                         navigator.push(GroupExpensePropertiesScreen(groupId, eventId = eventId))
                     },
@@ -275,7 +275,7 @@ private fun ExpenseAndPaymentsList(
     val items = (expenses + payments).sortedByDescending {
         when (it) {
             is GroupExpense -> it.createdAt
-            is Payment -> it.date
+            is Payment -> it.createdAt
             else -> 0L
         }
     }
@@ -432,7 +432,7 @@ private fun PaymentItem(
             )
 
             Text(
-                text = formatDate(payment.date, "dd MMM yyyy"),
+                text = formatDate(payment.createdAt, "dd MMM yyyy"),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.5f)
             )

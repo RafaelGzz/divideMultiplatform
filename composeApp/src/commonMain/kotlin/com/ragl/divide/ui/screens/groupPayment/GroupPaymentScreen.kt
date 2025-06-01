@@ -161,7 +161,7 @@ class GroupPaymentScreen(
                 )
                 
                 Text(
-                    text = stringResource(Res.string.added_on, formatDate(payment.date)),
+                    text = stringResource(Res.string.added_on, formatDate(payment.createdAt)),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier

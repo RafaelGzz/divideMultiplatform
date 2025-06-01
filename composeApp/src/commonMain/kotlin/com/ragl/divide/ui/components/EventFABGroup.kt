@@ -40,9 +40,8 @@ import dividemultiplatform.composeapp.generated.resources.add_expense
 import dividemultiplatform.composeapp.generated.resources.make_a_payment
 import org.jetbrains.compose.resources.stringResource
 
-
 @Composable
-fun CustomFABGroup(
+fun EventFABGroup(
     fabIcon: ImageVector = Icons.Default.Add,
     onAddExpenseClick: () -> Unit,
     onAddPaymentClick: () -> Unit,

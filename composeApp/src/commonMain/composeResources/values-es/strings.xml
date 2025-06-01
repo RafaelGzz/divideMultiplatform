@@ -21,8 +21,9 @@
     <string name="owed">Te deben $%1$s</string>
     <string name="you_owe">Debes $%1$s</string>
     <string name="see_all">Ver\ntodos</string>
-    <string name="bar_item_home_text">Inicio</string>
-    <string name="bar_item_friends_text">Amigos</string>
+    <string name="bar_item_expenses_text">Gastos</string>
+    <string name="bar_item_groups_text">Grupos</string>
+    <string name="friends">Amigos</string>
     <string name="your_friends">Tus amigos</string>
     <string name="add_expense">Añadir Gasto</string>
     <string name="title">Título</string>

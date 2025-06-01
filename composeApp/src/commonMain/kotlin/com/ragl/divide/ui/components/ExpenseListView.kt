@@ -65,7 +65,7 @@ fun ExpenseListView(
             }
 
             is Payment -> {
-                formatDate(it.date, "MMMM yyyy")
+                formatDate(it.createdAt, "MMMM yyyy")
             }
 
             else -> ""
@@ -119,7 +119,7 @@ private fun MonthSection(
             expensesAndPayments.sortedByDescending {
                 when (it) {
                     is GroupExpense -> it.createdAt
-                    is Payment -> it.date
+                    is Payment -> it.createdAt
                     else -> null
                 }
             }.fastForEachIndexed { i, item ->
@@ -131,21 +131,24 @@ private fun MonthSection(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(
-                            if (i == 0) RoundedCornerShape(
-                                topStart = 16.dp,
-                                topEnd = 16.dp,
-                                bottomEnd = 2.dp,
-                                bottomStart = 2.dp
-                            ) else {
-                                if (i == expensesAndPayments.lastIndex)
-                                    RoundedCornerShape(
-                                        topStart = 2.dp,
-                                        topEnd = 2.dp,
-                                        bottomEnd = 16.dp,
-                                        bottomStart = 16.dp
-                                    )
-                                else RoundedCornerShape(2.dp)
-                            }
+                            if (expensesAndPayments.size == 1)
+                                RoundedCornerShape(16.dp)
+                            else
+                                if (i == 0) RoundedCornerShape(
+                                    topStart = 16.dp,
+                                    topEnd = 16.dp,
+                                    bottomEnd = 2.dp,
+                                    bottomStart = 2.dp
+                                ) else {
+                                    if (i == expensesAndPayments.lastIndex)
+                                        RoundedCornerShape(
+                                            topStart = 2.dp,
+                                            topEnd = 2.dp,
+                                            bottomEnd = 16.dp,
+                                            bottomStart = 16.dp
+                                        )
+                                    else RoundedCornerShape(2.dp)
+                                }
 
                         )
                         .background(MaterialTheme.colorScheme.surfaceContainer)
@@ -169,7 +172,7 @@ private fun GroupExpenseItem(
     modifier: Modifier = Modifier,
 ) {
     val formattedDate = formatDate(
-        if (item is GroupExpense) item.createdAt else (item as Payment).date,
+        if (item is GroupExpense) item.createdAt else (item as Payment).createdAt,
         "MMM\ndd"
     )
 

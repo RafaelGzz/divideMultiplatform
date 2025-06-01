@@ -116,7 +116,7 @@ class GroupPaymentPropertiesViewModel(
                     amount = amount.toDouble(),
                     from = from.uuid,
                     to = to.uuid,
-                    date = Clock.System.now().toEpochMilliseconds(),
+                    createdAt = Clock.System.now().toEpochMilliseconds(),
                     eventId = if (event != null) event!!.id else ""
                 )
 

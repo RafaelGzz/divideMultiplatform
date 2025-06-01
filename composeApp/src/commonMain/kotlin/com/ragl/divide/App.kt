@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,7 +32,6 @@ import com.ragl.divide.ui.screens.home.HomeScreen
 import com.ragl.divide.ui.screens.signIn.SignInScreen
 import com.ragl.divide.ui.theme.DivideTheme
 import org.koin.compose.koinInject
-import androidx.compose.foundation.interaction.MutableInteractionSource
 
 @Composable
 fun App() {
@@ -69,7 +69,7 @@ fun App() {
     }
 
     DivideTheme(darkTheme = darkModeState?.toBoolean() ?: isSystemInDarkTheme()) {
-        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
+        Box(modifier = Modifier.fillMaxSize()) {
             // Solo mostrar la UI principal cuando esté cargada Y NO esté inicializando
             AnimatedVisibility(visible = loaded && !isInitializing, enter = fadeIn()) {
                 ContentWithMessageBar(

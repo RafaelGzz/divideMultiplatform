@@ -204,7 +204,7 @@ fun ExpenseScreenContent(
     }
 
     val payments = remember(expense.payments) {
-        expense.payments.entries.toList().sortedByDescending { it.value.date }
+        expense.payments.entries.toList().sortedByDescending { it.value.createdAt }
     }
 
     Scaffold(
@@ -352,7 +352,7 @@ fun ExpenseScreenContent(
                         },
                         supportingContent = {
                             Text(
-                                formatDate(payment.value.date, "MMM dd"),
+                                formatDate(payment.value.createdAt, "MMM dd"),
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
