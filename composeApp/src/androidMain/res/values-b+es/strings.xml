@@ -1,11 +1,10 @@
 <resources>
+    <!-- App General -->
     <string name="app_name">Divide</string>
-    <string name="notification_title">%1$s</string>
-    <string name="notification_body">Recuerda pagar %1$s</string>
-    <string name="two_people_must_be_selected">Al menos dos personas debe ser seleccionadas</string>
-    <string name="two_people_must_pay">Al menos dos personas deben pagar</string>
-    <string name="percentages_sum_must_be_100">Suma de porcentajes debe ser 100%</string>
-    <string name="quantities_sum_must_be_amount">Suma de cantidades debe ser igual a %1$s</string>
+    <string name="something_went_wrong">Algo salió mal</string>
+    <string name="unknown_error">Error desconocido</string>
+
+    <!-- Authentication -->
     <string name="email_required">El correo es requerido</string>
     <string name="email_not_valid">El correo no es válido</string>
     <string name="password_required">La contraseña es requerida</string>
@@ -16,29 +15,14 @@
     <string name="password_min_length">La contraseña debe tener al menos 8 caracteres</string>
     <string name="password_requirements">La contraseña debe contener al menos un número, una letra mayúscula, una letra minúscula y un carácter especial</string>
     <string name="passwords_not_match">Las contraseñas no coinciden</string>
-    <string name="something_went_wrong">Algo salió mal</string>
-    <string name="title_required">El título es requerido</string>
-    <string name="amount_required">La cantidad es requerida</string>
-    <string name="invalid_amount">Cantidad inválida</string>
-    <string name="amount_must_be_greater">La cantidad debe ser mayor que 0</string>
-    <string name="unknown_error">Error desconocido</string>
-    <string name="error_deleting_payment">Error al eliminar el pago</string>
     <string name="email_password_invalid">El correo o la contraseña no son válidos</string>
     <string name="email_already_in_use">El correo ya está en uso por otra cuenta</string>
     <string name="failed_to_login">No se pudo iniciar sesión</string>
     <string name="unusual_activity">Actividad inusual detectada. Inténtalo de nuevo más tarde.</string>
     <string name="email_not_verified">Correo electrónico no verificado</string>
     <string name="verification_email_sent">Correo de verificación enviado</string>
-    <string name="cannot_leave_group">No puedes salir del grupo mientras tengas deudas o créditos</string>
-    <string name="cannot_delete_group">No puedes eliminar el grupo mientras existan deudas o créditos</string>
-    <string name="cannot_delete_event">No puedes eliminar el evento mientras existan deudas o créditos</string>
-    <string name="could_not_process_image">No se pudo procesar la imagen</string>
-    <string name="notification_reminder_1">¡No olvides realizar el pago de tu %1$s! Mantén tus finanzas al día.</string>
-    <string name="notification_reminder_2">Recordatorio: Tu pago de %1$s está pendiente. ¡Evita recargos!</string>
-    <string name="notification_reminder_3">Es momento de pagar tu %1$s. ¡Tu bolsillo te lo agradecerá!</string>
-    <string name="notification_reminder_4">Tu %1$s necesita ser pagado. ¡Haz clic para ver los detalles!</string>
-    <string name="notification_reminder_5">¡Alerta de pago! %1$s está esperando por tu atención.</string>
-    <string name="notification_reminder_6">¿Ya pagaste tu %1$s? ¡Es hora de ponerse al día!</string>
+
+    <!-- Friends -->
     <string name="send_friend_request">Enviar solicitud de amistad</string>
     <string name="friend_request_sent">Solicitud de amistad enviada</string>
     <string name="friend_request_accepted">Solicitud de amistad aceptada</string>
@@ -54,6 +38,39 @@
     <string name="no_friend_requests_sent">No has enviado ninguna solicitud de amistad</string>
     <string name="accept">Aceptar</string>
     <string name="reject">Rechazar</string>
+
+    <!-- Add/Edit Expense -->
+    <string name="title_required">El título es requerido</string>
+    <string name="amount_required">La cantidad es requerida</string>
+    <string name="invalid_amount">Cantidad inválida</string>
+    <string name="amount_must_be_greater">La cantidad debe ser mayor que 0</string>
+    <string name="two_people_must_be_selected">Al menos dos personas debe ser seleccionadas</string>
+    <string name="percentages_sum_must_be_100">Suma de porcentajes debe ser 100%</string>
+    <string name="quantities_sum_must_be_amount">Suma de cantidades debe ser igual a %1$s</string>
+    <string name="two_people_must_pay">Al menos dos personas deben pagar</string>
     <string name="expense_already_paid">Este gasto ya ha sido pagado</string>
     <string name="no_individual_expenses">No se permiten gastos individuales</string>
+
+    <!-- Expense Details -->
+    <string name="error_deleting_payment">Error al eliminar el pago</string>
+
+    <!-- Groups -->
+    <string name="cannot_leave_group">No puedes salir del grupo mientras tengas deudas o créditos</string>
+    <string name="cannot_delete_group">No puedes eliminar el grupo mientras existan deudas o créditos</string>
+
+    <!-- Events -->
+    <string name="cannot_delete_event">No puedes eliminar el evento mientras existan deudas o créditos</string>
+
+    <!-- Image Selection -->
+    <string name="could_not_process_image">No se pudo procesar la imagen</string>
+
+    <!-- Notifications -->
+    <string name="notification_title">%1$s</string>
+    <string name="notification_body">Recuerda pagar %1$s</string>
+    <string name="notification_reminder_1">¡No olvides realizar el pago de tu %1$s! Mantén tus finanzas al día.</string>
+    <string name="notification_reminder_2">Recordatorio: Tu pago de %1$s está pendiente. ¡Evita recargos!</string>
+    <string name="notification_reminder_3">Es momento de pagar tu %1$s. ¡Tu bolsillo te lo agradecerá!</string>
+    <string name="notification_reminder_4">Tu %1$s necesita ser pagado. ¡Haz clic para ver los detalles!</string>
+    <string name="notification_reminder_5">¡Alerta de pago! %1$s está esperando por tu atención.</string>
+    <string name="notification_reminder_6">¿Ya pagaste tu %1$s? ¡Es hora de ponerse al día!</string>
 </resources>

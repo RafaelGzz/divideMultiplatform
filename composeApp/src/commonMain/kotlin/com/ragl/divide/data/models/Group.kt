@@ -11,7 +11,6 @@ data class Group(
     val payments: Map<String, Payment> = emptyMap(),
     val users: Map<String, String> = emptyMap(),
     val simplifyDebts: Boolean = false,
-    val currentDebts: Map<String, Map<String, Double>> = emptyMap(),
     val activityLog: Map<String, ActivityLog> = emptyMap(),
     val events: Map<String, GroupEvent> = emptyMap(),
     val recurringExpenses: Map<String, GroupExpense> = emptyMap()

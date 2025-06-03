@@ -8,6 +8,7 @@ import com.ragl.divide.data.models.Payment
 import com.ragl.divide.data.models.User
 import com.ragl.divide.data.services.GroupEventService
 import com.ragl.divide.data.services.GroupExpenseService
+import dev.gitlive.firebase.database.DatabaseReference
 import dev.gitlive.firebase.database.FirebaseDatabase
 import dev.gitlive.firebase.storage.File
 import dev.gitlive.firebase.storage.FirebaseStorage
@@ -80,7 +81,12 @@ class GroupRepositoryImpl(
                 }
             }
         }
-        updateCurrentDebts(id)
+
+        group.events.values.map {
+            if (!it.settled)
+                updateCurrentDebts(group.id, it.id)
+        }
+
         return savedGroup
     }
 
@@ -190,6 +196,9 @@ class GroupRepositoryImpl(
         )
         val groupRef = database.reference("groups/$groupId")
         groupRef.child("events").child(newEvent.id).setValue(newEvent)
+
+        updateCurrentDebts(groupId, newEvent.id)
+
         return newEvent
     }
 
@@ -225,9 +234,6 @@ class GroupRepositoryImpl(
         val groupRef = database.reference("groups/$groupId")
         groupRef.child("recurringExpenses").child(newExpense.id).setValue(newExpense)
 
-        // También actualizar las deudas generales del grupo
-        updateCurrentDebts(groupId)
-
         return newExpense
     }
 
@@ -238,9 +244,6 @@ class GroupRepositoryImpl(
         val groupRef = database.reference("groups/$groupId")
         groupRef.child("recurringExpenses").child(expense.id).setValue(expense)
 
-        // También actualizar las deudas generales del grupo
-        updateCurrentDebts(groupId)
-
         return expense
     }
 
@@ -248,41 +251,35 @@ class GroupRepositoryImpl(
         val groupRef = database.reference("groups/$groupId")
         groupRef.child("recurringExpenses").child(expenseId).removeValue()
 
-        // También actualizar las deudas generales del grupo
-        updateCurrentDebts(groupId)
     }
 
     private suspend fun updateCurrentDebts(groupId: String, eventId: String? = null) {
         val groupRef = database.reference("groups/$groupId")
 
+        if (!eventId.isNullOrEmpty()) {
+            updateEventDebts(groupRef, eventId)
+        }
+    }
+
+    private suspend fun updateEventDebts(groupRef: DatabaseReference, eventId: String) {
         val expenses =
-            if (!eventId.isNullOrEmpty())
-                groupRef.child("events/$eventId/expenses").valueEvents.firstOrNull()?.children?.map {
-                    it.value<GroupExpense>()
-                } ?: emptyList()
-            else
-                groupRef.child("expenses").valueEvents.firstOrNull()?.children?.map {
-                    it.value<GroupExpense>()
-                } ?: emptyList()
+            groupRef.child("events/$eventId/expenses").valueEvents.firstOrNull()?.children?.map {
+                it.value<GroupExpense>()
+            } ?: emptyList()
 
         val payments =
-            if (!eventId.isNullOrEmpty())
-                groupRef.child("events/$eventId/payments").valueEvents.firstOrNull()?.children?.map {
-                    it.value<Payment>()
-                } ?: emptyList()
-            else
-                groupRef.child("payments").valueEvents.firstOrNull()?.children?.map {
-                    it.value<Payment>()
-                } ?: emptyList()
+            groupRef.child("events/$eventId/payments").valueEvents.firstOrNull()?.children?.map {
+                it.value<Payment>()
+            } ?: emptyList()
+
+        if (expenses.isEmpty() && payments.isEmpty()) return
 
         val simplifyDebts =
-            groupRef.child("simplifyDebts").valueEvents.firstOrNull()?.value<Boolean>() ?: false
+            groupRef.child("simplifyDebts").valueEvents.firstOrNull()?.value<Boolean>() == true
 
-        // Listas para almacenar IDs de gastos y pagos a liquidar
         val expensesToSettle = mutableListOf<String>()
         val paymentsToSettle = mutableListOf<String>()
 
-        // Calcular deudas actuales, potencialmente identificando gastos/pagos a liquidar
         val currentDebts = groupExpenseService.calculateDebts(
             expenses,
             payments,
@@ -291,29 +288,18 @@ class GroupRepositoryImpl(
             paymentsToSettle
         )
 
-        // Crear un mapa de actualizaciones para realizar en una única transacción
         val updates = mutableMapOf<String, Any?>()
-
-        // Agregar actualización de deudas actuales
         updates["currentDebts"] = currentDebts
 
-        // Si hay gastos o pagos para liquidar (cuando calculateDebts detectó que no hay deudas)
         if (expensesToSettle.isNotEmpty() || paymentsToSettle.isNotEmpty()) {
-            // Agregar actualizaciones para marcar gastos como liquidados
             for (expenseId in expensesToSettle) {
                 updates["expenses/$expenseId/settled"] = true
             }
-
-            // Agregar actualizaciones para marcar pagos como liquidados
             for (paymentId in paymentsToSettle) {
                 updates["payments/$paymentId/settled"] = true
             }
         }
 
-        // Ejecutar todas las actualizaciones en una única transacción
-        if (!eventId.isNullOrEmpty())
-            groupRef.child("events/$eventId").updateChildren(updates)
-        else
-            groupRef.updateChildren(updates)
+        groupRef.child("events/$eventId").updateChildren(updates)
     }
 }

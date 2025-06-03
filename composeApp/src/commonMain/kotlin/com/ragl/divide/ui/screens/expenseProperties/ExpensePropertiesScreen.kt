@@ -9,11 +9,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -53,16 +53,17 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ragl.divide.data.models.Category
 import com.ragl.divide.data.models.Frequency
+import com.ragl.divide.ui.components.AdaptiveFAB
 import com.ragl.divide.ui.components.DateTimePickerDialog
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.utils.DivideTextField
 import com.ragl.divide.ui.utils.formatDate
 import dividemultiplatform.composeapp.generated.resources.Res
-import dividemultiplatform.composeapp.generated.resources.add
 import dividemultiplatform.composeapp.generated.resources.add_expense
 import dividemultiplatform.composeapp.generated.resources.amount
 import dividemultiplatform.composeapp.generated.resources.cancel
 import dividemultiplatform.composeapp.generated.resources.category
+import dividemultiplatform.composeapp.generated.resources.edit
 import dividemultiplatform.composeapp.generated.resources.frequency
 import dividemultiplatform.composeapp.generated.resources.get_reminders
 import dividemultiplatform.composeapp.generated.resources.notes
@@ -71,7 +72,6 @@ import dividemultiplatform.composeapp.generated.resources.reminder_permission_me
 import dividemultiplatform.composeapp.generated.resources.reminder_permission_title
 import dividemultiplatform.composeapp.generated.resources.starting_from
 import dividemultiplatform.composeapp.generated.resources.title
-import dividemultiplatform.composeapp.generated.resources.update
 import dividemultiplatform.composeapp.generated.resources.update_expense
 import org.jetbrains.compose.resources.stringResource
 
@@ -103,6 +103,29 @@ class ExpensePropertiesScreen(
         Scaffold(
             topBar = {
                 AppBar { navigator.pop() }
+            },
+            floatingActionButton = {
+                AdaptiveFAB(
+                    onClick = {
+                        if (vm.validateTitle().and(vm.validateAmount())) {
+                            userViewModel.showLoading()
+                            vm.saveExpense(
+                                onSuccess = {
+                                    userViewModel.saveExpense(it)
+                                    userViewModel.hideLoading()
+                                    navigator.pop()
+                                },
+                                onError = {
+                                    userViewModel.hideLoading()
+                                    userViewModel.handleError(it)
+                                }
+                            )
+                        }
+                    },
+                    icon = Icons.Default.Check,
+                    contentDescription = if (expenseId == null) stringResource(Res.string.add_expense) else stringResource(Res.string.edit),
+                    text = if (expenseId == null) stringResource(Res.string.add_expense) else stringResource(Res.string.edit),
+                )
             }
         ) { paddingValues ->
             Column(
@@ -354,33 +377,6 @@ class ExpensePropertiesScreen(
                     }
                 }
                 Spacer(modifier = Modifier.weight(1f))
-                Button(
-                    onClick = {
-                        userViewModel.showLoading()
-                        vm.saveExpense(
-                            onSuccess = {
-                                userViewModel.saveExpense(it)
-                                userViewModel.hideLoading()
-                                navigator.pop()
-                            },
-                            onError = {
-                                userViewModel.hideLoading()
-                                userViewModel.handleError(it)
-                            }
-                        )
-                    },
-                    shape = ShapeDefaults.Medium,
-                    modifier = Modifier
-                        .align(Alignment.End)
-                        .fillMaxWidth()
-                        .padding(top = 24.dp)
-                        .size(64.dp)
-                ) {
-                    Text(
-                        text = stringResource(if (expenseId == null) Res.string.add else Res.string.update),
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
             }
         }
 

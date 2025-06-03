@@ -31,7 +31,8 @@ import org.jetbrains.compose.resources.stringResource
 fun AddPaymentDialog(
     remainingAmount: Double,
     onDismiss: () -> Unit,
-    onConfirm: (Double) -> Unit
+    onConfirm: (Double) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     var amount by remember { mutableStateOf("") }
     var amountError by remember { mutableStateOf<String?>(null) }
@@ -40,6 +41,7 @@ fun AddPaymentDialog(
     val amountGreaterThanZero = stringResource(Res.string.amount_must_be_greater_than_0)
 
     AlertDialog(
+        modifier = modifier,
         onDismissRequest = onDismiss,
 //        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = .99f),
 //        titleContentColor = MaterialTheme.colorScheme.primary,

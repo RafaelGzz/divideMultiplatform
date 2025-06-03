@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -87,7 +87,7 @@ class AddFriendsScreen : Screen {
                         IconButton(onClick = {
                             navigator.pop()
                         }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.primary)
+                            Icon(Icons.Default.Close, contentDescription = "Back", tint = MaterialTheme.colorScheme.primary)
                         }
                     }
                 )

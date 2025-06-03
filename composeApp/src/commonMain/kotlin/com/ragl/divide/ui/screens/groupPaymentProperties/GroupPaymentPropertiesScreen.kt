@@ -42,6 +42,7 @@ import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ragl.divide.data.models.UserInfo
+import com.ragl.divide.ui.components.DebtInfo
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.utils.DivideTextField
 import dividemultiplatform.composeapp.generated.resources.Res
@@ -58,7 +59,8 @@ import org.jetbrains.compose.resources.stringResource
 class GroupPaymentPropertiesScreen(
     private val groupId: String,
     private val paymentId: String? = null,
-    private val eventId: String? = null
+    private val eventId: String? = null,
+    private val currentDebtInfo: DebtInfo? = null,
 ) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -72,7 +74,7 @@ class GroupPaymentPropertiesScreen(
             val members = userViewModel.getGroupMembers(groupId)
             val payment = userViewModel.getGroupPaymentById(groupId, paymentId, eventId)
             val event = userViewModel.getEventById(groupId, eventId)
-            vm.setGroupAndPayment(group, members, payment, event)
+            vm.setGroupAndPayment(group, members, payment, event, currentDebtInfo)
         }
 
         var fromMenuExpanded by remember { mutableStateOf(false) }
@@ -83,7 +85,8 @@ class GroupPaymentPropertiesScreen(
         }
 
         LaunchedEffect(vm.from) {
-            vm.updateTo(sortedMembers.firstOrNull { it.uuid != vm.from.uuid } ?: UserInfo())
+            if (currentDebtInfo == null)
+                vm.updateTo(sortedMembers.firstOrNull { it.uuid != vm.from.uuid } ?: UserInfo())
         }
 
         Scaffold(
@@ -160,7 +163,10 @@ class GroupPaymentPropertiesScreen(
                                 .fillMaxWidth()
                                 .padding(bottom = 20.dp),
                             expanded = fromMenuExpanded,
-                            onExpandedChange = { fromMenuExpanded = !fromMenuExpanded }
+                            onExpandedChange = {
+                                if (currentDebtInfo == null)
+                                    fromMenuExpanded = !fromMenuExpanded
+                            }
                         ) {
                             TextField(
                                 value = vm.from.name,
@@ -168,7 +174,10 @@ class GroupPaymentPropertiesScreen(
                                 onValueChange = {},
                                 singleLine = true,
                                 readOnly = true,
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = fromMenuExpanded) },
+                                trailingIcon =
+                                    if (currentDebtInfo == null) {
+                                        { ExposedDropdownMenuDefaults.TrailingIcon(expanded = fromMenuExpanded) }
+                                    } else null,
                                 modifier = Modifier
                                     .menuAnchor(MenuAnchorType.PrimaryEditable)
                                     .clip(ShapeDefaults.Medium)
@@ -201,7 +210,10 @@ class GroupPaymentPropertiesScreen(
                                 .fillMaxWidth()
                                 .padding(bottom = 20.dp),
                             expanded = toMenuExpanded,
-                            onExpandedChange = { toMenuExpanded = !toMenuExpanded }
+                            onExpandedChange = {
+                                if (currentDebtInfo == null)
+                                    toMenuExpanded = !toMenuExpanded
+                            }
                         ) {
                             TextField(
                                 value = vm.to.name,
@@ -209,7 +221,10 @@ class GroupPaymentPropertiesScreen(
                                 onValueChange = {},
                                 singleLine = true,
                                 readOnly = true,
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = toMenuExpanded) },
+                                trailingIcon =
+                                    if (currentDebtInfo == null) {
+                                        { ExposedDropdownMenuDefaults.TrailingIcon(expanded = toMenuExpanded) }
+                                    } else null,
                                 modifier = Modifier
                                     .menuAnchor(MenuAnchorType.PrimaryEditable)
                                     .clip(ShapeDefaults.Medium)

@@ -1,5 +1,11 @@
 package com.ragl.divide.ui.screens.group
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -19,9 +26,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -33,35 +42,49 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.core.annotation.InternalVoyagerApi
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinNavigatorScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import cafe.adriel.voyager.navigator.internal.BackHandler
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.GroupEvent
+import com.ragl.divide.data.models.UserInfo
+import com.ragl.divide.ui.components.AdaptiveFAB
+import com.ragl.divide.ui.components.CollapsedDebtsCard
+import com.ragl.divide.ui.components.DebtInfo
+import com.ragl.divide.ui.components.ExpandedDebtsCard
 import com.ragl.divide.ui.components.NetworkImage
 import com.ragl.divide.ui.components.NetworkImageType
-import com.ragl.divide.ui.components.TitleRow
+import com.ragl.divide.ui.components.UserAvatarSmall
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.event.EventScreen
 import com.ragl.divide.ui.screens.eventProperties.EventPropertiesScreen
+import com.ragl.divide.ui.screens.groupPaymentProperties.GroupPaymentPropertiesScreen
 import com.ragl.divide.ui.screens.groupProperties.GroupPropertiesScreen
 import com.ragl.divide.ui.utils.formatDate
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.add_event
 import dividemultiplatform.composeapp.generated.resources.events
+import dividemultiplatform.composeapp.generated.resources.group_members
+import org.jetbrains.compose.resources.stringResource
 
 class GroupScreen(
     private val groupId: String
 ) : Screen {
+    @OptIn(ExperimentalSharedTransitionApi::class, InternalVoyagerApi::class)
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
@@ -76,33 +99,124 @@ class GroupScreen(
 
         val uuid = remember(groupId) { userViewModel.getUUID() }
         val groupState by viewModel.group.collectAsState()
-        val hasExpensesOrPayments =
-            remember(groupState) { groupState.expenses.isNotEmpty() || groupState.payments.isNotEmpty() }
 
-        Scaffold(topBar = {
-            GroupDetailsAppBar(
-                group = groupState,
-                onBackClick = { navigator.pop() },
-                onEditClick = { navigator.push(GroupPropertiesScreen(groupId)) })
-        }) { paddingValues ->
+        val eventDebtsMap = remember(groupState.events) {
+            userViewModel.getEventDebtsMap(groupState.events)
+        }
 
-            Column(
-                modifier = Modifier.padding(paddingValues).padding(horizontal = 16.dp)
-                    .fillMaxSize().background(MaterialTheme.colorScheme.background)
+        val allDebts = remember(eventDebtsMap) {
+            buildList {
+                eventDebtsMap.forEach { (eventId, eventDebts) ->
+                    val eventName = groupState.events[eventId]?.title ?: "Evento desconocido"
+
+                    eventDebts.forEach { (fromUserId, debts) ->
+                        debts.forEach { (toUserId, amount) ->
+                            if (amount > 0.01) {
+                                add(
+                                    DebtInfo(
+                                        fromUserId = fromUserId,
+                                        toUserId = toUserId,
+                                        amount = amount,
+                                        isCurrentUserInvolved = fromUserId == uuid || toUserId == uuid,
+                                        eventName = eventName,
+                                        eventId = eventId
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        val usersWithDebts = remember(allDebts) {
+            (allDebts.map { it.fromUserId } + allDebts.map { it.toUserId }).distinct()
+        }
+        var isDebtsExpanded by remember { mutableStateOf(false) }
+
+        BackHandler(enabled = isDebtsExpanded) {
+            isDebtsExpanded = false
+        }
+
+        SharedTransitionLayout(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize()
             ) {
-                EventsSection(
-                    events = viewModel.events,
-                    onEventClick = { eventId ->
-                        navigator.push(EventScreen(groupId, eventId))
+                Scaffold(
+                    topBar = {
+                        GroupDetailsAppBar(
+                            group = groupState,
+                            onBackClick = { navigator.pop() },
+                            onEditClick = { navigator.push(GroupPropertiesScreen(groupId)) }
+                        )
                     },
-                    onAddEventClick = {
-                        navigator.push(
-                            EventPropertiesScreen(
-                                groupId
-                            )
+                    floatingActionButton = {
+                        AdaptiveFAB(
+                            onClick = { navigator.push(EventPropertiesScreen(groupId)) },
+                            icon = Icons.Filled.Add,
+                            contentDescription = stringResource(Res.string.add_event),
+                            text = stringResource(Res.string.add_event)
                         )
                     }
-                )
+                ) { paddingValues ->
+                    Column(
+                        modifier = Modifier
+                            .padding(paddingValues)
+                            .padding(horizontal = 16.dp)
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background)
+                    ) {
+                        GroupInfoHeader(
+                            group = groupState,
+                            members = viewModel.members
+                        )
+                        if (allDebts.isNotEmpty()) {
+                            AnimatedVisibility(
+                                visible = !isDebtsExpanded
+                            ) {
+                                CollapsedDebtsCard(
+                                    debts = allDebts,
+                                    isGroup = true,
+                                    currentUserId = uuid,
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = this@AnimatedVisibility,
+                                    onClick = { isDebtsExpanded = true }
+                                )
+                            }
+                        }
+                        EventsSection(
+                            events = viewModel.events,
+                            onEventClick = { eventId ->
+                                navigator.push(EventScreen(groupId, eventId))
+                            }
+                        )
+                    }
+                }
+
+                if (allDebts.isNotEmpty()) {
+                    AnimatedVisibility(
+                        visible = isDebtsExpanded,
+                        enter = fadeIn(tween(300)),
+                        exit = fadeOut(tween(300))
+                    ) {
+                        ExpandedDebtsCard(
+                            debts = allDebts,
+                            isGroup = true,
+                            users = usersWithDebts.mapNotNull { userId ->
+                                viewModel.members.find { it.uuid == userId }
+                            },
+                            currentUserId = uuid,
+                            sharedTransitionScope = this@SharedTransitionLayout,
+                            animatedVisibilityScope = this@AnimatedVisibility,
+                            onDismiss = { isDebtsExpanded = false },
+                            onPayDebt = {
+                                navigator.push(EventScreen(groupId, it.eventId))
+                                navigator.push(GroupPaymentPropertiesScreen(groupId = groupId, eventId = it.eventId, currentDebtInfo = it))
+                            }
+                        )
+                    }
+                }
             }
         }
     }
@@ -111,66 +225,61 @@ class GroupScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GroupDetailsAppBar(
-    onBackClick: () -> Unit, onEditClick: () -> Unit, group: Group
+    onBackClick: () -> Unit,
+    onEditClick: () -> Unit,
+    group: Group
 ) {
     TopAppBar(
         colors = TopAppBarDefaults.largeTopAppBarColors(
             scrolledContainerColor = Color.Transparent,
             containerColor = Color.Transparent,
             navigationIconContentColor = MaterialTheme.colorScheme.primary
-        ), title = { GroupImageAndTitleRow(group) }, navigationIcon = {
-            IconButton(
-                onClick = onBackClick
+        ),
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                NetworkImage(
+                    imageUrl = group.image,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape),
+                    type = NetworkImageType.GROUP
+                )
+                Text(
+                    group.name,
+                    style = MaterialTheme.typography.titleLarge,
+                    softWrap = true,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        navigationIcon = {
+            IconButton(onClick = onBackClick) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
             }
-
-        }, actions = {
+        },
+        actions = {
             IconButton(onClick = onEditClick) {
                 Icon(Icons.Filled.Settings, contentDescription = "Edit")
             }
-        })
-}
-
-@Composable
-private fun GroupImageAndTitleRow(group: Group, modifier: Modifier = Modifier) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = modifier
-    ) {
-        NetworkImage(
-            imageUrl = group.image,
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape),
-            type = NetworkImageType.GROUP
-        )
-        Text(
-            group.name,
-            style = MaterialTheme.typography.titleLarge,
-            softWrap = true,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
+        }
+    )
 }
 
 @Composable
 private fun EventsSection(
     events: List<GroupEvent>,
-    onEventClick: (String) -> Unit,
-    onAddEventClick: () -> Unit
+    onEventClick: (String) -> Unit
 ) {
     Column {
-        TitleRow(
-            buttonStringResource = Res.string.add_event,
-            labelStringResource = Res.string.events,
-            onAddClick = onAddEventClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 20.dp, bottom = 10.dp)
+        Text(
+            text = stringResource(Res.string.events),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(top = 20.dp, bottom = 10.dp)
         )
 
         if (events.isEmpty()) {
@@ -190,9 +299,8 @@ private fun EventsSection(
             }
         } else {
             LazyVerticalGrid(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                columns = GridCells.Fixed(2),
+                modifier = Modifier.fillMaxWidth(),
+                columns = GridCells.Adaptive(150.dp),
             ) {
                 items(events) { event ->
                     EventItem(
@@ -261,5 +369,87 @@ private fun EventItem(
                     .padding(horizontal = 8.dp, vertical = 4.dp)
             )
         }
+    }
+}
+
+@Composable
+private fun GroupInfoHeader(
+    group: Group,
+    members: List<UserInfo>
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    ) {
+        // Número de eventos activos
+        val activeEventsCount = group.events.values.count { !it.settled }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(vertical = 4.dp)
+        ) {
+            Icon(
+                Icons.Default.DateRange,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "$activeEventsCount eventos activos",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+
+        // Avatares de los miembros del grupo
+        if (members.isNotEmpty()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(vertical = 8.dp)
+            ) {
+                Text(
+                    text = stringResource(Res.string.group_members) + ":",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(end = 12.dp)
+                )
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy((-8).dp)
+                ) {
+                    members.take(5).forEach { member ->
+                        UserAvatarSmall(
+                            user = member,
+                            modifier = Modifier.size(32.dp).shadow(2.dp, CircleShape)
+                        )
+                    }
+
+                    if (members.size > 5) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .shadow(2.dp, CircleShape)
+                                .background(
+                                    color = MaterialTheme.colorScheme.surfaceDim,
+                                    shape = CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "+${members.size - 5}",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        HorizontalDivider(
+            Modifier.padding(vertical = 8.dp),
+            1.dp,
+            MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f)
+        )
     }
 }

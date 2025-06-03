@@ -9,6 +9,7 @@ import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.UserInfo
 import com.ragl.divide.data.repositories.FriendsRepository
 import com.ragl.divide.data.repositories.GroupRepository
+import com.ragl.divide.data.services.GroupExpenseService
 import com.ragl.divide.ui.utils.Strings
 import com.ragl.divide.ui.utils.logMessage
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +24,7 @@ import kotlinx.coroutines.launch
 class GroupPropertiesViewModel(
     private val groupRepository: GroupRepository,
     private val friendsRepository: FriendsRepository,
+    private val groupExpenseService: GroupExpenseService,
     private val strings: Strings
 ) : ScreenModel {
 
@@ -60,14 +62,15 @@ class GroupPropertiesViewModel(
     private fun canLeaveGroup(): Boolean {
         if (currentUserId.isEmpty()) return false
 
-        val currentDebts = _group.value.currentDebts
+        // Consolidar deudas de todos los eventos usando el servicio
+        val consolidatedDebts = groupExpenseService.consolidateDebtsFromEventsMap(_group.value.events)
 
-        val userDebts = currentDebts[currentUserId]
+        val userDebts = consolidatedDebts[currentUserId]
         if (userDebts != null) {
             return false
         }
 
-        val userCredits = currentDebts.filter { it.key != currentUserId }
+        val userCredits = consolidatedDebts.filter { it.key != currentUserId }
             .any { (_, debtMap) ->
                 debtMap.containsKey(currentUserId)
             }
@@ -76,7 +79,24 @@ class GroupPropertiesViewModel(
     }
 
     fun canDeleteGroup(): Boolean {
-        return _group.value.currentDebts.isEmpty()
+        // Consolidar deudas de todos los eventos usando el servicio
+        val consolidatedDebts = groupExpenseService.consolidateDebtsFromEventsMap(_group.value.events)
+        
+        return consolidatedDebts.isEmpty()
+    }
+
+    /**
+     * Obtiene un mapa con el ID del evento y sus currentDebts
+     */
+    fun getEventDebtsMap(): Map<String, Map<String, Map<String, Double>>> {
+        return groupExpenseService.getEventDebtsMap(_group.value.events)
+    }
+
+    /**
+     * Obtiene las deudas consolidadas de todos los eventos
+     */
+    fun getConsolidatedDebts(): Map<String, Map<String, Double>> {
+        return groupExpenseService.consolidateDebtsFromEventsMap(_group.value.events)
     }
 
     fun updateName(name: String) {
@@ -130,7 +150,7 @@ class GroupPropertiesViewModel(
         }
     }
 
-    private fun validateName(): Boolean {
+    fun validateName(): Boolean {
         return when (_group.value.name) {
             "" -> {
                 this.nameError = strings.getTitleRequired()

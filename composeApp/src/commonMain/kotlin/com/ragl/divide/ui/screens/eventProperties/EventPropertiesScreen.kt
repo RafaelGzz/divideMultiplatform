@@ -14,7 +14,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -37,18 +36,22 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinNavigatorScreenModel
+import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.ragl.divide.ui.components.AdaptiveFAB
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.group.GroupScreen
 import com.ragl.divide.ui.utils.DivideTextField
 import dividemultiplatform.composeapp.generated.resources.Res
+import dividemultiplatform.composeapp.generated.resources.add_event
 import dividemultiplatform.composeapp.generated.resources.cancel
 import dividemultiplatform.composeapp.generated.resources.cannot_delete_event
 import dividemultiplatform.composeapp.generated.resources.delete
 import dividemultiplatform.composeapp.generated.resources.delete_event
 import dividemultiplatform.composeapp.generated.resources.delete_group
 import dividemultiplatform.composeapp.generated.resources.delete_group_message
+import dividemultiplatform.composeapp.generated.resources.edit
 import org.jetbrains.compose.resources.stringResource
 
 class EventPropertiesScreen(
@@ -59,7 +62,7 @@ class EventPropertiesScreen(
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val viewModel = navigator.koinNavigatorScreenModel<EventPropertiesViewModel>()
+        val viewModel = koinScreenModel<EventPropertiesViewModel>()
         val userViewModel = navigator.koinNavigatorScreenModel<UserViewModel>()
 
         // Si es un evento existente, cargarlo
@@ -98,7 +101,7 @@ class EventPropertiesScreen(
                 )
             },
             floatingActionButton = {
-                FloatingActionButton(
+                AdaptiveFAB(
                     onClick = {
                         viewModel.saveEvent(
                             groupId = groupId,
@@ -109,11 +112,12 @@ class EventPropertiesScreen(
                             onError = { userViewModel.handleError(it) }
                         )
                     },
+                    icon = Icons.Default.Check,
+                    contentDescription = if (!isEditMode) stringResource(Res.string.add_event) else stringResource(Res.string.edit),
+                    text = if (!isEditMode) stringResource(Res.string.add_event) else stringResource(Res.string.edit),
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
-                ) {
-                    Icon(Icons.Default.Check, contentDescription = "Guardar")
-                }
+                )
             }
         ) { paddingValues ->
             if (dialogEnabled)

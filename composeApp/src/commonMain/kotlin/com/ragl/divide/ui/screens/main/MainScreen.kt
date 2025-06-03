@@ -1,4 +1,4 @@
-package com.ragl.divide.ui.screens.home
+package com.ragl.divide.ui.screens.main
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExitTransition
@@ -79,19 +79,21 @@ import com.ragl.divide.ui.utils.WindowWidthSizeClass
 import com.ragl.divide.ui.utils.getWindowWidthSizeClass
 import compose.icons.FontAwesomeIcons
 import compose.icons.fontawesomeicons.Solid
+import compose.icons.fontawesomeicons.solid.ChartBar
 import compose.icons.fontawesomeicons.solid.DollarSign
+import compose.icons.fontawesomeicons.solid.Home
 import compose.icons.fontawesomeicons.solid.User
 import compose.icons.fontawesomeicons.solid.Users
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.add_expense
 import dividemultiplatform.composeapp.generated.resources.add_group
-import dividemultiplatform.composeapp.generated.resources.bar_item_expenses_text
-import dividemultiplatform.composeapp.generated.resources.bar_item_groups_text
-import dividemultiplatform.composeapp.generated.resources.bar_item_profile_text
+import dividemultiplatform.composeapp.generated.resources.bar_item_1_text
+import dividemultiplatform.composeapp.generated.resources.bar_item_2_text
+import dividemultiplatform.composeapp.generated.resources.bar_item_3_text
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
-class HomeScreen : Screen {
+class MainScreen : Screen {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -108,9 +110,9 @@ class HomeScreen : Screen {
         val friendRequests = state.friendRequestsReceived.values.toList()
 
         val tabs: List<Pair<StringResource, ImageVector>> = listOf(
-            Pair(Res.string.bar_item_expenses_text, FontAwesomeIcons.Solid.DollarSign),
-            Pair(Res.string.bar_item_groups_text, FontAwesomeIcons.Solid.Users),
-            Pair(Res.string.bar_item_profile_text, FontAwesomeIcons.Solid.User)
+            Pair(Res.string.bar_item_1_text, FontAwesomeIcons.Solid.Home),
+            Pair(Res.string.bar_item_2_text, FontAwesomeIcons.Solid.ChartBar),
+            Pair(Res.string.bar_item_3_text, FontAwesomeIcons.Solid.User)
         )
         var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
         val pullToRefreshState = rememberPullToRefreshState()
@@ -559,20 +561,12 @@ private fun MainContent(
                     enter = fadeIn(animationSpec = tween(300)),
                     exit = ExitTransition.None
                 ) {
-                    ExpensesContent(
+                    HomeContent(
                         expenses = expenses,
+                        groups = groups,
                         onExpenseClick = {
                             navigator.push(ExpenseScreen(it))
-                        }
-                    )
-                }
-                AnimatedVisibility(
-                    visible = selectedTabIndex == 1,
-                    enter = fadeIn(animationSpec = tween(300)),
-                    exit = ExitTransition.None
-                ) {
-                    GroupsContent(
-                        groups = groups,
+                        },
                         onGroupClick = {
                             navigator.push(GroupScreen(it))
                         },
@@ -581,6 +575,15 @@ private fun MainContent(
                                 navigator.push(GroupPropertiesScreen())
                             else userViewModel.handleError("Add friends to create a group.")
                         }
+                    )
+                }
+                AnimatedVisibility(
+                    visible = selectedTabIndex == 1,
+                    enter = fadeIn(animationSpec = tween(300)),
+                    exit = ExitTransition.None
+                ) {
+                    ActivityContent(
+                        expenses = expenses
                     )
                 }
                 AnimatedVisibility(

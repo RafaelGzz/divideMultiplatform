@@ -48,7 +48,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.mmk.kmpauth.firebase.google.GoogleButtonUiContainerFirebase
 import com.mmk.kmpauth.uihelper.google.GoogleSignInButton
 import com.ragl.divide.ui.screens.UserViewModel
-import com.ragl.divide.ui.screens.home.HomeScreen
+import com.ragl.divide.ui.screens.main.MainScreen
 import com.ragl.divide.ui.utils.DivideTextField
 import com.ragl.divide.ui.utils.Strings
 import dev.gitlive.firebase.auth.FirebaseUser
@@ -136,7 +136,7 @@ class SignInScreen : Screen {
                                 userViewModel.signInWithEmailAndPassword(
                                     email = email,
                                     password = password,
-                                    onSuccess = { navigator.replace(HomeScreen()) },
+                                    onSuccess = { navigator.replace(MainScreen()) },
                                     onFail = { error ->
                                         if (error == strings.getEmailNotVerified()) {
                                             navigator.push(EmailVerificationScreen())
@@ -148,7 +148,7 @@ class SignInScreen : Screen {
                             onGoogleSignIn = { result ->
                                 userViewModel.signInWithGoogle(result) {
                                     navigator.replace(
-                                        HomeScreen()
+                                        MainScreen()
                                     )
                                 }
                             },
@@ -170,7 +170,7 @@ class SignInScreen : Screen {
                             onGoogleSignIn = { result ->
                                 userViewModel.signInWithGoogle(result = result) {
                                     navigator.replace(
-                                        HomeScreen()
+                                        MainScreen()
                                     )
                                 }
                             }

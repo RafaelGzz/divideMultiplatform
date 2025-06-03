@@ -1,10 +1,15 @@
 package com.ragl.divide.ui.screens.event
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,16 +24,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -50,16 +52,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.core.annotation.InternalVoyagerApi
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinNavigatorScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import cafe.adriel.voyager.navigator.internal.BackHandler
 import com.ragl.divide.data.models.GroupEvent
 import com.ragl.divide.data.models.GroupExpense
 import com.ragl.divide.data.models.Payment
 import com.ragl.divide.data.models.UserInfo
 import com.ragl.divide.data.models.getCategoryIcon
+import com.ragl.divide.ui.components.CollapsedDebtsCard
+import com.ragl.divide.ui.components.DebtInfo
 import com.ragl.divide.ui.components.EventFABGroup
+import com.ragl.divide.ui.components.ExpandedDebtsCard
 import com.ragl.divide.ui.components.ExpenseListView
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.eventProperties.EventPropertiesScreen
@@ -77,6 +84,7 @@ class EventScreen(
     private val groupId: String,
     private val eventId: String
 ) : Screen {
+    @OptIn(ExperimentalSharedTransitionApi::class, InternalVoyagerApi::class)
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
@@ -95,71 +103,159 @@ class EventScreen(
         }
         val uuid = remember(groupId) { userViewModel.getUUID() }
 
-        Scaffold(
-            topBar = {
-                EventDetailsAppBar(
-                    event = eventState,
-                    onBackClick = { navigator.pop() },
-                    onEditClick = { navigator.push(EventPropertiesScreen(groupId, eventId)) },
-                )
-            },
-            floatingActionButton = {
-                EventFABGroup(
-                    onAddExpenseClick = {
-                        navigator.push(GroupExpensePropertiesScreen(groupId, eventId = eventId))
-                    },
-                    onAddPaymentClick = {
-                        navigator.push(GroupPaymentPropertiesScreen(groupId, eventId = eventId))
+        val allDebts = remember(eventState.currentDebts) {
+            buildList {
+                eventState.currentDebts.forEach { (fromUserId, debts) ->
+                    debts.forEach { (toUserId, amount) ->
+                        if (amount > 0.01) {
+                            add(
+                                DebtInfo(
+                                    fromUserId = fromUserId,
+                                    toUserId = toUserId,
+                                    amount = amount,
+                                    isCurrentUserInvolved = fromUserId == uuid || toUserId == uuid,
+                                    eventName = eventState.title,
+                                    eventId = eventId
+                                )
+                            )
+                        }
                     }
-                )
+                }
             }
-        ) { paddingValues ->
-            Column(
-                modifier = Modifier
-                    .padding(paddingValues)
-                    .padding(horizontal = 16.dp)
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
+        }
+        val usersWithDebts = remember(allDebts) {
+            (allDebts.map { it.fromUserId } + allDebts.map { it.toUserId }).distinct()
+        }
+        var isDebtsExpanded by remember { mutableStateOf(false) }
+
+        BackHandler(enabled = isDebtsExpanded) {
+            isDebtsExpanded = false
+        }
+
+        SharedTransitionLayout(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize()
             ) {
-                // Información del evento
-                EventInfoHeader(event = eventState)
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                if (!hasExpensesOrPayments) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Aún no hay gastos ni pagos en este evento",
-                            style = MaterialTheme.typography.labelSmall,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
+                Scaffold(
+                    topBar = {
+                        EventDetailsAppBar(
+                            event = eventState,
+                            onBackClick = { navigator.pop() },
+                            onEditClick = {
+                                navigator.push(
+                                    EventPropertiesScreen(
+                                        groupId,
+                                        eventId
+                                    )
+                                )
+                            },
+                        )
+                    },
+                    floatingActionButton = {
+                        EventFABGroup(
+                            onAddExpenseClick = {
+                                navigator.push(
+                                    GroupExpensePropertiesScreen(
+                                        groupId,
+                                        eventId = eventId
+                                    )
+                                )
+                            },
+                            onAddPaymentClick = {
+                                navigator.push(
+                                    GroupPaymentPropertiesScreen(
+                                        groupId,
+                                        eventId = eventId
+                                    )
+                                )
+                            }
                         )
                     }
-                } else
-                    ExpenseListView(
-                        expensesAndPayments = viewModel.expensesAndPayments,
-                        getPaidByNames = viewModel::getPaidByNames,
-                        onExpenseClick = {
-                            navigator.push(
-                                GroupExpenseScreen(
-                                    groupId, it, eventId
+                ) { paddingValues ->
+                    Column(
+                        modifier = Modifier
+                            .padding(paddingValues)
+                            .padding(horizontal = 16.dp)
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background)
+                    ) {
+                        EventInfoHeader(event = eventState)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        if (!hasExpensesOrPayments) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Aún no hay gastos ni pagos en este evento",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth()
                                 )
-                            )
-                        },
-                        onPaymentClick = { paymentId ->
-                            navigator.push(
-                                GroupPaymentScreen(
-                                    groupId, paymentId, eventId
+                            }
+                        } else {
+                            Column {
+                                AnimatedVisibility(
+                                    !isDebtsExpanded
+                                ) {
+                                    CollapsedDebtsCard(
+                                        debts = allDebts,
+                                        currentUserId = uuid,
+                                        sharedTransitionScope = this@SharedTransitionLayout,
+                                        animatedVisibilityScope = this@AnimatedVisibility,
+                                        onClick = { isDebtsExpanded = true }
+                                    )
+                                }
+                                ExpenseListView(
+                                    expensesAndPayments = viewModel.expensesAndPayments,
+                                    getPaidByNames = viewModel::getPaidByNames,
+                                    members = viewModel.members,
+                                    onExpenseClick = {
+                                        navigator.push(
+                                            GroupExpenseScreen(
+                                                groupId, it, eventId
+                                            )
+                                        )
+                                    },
+                                    onPaymentClick = { paymentId ->
+                                        navigator.push(
+                                            GroupPaymentScreen(
+                                                groupId, paymentId, eventId
+                                            )
+                                        )
+                                    },
+                                    modifier = Modifier.fillMaxSize()
                                 )
-                            )
+                            }
+                        }
+                    }
+                }
+                AnimatedVisibility(
+                    isDebtsExpanded,
+                    enter = fadeIn(tween(300)),
+                    exit = fadeOut(tween(300))
+                ) {
+                    ExpandedDebtsCard(
+                        debts = allDebts,
+                        users = usersWithDebts.mapNotNull { userId ->
+                            viewModel.members.find { it.uuid == userId }
                         },
-                        members = viewModel.members,
-                        currentDebts = eventState.currentDebts,
                         currentUserId = uuid,
+                        sharedTransitionScope = this@SharedTransitionLayout,
+                        animatedVisibilityScope = this@AnimatedVisibility,
+                        onDismiss = { isDebtsExpanded = false },
+                        onPayDebt = { debt ->
+                            navigator.push(
+                                GroupPaymentPropertiesScreen(
+                                    groupId = groupId, eventId = eventId, currentDebtInfo = debt
+                                )
+                            )
+                            isDebtsExpanded = false
+                        }
                     )
+                }
             }
         }
     }
@@ -255,9 +351,10 @@ private fun EventInfoHeader(event: GroupEvent) {
             }
         }
 
-        Divider(
-            modifier = Modifier.padding(vertical = 8.dp),
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f)
+        HorizontalDivider(
+            Modifier.padding(vertical = 8.dp),
+            1.dp,
+            MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f)
         )
     }
 }
@@ -457,64 +554,3 @@ private fun PaymentItem(
         }
     }
 }
-
-@Composable
-fun EventFloatingActionButton(
-    onAddExpenseClick: () -> Unit,
-    onAddPaymentClick: () -> Unit
-) {
-    var isExpanded by remember { mutableStateOf(false) }
-
-    Column(
-        horizontalAlignment = Alignment.End
-    ) {
-        if (isExpanded) {
-            // Botón para Agregar Gasto
-            Button(
-                onClick = {
-                    onAddExpenseClick()
-                    isExpanded = false
-                },
-                shape = RoundedCornerShape(16.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                modifier = Modifier.padding(bottom = 8.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Agregar Gasto")
-            }
-
-            // Botón para Realizar Pago
-            Button(
-                onClick = {
-                    onAddPaymentClick()
-                    isExpanded = false
-                },
-                shape = RoundedCornerShape(16.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                modifier = Modifier.padding(bottom = 16.dp)
-            ) {
-                Icon(
-                    FontAwesomeIcons.Solid.DollarSign,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Realizar Pago")
-            }
-        }
-
-        // Botón principal
-        FloatingActionButton(
-            onClick = { isExpanded = !isExpanded },
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Agregar",
-                modifier = Modifier.size(24.dp)
-            )
-        }
-    }
-} 

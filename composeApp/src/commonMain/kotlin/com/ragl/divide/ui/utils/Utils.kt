@@ -426,29 +426,3 @@ fun Header(
         }
     }
 }
-
-@Composable
-fun ActionButton(
-    onClick: () -> Unit,
-    text: String,
-    icon: ImageVector,
-    modifier: Modifier = Modifier,
-    contentDescription: String? = null
-) {
-    ExtendedFloatingActionButton(
-        onClick = onClick,
-        icon = {
-            Icon(
-                icon,
-                contentDescription = contentDescription,
-                modifier = Modifier.size(24.dp)
-            )
-        },
-        text = { Text(text) },
-        containerColor = MaterialTheme.colorScheme.primary,
-        contentColor = MaterialTheme.colorScheme.onPrimary,
-        expanded = true,
-        elevation = FloatingActionButtonDefaults.elevation(0.dp),
-        modifier = modifier
-    )
-}

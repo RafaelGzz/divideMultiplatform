@@ -28,7 +28,7 @@ import com.ragl.divide.ui.components.ContentWithMessageBar
 import com.ragl.divide.ui.components.MessageBarPosition
 import com.ragl.divide.ui.components.rememberMessageBarState
 import com.ragl.divide.ui.screens.UserViewModel
-import com.ragl.divide.ui.screens.home.HomeScreen
+import com.ragl.divide.ui.screens.main.MainScreen
 import com.ragl.divide.ui.screens.signIn.SignInScreen
 import com.ragl.divide.ui.theme.DivideTheme
 import org.koin.compose.koinInject
@@ -69,7 +69,7 @@ fun App() {
     }
 
     DivideTheme(darkTheme = darkModeState?.toBoolean() ?: isSystemInDarkTheme()) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             // Solo mostrar la UI principal cuando esté cargada Y NO esté inicializando
             AnimatedVisibility(visible = loaded && !isInitializing, enter = fadeIn()) {
                 ContentWithMessageBar(
@@ -88,7 +88,7 @@ fun App() {
                         if (startAtLogin)
                             SignInScreen()
                         else
-                            HomeScreen()
+                            MainScreen()
                     ) { navigator ->
                         FadeTransition(navigator)
                     }

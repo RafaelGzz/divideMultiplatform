@@ -1,4 +1,4 @@
-package com.ragl.divide.ui.screens.home
+package com.ragl.divide.ui.screens.main
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState

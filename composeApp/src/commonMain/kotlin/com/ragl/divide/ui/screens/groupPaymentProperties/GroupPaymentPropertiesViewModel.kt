@@ -10,6 +10,7 @@ import com.ragl.divide.data.models.GroupEvent
 import com.ragl.divide.data.models.Payment
 import com.ragl.divide.data.models.UserInfo
 import com.ragl.divide.data.repositories.GroupRepository
+import com.ragl.divide.ui.components.DebtInfo
 import com.ragl.divide.ui.utils.Strings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -64,7 +65,8 @@ class GroupPaymentPropertiesViewModel(
         group: Group,
         members: List<UserInfo>,
         payment: Payment? = null,
-        event: GroupEvent? = null
+        event: GroupEvent? = null,
+        currentDebtInfo: DebtInfo? = null
     ) {
         this.event = event
         screenModelScope.launch {
@@ -78,8 +80,15 @@ class GroupPaymentPropertiesViewModel(
                 from = members.firstOrNull { it.uuid == payment.from } ?: UserInfo()
                 to = members.firstOrNull { it.uuid == payment.to } ?: UserInfo()
             } else {
-                from = members.firstOrNull { it.uuid == uuid } ?: UserInfo()
-                to = members.firstOrNull { it.uuid != uuid } ?: UserInfo()
+                if (currentDebtInfo != null) {
+                    from =
+                        members.firstOrNull { it.uuid == currentDebtInfo.fromUserId } ?: UserInfo()
+                    to = members.firstOrNull { it.uuid == currentDebtInfo.toUserId } ?: UserInfo()
+                    amount = currentDebtInfo.amount.toString()
+                } else {
+                    from = members.firstOrNull { it.uuid == uuid } ?: UserInfo()
+                    to = members.firstOrNull { it.uuid != uuid } ?: UserInfo()
+                }
             }
             _group.update { group }
         }

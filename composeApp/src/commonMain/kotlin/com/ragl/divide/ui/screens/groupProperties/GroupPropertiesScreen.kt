@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -29,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
@@ -68,11 +68,12 @@ import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ragl.divide.data.models.UserInfo
+import com.ragl.divide.ui.components.AdaptiveFAB
 import com.ragl.divide.ui.components.ImagePicker
 import com.ragl.divide.ui.components.NetworkImage
 import com.ragl.divide.ui.components.NetworkImageType
 import com.ragl.divide.ui.screens.UserViewModel
-import com.ragl.divide.ui.screens.home.HomeScreen
+import com.ragl.divide.ui.screens.main.MainScreen
 import com.ragl.divide.ui.utils.DivideTextField
 import com.ragl.divide.ui.utils.FriendItem
 import dividemultiplatform.composeapp.generated.resources.Res
@@ -86,6 +87,7 @@ import dividemultiplatform.composeapp.generated.resources.configuration
 import dividemultiplatform.composeapp.generated.resources.delete
 import dividemultiplatform.composeapp.generated.resources.delete_group
 import dividemultiplatform.composeapp.generated.resources.delete_group_message
+import dividemultiplatform.composeapp.generated.resources.edit
 import dividemultiplatform.composeapp.generated.resources.group_members
 import dividemultiplatform.composeapp.generated.resources.leave
 import dividemultiplatform.composeapp.generated.resources.leave_group
@@ -95,7 +97,6 @@ import dividemultiplatform.composeapp.generated.resources.search
 import dividemultiplatform.composeapp.generated.resources.select_friends
 import dividemultiplatform.composeapp.generated.resources.select_group_members
 import dividemultiplatform.composeapp.generated.resources.simplify_debts
-import dividemultiplatform.composeapp.generated.resources.update
 import dividemultiplatform.composeapp.generated.resources.update_group
 import dividemultiplatform.composeapp.generated.resources.you_have_no_friends
 import org.jetbrains.compose.resources.stringResource
@@ -145,7 +146,7 @@ class GroupPropertiesScreen(
         val onDeleteGroup = {
             userViewModel.removeGroup(groupId!!)
             userViewModel.hideLoading()
-            navigator.replaceAll(HomeScreen())
+            navigator.replaceAll(MainScreen())
         }
 
         val friends: List<UserInfo> = userViewModel.state.value.friends.values.toList()
@@ -195,61 +196,35 @@ class GroupPropertiesScreen(
                                 }
                             )
                         },
-                        bottomBar = {
-                            if (!isUpdate && selectedFriends.size > 0)
-                                Button(
+                        floatingActionButton = {
+                            AnimatedVisibility(
+                                visible = (!isUpdate && selectedFriends.isNotEmpty()) || isUpdate,
+                                enter = fadeIn(animationSpec = tween(300)),
+                                exit = fadeOut(animationSpec = tween(300))
+                            ) {
+                                AdaptiveFAB(
                                     onClick = {
-                                        userViewModel.showLoading()
-                                        viewModel.saveGroup(onSuccess = { group ->
-                                            userViewModel.setGroupMembers(group)
-                                            userViewModel.addGroup(group)
-                                            userViewModel.hideLoading()
-                                            navigator.pop()
-                                        }, onError = {
-                                            userViewModel.hideLoading()
-                                            userViewModel.handleError(it)
-                                        })
+                                        if (viewModel.validateName()) {
+                                            userViewModel.showLoading()
+                                            viewModel.saveGroup(
+                                                onSuccess = { group ->
+                                                    userViewModel.setGroupMembers(group)
+                                                    userViewModel.saveGroup(group)
+                                                    userViewModel.hideLoading()
+                                                    navigator.pop()
+                                                },
+                                                onError = {
+                                                    userViewModel.hideLoading()
+                                                    userViewModel.handleError(it)
+                                                }
+                                            )
+                                        }
                                     },
-                                    shape = ShapeDefaults.Medium,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .navigationBarsPadding()
-                                        .padding(horizontal = 16.dp)
-                                ) {
-                                    Text(
-                                        text = stringResource(Res.string.add),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        modifier = Modifier.padding(vertical = 12.dp)
-                                    )
-                                }
-                            else if (isUpdate)
-                                Button(
-                                    onClick = {
-                                        userViewModel.showLoading()
-                                        viewModel.saveGroup(
-                                            onSuccess = {
-                                                userViewModel.setGroupMembers(it)
-                                                userViewModel.addGroup(it)
-                                                userViewModel.hideLoading()
-                                                navigator.pop()
-                                            },
-                                            onError = {
-                                                userViewModel.hideLoading()
-                                                userViewModel.handleError(it)
-                                            })
-                                    },
-                                    shape = ShapeDefaults.Medium,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .navigationBarsPadding()
-                                        .padding(horizontal = 16.dp)
-                                ) {
-                                    Text(
-                                        text = stringResource(Res.string.update),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        modifier = Modifier.padding(vertical = 12.dp)
-                                    )
-                                }
+                                    icon = Icons.Default.Check,
+                                    contentDescription = if (!isUpdate) stringResource(Res.string.add_group) else stringResource(Res.string.edit),
+                                    text = if (!isUpdate) stringResource(Res.string.add_group) else stringResource(Res.string.edit),
+                                )
+                            }
                         }
                     ) { paddingValues ->
                         if (showImagePicker) {

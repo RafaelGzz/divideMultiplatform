@@ -149,8 +149,7 @@ class ExpensePropertiesViewModel(
         onSuccess: (Expense) -> Unit,
         onError: (String) -> Unit
     ) {
-        val valid = validateTitle().and(validateAmount())//.and(validatePayments())
-        if (valid) {
+        if (validateTitle().and(validateAmount())) {
             screenModelScope.launch {
                 try {
                     val savedExpense = userRepository.saveExpense(

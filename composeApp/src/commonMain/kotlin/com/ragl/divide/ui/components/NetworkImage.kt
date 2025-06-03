@@ -78,7 +78,8 @@ fun NetworkImage(
                             painter = painter,
                             contentDescription = null,
                             contentScale = contentScale,
-                            modifier = Modifier.fillMaxSize().alpha(state)
+                            modifier = Modifier.fillMaxSize()
+                            //.alpha(state)
                         )
                     }
                 },

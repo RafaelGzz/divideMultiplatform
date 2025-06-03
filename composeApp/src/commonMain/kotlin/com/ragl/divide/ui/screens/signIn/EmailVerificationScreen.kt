@@ -22,7 +22,7 @@ import cafe.adriel.voyager.koin.koinNavigatorScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ragl.divide.ui.screens.UserViewModel
-import com.ragl.divide.ui.screens.home.HomeScreen
+import com.ragl.divide.ui.screens.main.MainScreen
 import com.ragl.divide.ui.utils.Strings
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.cancel
@@ -84,7 +84,7 @@ class EmailVerificationScreen : Screen {
                 onClick = {
                     scope.launch {
                         if (userViewModel.isEmailVerified()) {
-                            navigator.replaceAll(HomeScreen())
+                            navigator.replaceAll(MainScreen())
                         } else {
                             userViewModel.handleError(strings.getEmailNotVerified())
                         }

@@ -1,10 +1,16 @@
 package com.ragl.divide.data.services
 
+import com.ragl.divide.data.models.GroupEvent
 import com.ragl.divide.data.models.GroupExpense
 import com.ragl.divide.data.models.Payment
 import com.ragl.divide.ui.utils.toTwoDecimals
 
 class GroupExpenseService {
+    
+    companion object {
+        private const val MINIMUM_DEBT = 0.01
+    }
+    
     fun calculateDebts(
         expenses: Collection<GroupExpense>,
         payments: Collection<Payment>,
@@ -13,277 +19,315 @@ class GroupExpenseService {
         paymentsToSettle: MutableList<String>? = null
     ): Map<String, Map<String, Double>> {
         val balances = mutableMapOf<String, MutableMap<String, Double>>()
-
-        // Filtrar gastos eliminados o ya saldados
-        val activeExpenses = expenses.filter { 
-            !it.deleted && !it.settled 
-        }
         
-        // Guardar IDs de gastos activos para posible liquidación automática
-        val activeExpenseIds = activeExpenses.map { it.id }
-
-        for (expense in activeExpenses) {
-            val (updatedPayers, updatedDebtors) = expense.calculateDebtsAndPayers()
-
-            for ((debtor, debtAmount) in updatedDebtors) {
-                for ((payer, _) in updatedPayers) {
-                    if (debtor == payer) continue
-
-                    balances[debtor] = balances.getOrElse(debtor) { mutableMapOf() }.apply {
-                        this[payer] = (this[payer] ?: 0.0) + debtAmount
-                    }
-                }
-            }
-        }
-
-        // Filtrar pagos ya saldados
+        // Procesar gastos activos
+        val activeExpenses = expenses.filter { !it.deleted && !it.settled }
+        processExpenses(activeExpenses, balances)
+        
+        // Procesar pagos activos
         val activePayments = payments.filter { !it.settled }
+        processPayments(activePayments, balances, simplify)
         
-        // Guardar IDs de pagos activos para posible liquidación automática
-        val activePaymentIds = activePayments.map { it.id }
-
-        for (payment in activePayments) {
-            // Verificar si ya existe una deuda de 'to' hacia 'from'
-            val toUserMap = balances[payment.to]
-            val existingDebtToFrom = toUserMap?.get(payment.from) ?: 0.0
-            
-            if (existingDebtToFrom > 0) {
-                // El destinatario (to) ya debe dinero al remitente (from)
-                // Incrementar esta deuda según el requisito
-                balances[payment.to]!![payment.from] = existingDebtToFrom + payment.amount
-            } else {
-                // No existe una deuda de 'to' a 'from', verificar si 'from' debe a 'to'
-                val fromOwesToAmount = balances.getOrElse(payment.from) { mutableMapOf() }[payment.to] ?: 0.0
-                
-                if (fromOwesToAmount > 0) {
-                    // 'from' le debe dinero a 'to', reducir esa deuda
-                    val newDebt = (fromOwesToAmount - payment.amount).coerceAtLeast(0.0)
-                    
-                    if (newDebt > 0.01) {
-                        // Todavía queda deuda
-                        balances[payment.from]!![payment.to] = newDebt
-                    } else {
-                        // La deuda está pagada, eliminar la entrada
-                        balances[payment.from]!!.remove(payment.to)
-                        // Si no hay más deudas para este usuario, eliminar el mapa
-                        if (balances[payment.from]!!.isEmpty()) {
-                            balances.remove(payment.from)
-                        }
-                        
-                        // Si el pago excede la deuda, crear una deuda en dirección contraria
-                        val excessAmount = payment.amount - fromOwesToAmount
-                        if (excessAmount > 0.01) {
-                            balances[payment.to] = balances.getOrElse(payment.to) { mutableMapOf() }.apply {
-                                this[payment.from] = (this[payment.from] ?: 0.0) + excessAmount
-                            }
-                        }
-                    }
-                } else {
-                    // No hay deuda en ninguna dirección, crear una donde 'to' debe a 'from'
-                    balances[payment.to] = balances.getOrElse(payment.to) { mutableMapOf() }.apply {
-                        this[payment.from] = (this[payment.from] ?: 0.0) + payment.amount
-                    }
-                }
-            }
-        }
-
-        val debts = balances.mapValues { (_, map) ->
-            map.mapValues { (_, value) -> value.toTwoDecimals() }
-                .filterValues { kotlin.math.abs(it) > 0.01 }
-        }.filterValues { it.isNotEmpty() }
-
-        // Si no hay deudas pendientes y hay gastos/pagos para liquidar
-        if (debts.isEmpty() && (activeExpenseIds.isNotEmpty() || activePaymentIds.isNotEmpty())) {
-            // Agregar todos los gastos y pagos activos a las listas de liquidación
-            expensesToSettle?.addAll(activeExpenseIds)
-            paymentsToSettle?.addAll(activePaymentIds)
+        // Limpiar y formatear deudas
+        val debts = cleanAndFormatDebts(balances)
+        
+        // Manejar liquidación automática si no hay deudas
+        if (debts.isEmpty()) {
+            expensesToSettle?.addAll(activeExpenses.map { it.id })
+            paymentsToSettle?.addAll(activePayments.map { it.id })
             return emptyMap()
         }
-
-        val result = if (simplify) {
+        
+        // Aplicar simplificación si es necesario
+        return if (simplify) {
             val simplified = simplifyDebts(debts)
-            // Si después de simplificar las deudas el resultado es vacío, también marcar como saldados
-            if (simplified.isEmpty() && (activeExpenseIds.isNotEmpty() || activePaymentIds.isNotEmpty())) {
-                expensesToSettle?.addAll(activeExpenseIds)
-                paymentsToSettle?.addAll(activePaymentIds)
+            if (simplified.isEmpty()) {
+                expensesToSettle?.addAll(activeExpenses.map { it.id })
+                paymentsToSettle?.addAll(activePayments.map { it.id })
             }
             simplified
         } else {
             debts
         }
-        
-        return result
     }
-
+    
+    private fun processExpenses(
+        expenses: Collection<GroupExpense>,
+        balances: MutableMap<String, MutableMap<String, Double>>
+    ) {
+        expenses.forEach { expense ->
+            val (payers, debtors) = expense.calculateDebtsAndPayers()
+            debtors.forEach { (debtor, debtAmount) ->
+                payers.forEach { (payer, _) ->
+                    if (debtor != payer) {
+                        addDebt(balances, debtor, payer, debtAmount)
+                    }
+                }
+            }
+        }
+    }
+    
+    private fun processPayments(
+        payments: Collection<Payment>,
+        balances: MutableMap<String, MutableMap<String, Double>>,
+        simplify: Boolean
+    ) {
+        payments.forEach { payment ->
+            if (simplify) {
+                processPaymentWithSimplification(payment, balances)
+            } else {
+                addDebt(balances, payment.to, payment.from, payment.amount)
+            }
+        }
+    }
+    
+    private fun processPaymentWithSimplification(
+        payment: Payment,
+        balances: MutableMap<String, MutableMap<String, Double>>
+    ) {
+        val existingDebtToFrom = balances[payment.to]?.get(payment.from) ?: 0.0
+        
+        if (existingDebtToFrom > 0) {
+            // Incrementar deuda existente
+            balances[payment.to]!![payment.from] = existingDebtToFrom + payment.amount
+        } else {
+            val fromOwesToAmount = balances[payment.from]?.get(payment.to) ?: 0.0
+            
+            if (fromOwesToAmount > 0) {
+                // Reducir deuda existente
+                val newDebt = (fromOwesToAmount - payment.amount).coerceAtLeast(0.0)
+                
+                if (newDebt > MINIMUM_DEBT) {
+                    balances[payment.from]!![payment.to] = newDebt
+                } else {
+                    removeDebt(balances, payment.from, payment.to)
+                    
+                    // Manejar exceso
+                    val excessAmount = payment.amount - fromOwesToAmount
+                    if (excessAmount > MINIMUM_DEBT) {
+                        addDebt(balances, payment.to, payment.from, excessAmount)
+                    }
+                }
+            } else {
+                // Crear nueva deuda
+                addDebt(balances, payment.to, payment.from, payment.amount)
+            }
+        }
+    }
+    
+    private fun addDebt(
+        balances: MutableMap<String, MutableMap<String, Double>>,
+        debtor: String,
+        creditor: String,
+        amount: Double
+    ) {
+        balances.getOrPut(debtor) { mutableMapOf() }[creditor] = 
+            (balances[debtor]?.get(creditor) ?: 0.0) + amount
+    }
+    
+    private fun removeDebt(
+        balances: MutableMap<String, MutableMap<String, Double>>,
+        debtor: String,
+        creditor: String
+    ) {
+        balances[debtor]?.remove(creditor)
+        if (balances[debtor]?.isEmpty() == true) {
+            balances.remove(debtor)
+        }
+    }
+    
+    private fun cleanAndFormatDebts(
+        balances: MutableMap<String, MutableMap<String, Double>>
+    ): Map<String, Map<String, Double>> {
+        return balances.mapValues { (_, map) ->
+            map.mapValues { (_, value) -> value.toTwoDecimals() }
+                .filterValues { kotlin.math.abs(it) > MINIMUM_DEBT }
+        }.filterValues { it.isNotEmpty() }
+    }
+    
     private fun simplifyDebts(
         debts: Map<String, Map<String, Double>>
     ): Map<String, Map<String, Double>> {
         if (debts.isEmpty()) return emptyMap()
         
-        // Paso 1: Calcular las deudas netas entre pares de personas
+        // Calcular deudas netas entre pares
+        val netDebts = calculateNetDebts(debts)
+        
+        // Crear mapa inicial simplificado
+        val simplified = createInitialSimplifiedMap(netDebts)
+        
+        // Aplicar simplificación iterativa
+        applyIterativeSimplification(simplified)
+        
+        return cleanAndFormatDebts(simplified)
+    }
+    
+    private fun calculateNetDebts(
+        debts: Map<String, Map<String, Double>>
+    ): Map<Pair<String, String>, Double> {
         val netDebts = mutableMapOf<Pair<String, String>, Double>()
-
-        for ((debtor, creditors) in debts) {
-            for ((creditor, amount) in creditors) {
+        
+        debts.forEach { (debtor, creditors) ->
+            creditors.forEach { (creditor, amount) ->
                 val key = if (debtor < creditor) Pair(debtor, creditor) else Pair(creditor, debtor)
                 val signedAmount = if (debtor < creditor) amount else -amount
-
                 netDebts[key] = (netDebts[key] ?: 0.0) + signedAmount
             }
         }
-
-        // Paso 2: Crear un mapa inicial de deudas simplificadas
+        
+        return netDebts
+    }
+    
+    private fun createInitialSimplifiedMap(
+        netDebts: Map<Pair<String, String>, Double>
+    ): MutableMap<String, MutableMap<String, Double>> {
         val simplified = mutableMapOf<String, MutableMap<String, Double>>()
-
-        for ((pair, amount) in netDebts) {
-            // Si la deuda neta es insignificante, ignorarla
-            if (kotlin.math.abs(amount) < 0.01) continue
-
-            val (from, to, amt) = if (amount > 0) {
-                Triple(pair.first, pair.second, amount)
-            } else {
-                Triple(pair.second, pair.first, -amount)
+        
+        netDebts.forEach { (pair, amount) ->
+            if (kotlin.math.abs(amount) >= MINIMUM_DEBT) {
+                val (from, to, amt) = if (amount > 0) {
+                    Triple(pair.first, pair.second, amount)
+                } else {
+                    Triple(pair.second, pair.first, -amount)
+                }
+                simplified.getOrPut(from) { mutableMapOf() }[to] = amt
             }
-
-            simplified.getOrPut(from) { mutableMapOf() }[to] = amt
         }
         
-        // Paso 3: Aplicar el algoritmo de transferencia de deudas
+        return simplified
+    }
+    
+    private fun applyIterativeSimplification(
+        simplified: MutableMap<String, MutableMap<String, Double>>
+    ) {
         var wasSimplified: Boolean
         do {
             wasSimplified = false
             
-            // Optimización: Buscar caminos directos para simplificar deudas circulares
-            val debtors = simplified.keys.toList()
+            // Buscar y resolver deudas circulares directas
+            wasSimplified = resolveMutualDebts(simplified) || wasSimplified
             
-            for (debtor in debtors) {
-                val creditors = simplified[debtor]?.keys?.toList() ?: continue
-                
-                for (creditor in creditors) {
-                    // Caso especial: detectar deudas circulares directas (A debe a B y B debe a A)
-                    val mutualDebt = simplified[creditor]?.get(debtor)
-                    if (mutualDebt != null) {
-                        val debtAmount = simplified[debtor]!![creditor] ?: 0.0
-                        
-                        // Cancelar la menor contra la mayor
-                        val minDebt = kotlin.math.min(debtAmount, mutualDebt)
-                        val remainingDebtorDebt = (debtAmount - minDebt).coerceAtLeast(0.0)
-                        val remainingCreditorDebt = (mutualDebt - minDebt).coerceAtLeast(0.0)
-                        
-                        var changed = false
-                        
-                        // Actualizar o eliminar la deuda del deudor
-                        if (remainingDebtorDebt > 0.01) {
-                            simplified[debtor]!![creditor] = remainingDebtorDebt
-                        } else {
-                            simplified[debtor]!!.remove(creditor)
-                            if (simplified[debtor]!!.isEmpty()) {
-                                simplified.remove(debtor)
-                            }
-                            changed = true
-                        }
-                        
-                        // Actualizar o eliminar la deuda del acreedor
-                        if (remainingCreditorDebt > 0.01) {
-                            simplified[creditor]!![debtor] = remainingCreditorDebt
-                        } else {
-                            simplified[creditor]!!.remove(debtor)
-                            if (simplified[creditor]!!.isEmpty()) {
-                                simplified.remove(creditor)
-                            }
-                            changed = true
-                        }
-                        
-                        if (changed) {
-                            wasSimplified = true
-                            break  // Salir del bucle interno
-                        }
-                        
-                        continue  // Pasar a la siguiente combinación
-                    }
-                    
-                    // Si A debe a B y B debe a C, entonces A podría deber directamente a C
-                    val secondaryCreditors = simplified[creditor]?.keys?.toList() ?: continue
-                    
-                    for (secondaryCreditor in secondaryCreditors) {
-                        // Evitar ciclos
-                        if (secondaryCreditor == debtor) continue
-                        
-                        // Calculamos el monto que se puede transferir (el mínimo entre las dos deudas)
-                        val debtToCreditor = simplified[debtor]?.get(creditor) ?: 0.0
-                        val creditorToSecondary = simplified[creditor]?.get(secondaryCreditor) ?: 0.0
-                        val transferAmount = kotlin.math.min(debtToCreditor, creditorToSecondary)
-                        
-                        if (transferAmount > 0.01) {
-                            // Transferir la deuda
-                            // 1. Reducir la deuda original de debtor a creditor
-                            val remainingDebt = debtToCreditor - transferAmount
-                            if (remainingDebt > 0.01) {
-                                simplified[debtor]!![creditor] = remainingDebt
-                            } else {
-                                simplified[debtor]!!.remove(creditor)
-                                if (simplified[debtor]!!.isEmpty()) {
-                                    simplified.remove(debtor)
-                                }
-                            }
-                            
-                            // 2. Reducir la deuda de creditor a secondaryCreditor
-                            val remainingSecondaryDebt = creditorToSecondary - transferAmount
-                            if (remainingSecondaryDebt > 0.01) {
-                                simplified[creditor]!![secondaryCreditor] = remainingSecondaryDebt
-                            } else {
-                                simplified[creditor]!!.remove(secondaryCreditor)
-                                if (simplified[creditor]!!.isEmpty()) {
-                                    simplified.remove(creditor)
-                                }
-                            }
-                            
-                            // 3. Verificar si ya existe una deuda en dirección contraria antes de crear una nueva
-                            val existingReverseDebt = simplified[secondaryCreditor]?.get(debtor) ?: 0.0
-                            if (existingReverseDebt > 0.0) {
-                                // Si existe deuda en dirección contraria, cancelarlas entre sí
-                                val diff = transferAmount - existingReverseDebt
-                                if (diff > 0.01) {
-                                    // debtor sigue debiendo a secondaryCreditor
-                                    simplified.getOrPut(debtor) { mutableMapOf() }[secondaryCreditor] = diff
-                                    // Eliminar la deuda inversa
-                                    simplified[secondaryCreditor]!!.remove(debtor)
-                                    if (simplified[secondaryCreditor]!!.isEmpty()) {
-                                        simplified.remove(secondaryCreditor)
-                                    }
-                                } else if (diff < -0.01) {
-                                    // secondaryCreditor sigue debiendo a debtor, pero menos
-                                    simplified[secondaryCreditor]!![debtor] = -diff
-                                } else {
-                                    // Las deudas se cancelan exactamente
-                                    simplified[secondaryCreditor]!!.remove(debtor)
-                                    if (simplified[secondaryCreditor]!!.isEmpty()) {
-                                        simplified.remove(secondaryCreditor)
-                                    }
-                                }
-                            } else {
-                                // No hay deuda inversa, crear nueva deuda
-                                simplified.getOrPut(debtor) { mutableMapOf() }[secondaryCreditor] = 
-                                    (simplified[debtor]?.get(secondaryCreditor) ?: 0.0) + transferAmount
-                            }
-                            
-                            wasSimplified = true
-                            break  // Salir del bucle interno ya que hemos modificado las colecciones
-                        }
-                    }
-                    
-                    if (wasSimplified) break  // Salir del bucle externo si ya hicimos una simplificación
-                }
-                
-                if (wasSimplified) break  // Salir del bucle principal si ya hicimos una simplificación
-            }
+            // Buscar y resolver cadenas de deudas
+            wasSimplified = resolveDebtChains(simplified) || wasSimplified
+            
         } while (wasSimplified)
+    }
+    
+    private fun resolveMutualDebts(
+        simplified: MutableMap<String, MutableMap<String, Double>>
+    ): Boolean {
+        val debtors = simplified.keys.toList()
         
-        // Paso 4: Redondear a dos decimales
-        return simplified.mapValues { (_, creditors) ->
-            creditors.mapValues { (_, amount) -> amount.toTwoDecimals() }
-                .filterValues { it > 0.01 }
-                .toMutableMap()
-        }.filterValues { it.isNotEmpty() }
+        for (debtor in debtors) {
+            val creditors = simplified[debtor]?.keys?.toList() ?: continue
+            
+            for (creditor in creditors) {
+                val mutualDebt = simplified[creditor]?.get(debtor)
+                if (mutualDebt != null) {
+                    val debtAmount = simplified[debtor]!![creditor] ?: 0.0
+                    val minDebt = kotlin.math.min(debtAmount, mutualDebt)
+                    
+                    // Reducir ambas deudas
+                    updateOrRemoveDebt(simplified, debtor, creditor, debtAmount - minDebt)
+                    updateOrRemoveDebt(simplified, creditor, debtor, mutualDebt - minDebt)
+                    
+                    return true
+                }
+            }
+        }
+        return false
+    }
+    
+    private fun resolveDebtChains(
+        simplified: MutableMap<String, MutableMap<String, Double>>
+    ): Boolean {
+        val debtors = simplified.keys.toList()
+        
+        for (debtor in debtors) {
+            val creditors = simplified[debtor]?.keys?.toList() ?: continue
+            
+            for (creditor in creditors) {
+                val secondaryCreditors = simplified[creditor]?.keys?.toList() ?: continue
+                
+                for (secondaryCreditor in secondaryCreditors) {
+                    if (secondaryCreditor == debtor) continue
+                    
+                    val debtToCreditor = simplified[debtor]?.get(creditor) ?: 0.0
+                    val creditorToSecondary = simplified[creditor]?.get(secondaryCreditor) ?: 0.0
+                    val transferAmount = kotlin.math.min(debtToCreditor, creditorToSecondary)
+                    
+                    if (transferAmount > MINIMUM_DEBT) {
+                        // Transferir deuda
+                        updateOrRemoveDebt(simplified, debtor, creditor, debtToCreditor - transferAmount)
+                        updateOrRemoveDebt(simplified, creditor, secondaryCreditor, creditorToSecondary - transferAmount)
+                        
+                        // Manejar deuda resultante
+                        val existingReverseDebt = simplified[secondaryCreditor]?.get(debtor) ?: 0.0
+                        if (existingReverseDebt > 0.0) {
+                            val diff = transferAmount - existingReverseDebt
+                            updateOrRemoveDebt(simplified, secondaryCreditor, debtor, 0.0)
+                            if (kotlin.math.abs(diff) > MINIMUM_DEBT) {
+                                if (diff > 0) {
+                                    addDebt(simplified, debtor, secondaryCreditor, diff)
+                                } else {
+                                    addDebt(simplified, secondaryCreditor, debtor, -diff)
+                                }
+                            }
+                        } else {
+                            addDebt(simplified, debtor, secondaryCreditor, transferAmount)
+                        }
+                        
+                        return true
+                    }
+                }
+            }
+        }
+        return false
+    }
+    
+    private fun updateOrRemoveDebt(
+        simplified: MutableMap<String, MutableMap<String, Double>>,
+        debtor: String,
+        creditor: String,
+        newAmount: Double
+    ) {
+        if (newAmount > MINIMUM_DEBT) {
+            simplified[debtor]!![creditor] = newAmount
+        } else {
+            removeDebt(simplified, debtor, creditor)
+        }
+    }
+
+    /**
+     * Consolida las deudas de múltiples eventos.
+     */
+    fun consolidateDebtsFromEvents(events: Collection<GroupEvent>): Map<String, Map<String, Double>> {
+        val consolidatedBalances = mutableMapOf<String, MutableMap<String, Double>>()
+
+        events.filter { !it.settled }.forEach { event ->
+            event.currentDebts.forEach { (debtor, debts) ->
+                debts.forEach { (creditor, amount) ->
+                    if (amount > MINIMUM_DEBT) {
+                        addDebt(consolidatedBalances, debtor, creditor, amount)
+                    }
+                }
+            }
+        }
+
+        return cleanAndFormatDebts(consolidatedBalances)
+    }
+
+    /**
+     * Función utilitaria para consolidar deudas de eventos desde un mapa.
+     */
+    fun consolidateDebtsFromEventsMap(eventsMap: Map<String, GroupEvent>): Map<String, Map<String, Double>> {
+        return consolidateDebtsFromEvents(eventsMap.values)
+    }
+
+    /**
+     * Obtiene un mapa con el ID del evento y sus currentDebts.
+     */
+    fun getEventDebtsMap(eventsMap: Map<String, GroupEvent>): Map<String, Map<String, Map<String, Double>>> {
+        return eventsMap.mapValues { (_, event) -> event.currentDebts }
     }
 }

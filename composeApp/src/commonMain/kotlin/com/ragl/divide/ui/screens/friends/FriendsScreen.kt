@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CardDefaults
@@ -32,7 +34,7 @@ import cafe.adriel.voyager.koin.koinNavigatorScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ragl.divide.data.models.UserInfo
-import com.ragl.divide.ui.components.TitleRow
+import com.ragl.divide.ui.components.AdaptiveFAB
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.addFriends.AddFriendsScreen
 import com.ragl.divide.ui.utils.FriendItem
@@ -46,7 +48,6 @@ import dividemultiplatform.composeapp.generated.resources.friend_requests_sent
 import dividemultiplatform.composeapp.generated.resources.friends
 import dividemultiplatform.composeapp.generated.resources.reject
 import dividemultiplatform.composeapp.generated.resources.you_have_no_friends
-import dividemultiplatform.composeapp.generated.resources.your_friends
 import org.jetbrains.compose.resources.stringResource
 
 class FriendsScreen : Screen {
@@ -71,11 +72,21 @@ class FriendsScreen : Screen {
                     navigationIcon = {
                         IconButton(onClick = { navigator.pop() }) {
                             Icon(
-                                imageVector = Icons.Default.Close,
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(Res.string.back)
                             )
                         }
                     },
+                )
+            },
+            floatingActionButton = {
+                AdaptiveFAB(
+                    text = stringResource(Res.string.add_friends),
+                    icon = Icons.Default.Add,
+                    contentDescription = stringResource(Res.string.add_friends),
+                    onClick = {
+                        navigator.push(AddFriendsScreen())
+                    }
                 )
             }
         ) { pv ->
@@ -83,9 +94,6 @@ class FriendsScreen : Screen {
                 friends = friends,
                 friendRequestsReceived = friendRequests,
                 friendRequestsSent = state.friendRequestsSent.values.toList(),
-                onAddFriendClick = {
-                    navigator.push(AddFriendsScreen())
-                },
                 onAcceptFriendRequest = userViewModel::acceptFriendRequest,
                 onRejectFriendRequest = userViewModel::rejectFriendRequest,
                 onCancelFriendRequest = userViewModel::cancelFriendRequest,
@@ -103,7 +111,6 @@ fun FriendsBody(
     friends: List<UserInfo>,
     friendRequestsReceived: List<UserInfo>,
     friendRequestsSent: List<UserInfo>,
-    onAddFriendClick: () -> Unit = {},
     onAcceptFriendRequest: (UserInfo) -> Unit = {},
     onRejectFriendRequest: (UserInfo) -> Unit = {},
     onCancelFriendRequest: (UserInfo) -> Unit = {},
@@ -175,10 +182,9 @@ fun FriendsBody(
         }
         item {
             Spacer(modifier = Modifier.height(16.dp))
-            TitleRow(
-                Res.string.add_friends,
-                Res.string.your_friends,
-                onAddClick = onAddFriendClick,
+            Text(
+                text = stringResource(Res.string.add_friends),
+                style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
             )
         }

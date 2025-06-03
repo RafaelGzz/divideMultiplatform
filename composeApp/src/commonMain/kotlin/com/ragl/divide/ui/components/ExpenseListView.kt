@@ -1,5 +1,6 @@
 package com.ragl.divide.ui.components
 
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,12 +23,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
 import com.ragl.divide.data.models.GroupExpense
@@ -47,6 +45,7 @@ import dividemultiplatform.composeapp.generated.resources.x_paid_y
 import org.jetbrains.compose.resources.stringResource
 
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun ExpenseListView(
     modifier: Modifier = Modifier,
@@ -55,8 +54,6 @@ fun ExpenseListView(
     members: List<UserInfo>,
     onExpenseClick: (String) -> Unit,
     onPaymentClick: (String) -> Unit,
-    currentDebts: Map<String, Map<String, Double>>,
-    currentUserId: String,
 ) {
     val expensesByMonth = expensesAndPayments.groupBy {
         when (it) {
@@ -74,14 +71,6 @@ fun ExpenseListView(
     LazyColumn(
         modifier = modifier
     ) {
-        item {
-            CurrentDebtsView(
-                currentDebts = currentDebts,
-                currentUserId = currentUserId,
-                members = members,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-        }
         items(expensesByMonth.keys.toList().sorted()) { month ->
             MonthSection(
                 month = month,
@@ -292,59 +281,6 @@ private fun GroupExpenseItem(
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun CurrentDebtsView(
-    currentDebts: Map<String, Map<String, Double>>,
-    currentUserId: String,
-    members: List<UserInfo>,
-    modifier: Modifier = Modifier
-) {
-    if (currentDebts.isEmpty()) return
-
-    // Filtrar deudas del usuario actual
-    val userDebts = currentDebts[currentUserId] ?: emptyMap()
-    val userOwed =
-        currentDebts.filter { it.key != currentUserId }.mapValues { it.value[currentUserId] ?: 0.0 }
-            .filter { it.value > 0.01 }
-
-    if (userDebts.isEmpty() && userOwed.isEmpty()) return
-
-    Column(
-        modifier = modifier
-    ) {
-        // Si el usuario debe dinero a alguien
-        userDebts.forEach { (toUserId, amount) ->
-            if (amount > 0.01) {
-                val toUser = members.find { it.uuid == toUserId }
-                Text(
-                    buildAnnotatedString {
-                        append("Debes ")
-                        withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
-                            append(formatCurrency(amount, "es-MX"))
-                        }
-                        append(" a ${toUser?.name ?: "Desconocido"}")
-                    }, style = MaterialTheme.typography.bodyMedium
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-            }
-        }
-
-        // Si alguien debe dinero al usuario
-        userOwed.forEach { (fromUserId, amount) ->
-            val fromUser = members.find { it.uuid == fromUserId }
-            Text(
-                buildAnnotatedString {
-                    append("${fromUser?.name ?: "Desconocido"} te debe ")
-                    withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
-                        append(formatCurrency(amount, "es-MX"))
-                    }
-                }, style = MaterialTheme.typography.bodyMedium
-            )
-            Spacer(modifier = Modifier.height(4.dp))
         }
     }
 }
