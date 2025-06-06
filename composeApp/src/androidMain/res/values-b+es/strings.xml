@@ -38,6 +38,8 @@
     <string name="no_friend_requests_sent">No has enviado ninguna solicitud de amistad</string>
     <string name="accept">Aceptar</string>
     <string name="reject">Rechazar</string>
+    <string name="friend_removed">Amigo eliminado</string>
+    <string name="failed_to_remove_friend">No se pudo eliminar el amigo</string>
 
     <!-- Add/Edit Expense -->
     <string name="title_required">El título es requerido</string>
@@ -50,6 +52,7 @@
     <string name="two_people_must_pay">Al menos dos personas deben pagar</string>
     <string name="expense_already_paid">Este gasto ya ha sido pagado</string>
     <string name="no_individual_expenses">No se permiten gastos individuales</string>
+    <string name="congratulations">Felicidades! Has terminado de pagar %1$s</string>
 
     <!-- Expense Details -->
     <string name="error_deleting_payment">Error al eliminar el pago</string>
@@ -67,10 +70,10 @@
     <!-- Notifications -->
     <string name="notification_title">%1$s</string>
     <string name="notification_body">Recuerda pagar %1$s</string>
-    <string name="notification_reminder_1">¡No olvides realizar el pago de tu %1$s! Mantén tus finanzas al día.</string>
-    <string name="notification_reminder_2">Recordatorio: Tu pago de %1$s está pendiente. ¡Evita recargos!</string>
-    <string name="notification_reminder_3">Es momento de pagar tu %1$s. ¡Tu bolsillo te lo agradecerá!</string>
-    <string name="notification_reminder_4">Tu %1$s necesita ser pagado. ¡Haz clic para ver los detalles!</string>
+    <string name="notification_reminder_1">¡No olvides realizar el pago de %1$s! Mantén tus finanzas al día.</string>
+    <string name="notification_reminder_2">Recordatorio: El pago de %1$s está pendiente. ¡Evita recargos!</string>
+    <string name="notification_reminder_3">Es momento de pagar %1$s. ¡Tu bolsillo te lo agradecerá!</string>
+    <string name="notification_reminder_4">%1$s necesita ser pagado. ¡Haz clic para ver los detalles!</string>
     <string name="notification_reminder_5">¡Alerta de pago! %1$s está esperando por tu atención.</string>
-    <string name="notification_reminder_6">¿Ya pagaste tu %1$s? ¡Es hora de ponerse al día!</string>
+    <string name="notification_reminder_6">¿Ya pagaste %1$s? ¡Es hora de ponerse al día!</string>
 </resources>

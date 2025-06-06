@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import cafe.adriel.voyager.navigator.Navigator
+import cafe.adriel.voyager.navigator.NavigatorDisposeBehavior
 import cafe.adriel.voyager.transitions.FadeTransition
 import com.mmk.kmpauth.google.GoogleAuthCredentials
 import com.mmk.kmpauth.google.GoogleAuthProvider
@@ -31,6 +32,8 @@ import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.main.MainScreen
 import com.ragl.divide.ui.screens.signIn.SignInScreen
 import com.ragl.divide.ui.theme.DivideTheme
+import com.ragl.divide.ui.utils.logMessage
+import kotlinx.datetime.Clock
 import org.koin.compose.koinInject
 
 @Composable
@@ -47,12 +50,15 @@ fun App() {
     val appState by userViewModel.state.collectAsState()
 
     LaunchedEffect(Unit) {
+        val startTime = Clock.System.now().toEpochMilliseconds()
         GoogleAuthProvider.create(
             credentials = GoogleAuthCredentials(
                 serverId = "136615745370-2h4gflq2jv0u176mhbpu0ke5fei3cb4t.apps.googleusercontent.com"
             )
         )
         loaded = true
+        val timeTaken = Clock.System.now().toEpochMilliseconds() - startTime
+        logMessage("App", "GoogleAuthProvider loaded in $timeTaken ms")
     }
 
     LaunchedEffect(errorState) {
@@ -88,7 +94,8 @@ fun App() {
                         if (startAtLogin)
                             SignInScreen()
                         else
-                            MainScreen()
+                            MainScreen(),
+                        NavigatorDisposeBehavior(true, true)
                     ) { navigator ->
                         FadeTransition(navigator)
                     }

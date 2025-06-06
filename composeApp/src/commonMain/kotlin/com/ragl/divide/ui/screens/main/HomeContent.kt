@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
@@ -178,118 +179,66 @@ internal fun HomeContent(
         }
     }
 
-    when (windowSizeClass) {
-        WindowWidthSizeClass.Compact, WindowWidthSizeClass.Medium -> {
-            // Compact: GroupsRow arriba, LazyColumn de gastos abajo
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                item {
-                    Header(
-                        title = stringResource(Res.string.bar_item_1_text),
-                        modifier = Modifier
-                            .alpha(headerAlpha)
-                            .offset(y = headerOffsetY.dp)
-                    )
-                    Text(
-                        text = stringResource(Res.string.your_groups),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
-                    )
-
-                }
-                item {
-                    if (groups.isEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(80.dp)
-                                .alpha(emptyStateAlpha)
-                                .offset(y = emptyStateOffsetY.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = stringResource(Res.string.you_have_no_groups),
-                                style = MaterialTheme.typography.labelMedium,
-                                textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                            )
-                        }
-                    } else {
-                        GroupsRow(
-                            groups = groups,
-                            onGroupClick = onGroupClick,
-                            modifier = Modifier
-                                .alpha(groupsRowAlpha)
-                                .offset(y = groupsRowOffsetY.dp)
-                                .padding(vertical = 8.dp)
+    Column {
+        Header(
+            title = stringResource(Res.string.bar_item_1_text),
+            modifier = Modifier
+                .alpha(headerAlpha)
+                .offset(y = headerOffsetY.dp)
+        )
+        when (windowSizeClass) {
+            WindowWidthSizeClass.Compact, WindowWidthSizeClass.Medium -> {
+                // Compact: GroupsRow arriba, LazyColumn de gastos abajo
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    item {
+                        Text(
+                            text = stringResource(Res.string.your_groups),
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                         )
                     }
-                }
-                if (expenses.isEmpty()) {
                     item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(80.dp)
-                                .alpha(emptyStateAlpha)
-                                .offset(y = emptyStateOffsetY.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = stringResource(Res.string.you_have_no_expenses),
-                                style = MaterialTheme.typography.labelMedium,
-                                textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                            )
-                        }
-                    }
-                } else {
-                    if (unpaid.isNotEmpty()) {
-                        item {
-                            Text(
-                                text = stringResource(Res.string.your_expenses),
-                                style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
-                                    .padding(top = 12.dp, bottom = 4.dp)
-                            )
-                        }
-                        itemsIndexed(unpaid) { i, expense ->
-                            ExpenseCard(
-                                expense = expense,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 1.dp)
-                                    .clip(
-                                        if (unpaid.size == 1) {
-                                            RoundedCornerShape(16.dp)
-                                        } else {
-                                            if (i == 0) RoundedCornerShape(
-                                                topStart = 16.dp,
-                                                topEnd = 16.dp,
-                                                bottomEnd = 2.dp,
-                                                bottomStart = 2.dp
-                                            ) else {
-                                                if (i == unpaid.lastIndex)
-                                                    RoundedCornerShape(
-                                                        topStart = 2.dp,
-                                                        topEnd = 2.dp,
-                                                        bottomEnd = 16.dp,
-                                                        bottomStart = 16.dp
-                                                    )
-                                                else RoundedCornerShape(2.dp)
-                                            }
-                                        }
-                                    )
-                                    .clickable {
-                                        onExpenseClick(expense.id)
-                                    }
-                            )
-                        }
-                    } else {
-                        item {
+                        if (groups.isEmpty()) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(80.dp)
+                                    .alpha(emptyStateAlpha)
+                                    .offset(y = emptyStateOffsetY.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = stringResource(Res.string.you_have_no_groups),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                )
+                            }
+                        } else {
+                            GroupsRow(
+                                groups = groups,
+                                onGroupClick = onGroupClick,
+                                modifier = Modifier
+                                    .alpha(groupsRowAlpha)
+                                    .offset(y = groupsRowOffsetY.dp)
+                                    .padding(vertical = 8.dp)
+                            )
+                        }
+                    }
+                    item {
+                        Text(
+                            text = stringResource(Res.string.your_expenses),
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                                .padding(top = 12.dp, bottom = 4.dp)
+                        )
+                    }
+                    if (expenses.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 24.dp)
                                     .alpha(emptyStateAlpha)
                                     .offset(y = emptyStateOffsetY.dp),
                                 contentAlignment = Alignment.Center
@@ -302,42 +251,95 @@ internal fun HomeContent(
                                 )
                             }
                         }
-                    }
-                    if (paid.isNotEmpty()) {
-                        item {
-                            Row(
-                                horizontalArrangement = Arrangement.Center,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .alpha(paidButtonAlpha)
-                                    .offset(y = paidButtonOffsetY.dp)
-                            ) {
-                                TextButton(
-                                    onClick = { showPaidExpenses = !showPaidExpenses },
-                                    colors = ButtonDefaults.textButtonColors(
-                                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                    ),
-                                    modifier = Modifier.wrapContentWidth()
+                    } else {
+                        if (unpaid.isNotEmpty()) {
+                            itemsIndexed(unpaid) { i, expense ->
+                                ExpenseCard(
+                                    expense = expense,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 1.dp)
+                                        .clip(
+                                            if (unpaid.size == 1) {
+                                                RoundedCornerShape(16.dp)
+                                            } else {
+                                                if (i == 0) RoundedCornerShape(
+                                                    topStart = 16.dp,
+                                                    topEnd = 16.dp,
+                                                    bottomEnd = 2.dp,
+                                                    bottomStart = 2.dp
+                                                ) else {
+                                                    if (i == unpaid.lastIndex)
+                                                        RoundedCornerShape(
+                                                            topStart = 2.dp,
+                                                            topEnd = 2.dp,
+                                                            bottomEnd = 16.dp,
+                                                            bottomStart = 16.dp
+                                                        )
+                                                    else RoundedCornerShape(2.dp)
+                                                }
+                                            }
+                                        )
+                                        .clickable {
+                                            onExpenseClick(expense.id)
+                                        }
+                                )
+                            }
+                        } else {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 24.dp)
+                                        .alpha(emptyStateAlpha)
+                                        .offset(y = emptyStateOffsetY.dp),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.Center,
+                                    Text(
+                                        text = stringResource(Res.string.you_have_no_expenses),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        textAlign = TextAlign.Center,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                    )
+                                }
+                            }
+                        }
+                        if (paid.isNotEmpty()) {
+                            item {
+                                Row(
+                                    horizontalArrangement = Arrangement.Center,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .alpha(paidButtonAlpha)
+                                        .offset(y = paidButtonOffsetY.dp)
+                                ) {
+                                    TextButton(
+                                        onClick = { showPaidExpenses = !showPaidExpenses },
+                                        colors = ButtonDefaults.textButtonColors(
+                                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                        ),
+                                        modifier = Modifier.wrapContentWidth()
                                     ) {
-                                        Icon(
-                                            imageVector = if (showPaidExpenses) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = stringResource(Res.string.paid_expenses) + " (${paid.size})",
-                                            style = MaterialTheme.typography.labelSmall
-                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center,
+                                        ) {
+                                            Icon(
+                                                imageVector = if (showPaidExpenses) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = stringResource(Res.string.paid_expenses) + " (${paid.size})",
+                                                style = MaterialTheme.typography.labelSmall
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
-                        item {
+                        itemsIndexed(paid) { i, expense ->
                             AnimatedVisibility(
                                 visible = showPaidExpenses,
                                 enter = slideInVertically(
@@ -349,13 +351,189 @@ internal fun HomeContent(
                                     targetOffsetY = { -it - (it / 8) }
                                 ) + fadeOut(tween(100))
                             ) {
-                                Column {
-                                    paid.forEachIndexed { i, expense ->
+                                ExpenseCard(
+                                    expense = expense,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 1.dp)
+                                        .clip(
+                                            if (paid.size == 1) {
+                                                RoundedCornerShape(16.dp)
+                                            } else
+                                                if (i == 0) RoundedCornerShape(
+                                                    topStart = 16.dp,
+                                                    topEnd = 16.dp,
+                                                    bottomEnd = 2.dp,
+                                                    bottomStart = 2.dp
+                                                ) else {
+                                                    if (i == paid.lastIndex)
+                                                        RoundedCornerShape(
+                                                            topStart = 2.dp,
+                                                            topEnd = 2.dp,
+                                                            bottomEnd = 16.dp,
+                                                            bottomStart = 16.dp
+                                                        )
+                                                    else RoundedCornerShape(2.dp)
+                                                }
+                                        )
+                                        .clickable {
+                                            onExpenseClick(expense.id)
+                                        }
+                                )
+                            }
+                        }
+                    }
+                    item {
+                        Spacer(modifier = Modifier.height(100.dp))
+                    }
+                }
+            }
+
+            WindowWidthSizeClass.Expanded -> {
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                    ) {
+                        item {
+                            Text(
+                                text = stringResource(Res.string.your_expenses),
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(horizontal = 16.dp)
+                                    .padding(bottom = 4.dp)
+                            )
+                        }
+                        if (expenses.isEmpty()) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(80.dp)
+                                        .alpha(emptyStateAlpha)
+                                        .offset(y = emptyStateOffsetY.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = stringResource(Res.string.you_have_no_expenses),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        textAlign = TextAlign.Center,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                    )
+                                }
+                            }
+                        } else {
+                            if (unpaid.isNotEmpty()) {
+                                itemsIndexed(unpaid) { i, expense ->
+                                    ExpenseCard(
+                                        expense = expense,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp, vertical = 1.dp)
+                                            .clip(
+                                                if (unpaid.size == 1) {
+                                                    RoundedCornerShape(16.dp)
+                                                } else {
+                                                    if (i == 0) RoundedCornerShape(
+                                                        topStart = 16.dp,
+                                                        topEnd = 16.dp,
+                                                        bottomEnd = 2.dp,
+                                                        bottomStart = 2.dp
+                                                    ) else {
+                                                        if (i == unpaid.lastIndex)
+                                                            RoundedCornerShape(
+                                                                topStart = 2.dp,
+                                                                topEnd = 2.dp,
+                                                                bottomEnd = 16.dp,
+                                                                bottomStart = 16.dp
+                                                            )
+                                                        else RoundedCornerShape(2.dp)
+                                                    }
+                                                }
+                                            )
+                                            .clickable {
+                                                onExpenseClick(expense.id)
+                                            }
+                                    )
+                                }
+                            } else {
+                                item {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(80.dp)
+                                            .alpha(emptyStateAlpha)
+                                            .offset(y = emptyStateOffsetY.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = stringResource(Res.string.you_have_no_expenses),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            textAlign = TextAlign.Center,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(
+                                                alpha = 0.6f
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                            if (paid.isNotEmpty()) {
+                                item {
+                                    Row(
+                                        horizontalArrangement = Arrangement.Center,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .alpha(paidButtonAlpha)
+                                            .offset(y = paidButtonOffsetY.dp)
+                                    ) {
+                                        TextButton(
+                                            onClick = { showPaidExpenses = !showPaidExpenses },
+                                            colors = ButtonDefaults.textButtonColors(
+                                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                            ),
+                                            modifier = Modifier.wrapContentWidth()
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.Center,
+                                            ) {
+                                                Icon(
+                                                    imageVector = if (showPaidExpenses) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    text = stringResource(Res.string.paid_expenses) + " (${paid.size})",
+                                                    style = MaterialTheme.typography.labelSmall
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                itemsIndexed(paid) { i, expense ->
+                                    AnimatedVisibility(
+                                        visible = showPaidExpenses,
+                                        enter = slideInVertically(
+                                            animationSpec = tween(350),
+                                            initialOffsetY = { -it + (it / 8) * 5 }
+                                        ) + fadeIn(tween(350)),
+                                        exit = slideOutVertically(
+                                            animationSpec = tween(250),
+                                            targetOffsetY = { -it - (it / 8) }
+                                        ) + fadeOut(tween(100))
+                                    ) {
                                         ExpenseCard(
                                             expense = expense,
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .padding(horizontal = 16.dp, vertical = 1.dp)
+                                                .padding(
+                                                    horizontal = 16.dp,
+                                                    vertical = 1.dp
+                                                )
                                                 .clip(
                                                     if (paid.size == 1) {
                                                         RoundedCornerShape(16.dp)
@@ -383,250 +561,60 @@ internal fun HomeContent(
                                     }
                                 }
                             }
-                        }
-                    }
-                }
-                item {
-                    Spacer(modifier = Modifier.height(100.dp))
-                }
-            }
-        }
-
-        WindowWidthSizeClass.Expanded -> {
-            Column(modifier = Modifier.fillMaxSize()) {
-                Header(
-                    title = stringResource(Res.string.bar_item_1_text),
-                    modifier = Modifier
-                        .alpha(headerAlpha)
-                        .offset(y = headerOffsetY.dp)
-                )
-                Row(
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                    )  {
-                        Text(
-                            text = stringResource(Res.string.your_expenses),
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.fillMaxWidth()
-                                .padding(horizontal = 16.dp)
-                                .padding(top = 12.dp, bottom = 4.dp)
-                        )
-                        if (expenses.isEmpty()) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(80.dp)
-                                    .alpha(emptyStateAlpha)
-                                    .offset(y = emptyStateOffsetY.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = stringResource(Res.string.you_have_no_expenses),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    textAlign = TextAlign.Center,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                )
-                            }
-                        } else {
-                            LazyColumn{
-                                if (unpaid.isNotEmpty()) {
-                                    itemsIndexed(unpaid) { i, expense ->
-                                        ExpenseCard(
-                                            expense = expense,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 16.dp, vertical = 1.dp)
-                                                .clip(
-                                                    if (unpaid.size == 1) {
-                                                        RoundedCornerShape(16.dp)
-                                                    } else {
-                                                        if (i == 0) RoundedCornerShape(
-                                                            topStart = 16.dp,
-                                                            topEnd = 16.dp,
-                                                            bottomEnd = 2.dp,
-                                                            bottomStart = 2.dp
-                                                        ) else {
-                                                            if (i == unpaid.lastIndex)
-                                                                RoundedCornerShape(
-                                                                    topStart = 2.dp,
-                                                                    topEnd = 2.dp,
-                                                                    bottomEnd = 16.dp,
-                                                                    bottomStart = 16.dp
-                                                                )
-                                                            else RoundedCornerShape(2.dp)
-                                                        }
-                                                    }
-                                                )
-                                                .clickable {
-                                                    onExpenseClick(expense.id)
-                                                }
-                                        )
-                                    }
-                                } else {
-                                    item {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(80.dp)
-                                                .alpha(emptyStateAlpha)
-                                                .offset(y = emptyStateOffsetY.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                text = stringResource(Res.string.you_have_no_expenses),
-                                                style = MaterialTheme.typography.labelMedium,
-                                                textAlign = TextAlign.Center,
-                                                color = MaterialTheme.colorScheme.onSurface.copy(
-                                                    alpha = 0.6f
-                                                )
-                                            )
-                                        }
-                                    }
-                                }
-                                if (paid.isNotEmpty()) {
-                                    item {
-                                        Row(
-                                            horizontalArrangement = Arrangement.Center,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .alpha(paidButtonAlpha)
-                                                .offset(y = paidButtonOffsetY.dp)
-                                        ) {
-                                            TextButton(
-                                                onClick = { showPaidExpenses = !showPaidExpenses },
-                                                colors = ButtonDefaults.textButtonColors(
-                                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                                ),
-                                                modifier = Modifier.wrapContentWidth()
-                                            ) {
-                                                Row(
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.Center,
-                                                ) {
-                                                    Icon(
-                                                        imageVector = if (showPaidExpenses) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                                        contentDescription = null,
-                                                        modifier = Modifier.size(20.dp)
-                                                    )
-                                                    Spacer(modifier = Modifier.width(8.dp))
-                                                    Text(
-                                                        text = stringResource(Res.string.paid_expenses) + " (${paid.size})",
-                                                        style = MaterialTheme.typography.labelSmall
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                    item {
-                                        AnimatedVisibility(
-                                            visible = showPaidExpenses,
-                                            enter = slideInVertically(
-                                                animationSpec = tween(350),
-                                                initialOffsetY = { -it + (it / 8) * 5 }
-                                            ) + fadeIn(tween(350)),
-                                            exit = slideOutVertically(
-                                                animationSpec = tween(250),
-                                                targetOffsetY = { -it - (it / 8) }
-                                            ) + fadeOut(tween(100))
-                                        ) {
-                                            Column {
-                                                paid.forEachIndexed { i, expense ->
-                                                    ExpenseCard(
-                                                        expense = expense,
-                                                        modifier = Modifier
-                                                            .fillMaxWidth()
-                                                            .padding(
-                                                                horizontal = 16.dp,
-                                                                vertical = 1.dp
-                                                            )
-                                                            .clip(
-                                                                if (paid.size == 1) {
-                                                                    RoundedCornerShape(16.dp)
-                                                                } else
-                                                                    if (i == 0) RoundedCornerShape(
-                                                                        topStart = 16.dp,
-                                                                        topEnd = 16.dp,
-                                                                        bottomEnd = 2.dp,
-                                                                        bottomStart = 2.dp
-                                                                    ) else {
-                                                                        if (i == paid.lastIndex)
-                                                                            RoundedCornerShape(
-                                                                                topStart = 2.dp,
-                                                                                topEnd = 2.dp,
-                                                                                bottomEnd = 16.dp,
-                                                                                bottomStart = 16.dp
-                                                                            )
-                                                                        else RoundedCornerShape(2.dp)
-                                                                    }
-                                                            )
-                                                            .clickable {
-                                                                onExpenseClick(expense.id)
-                                                            }
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                            item {
+                                Spacer(modifier = Modifier.height(80.dp))
                             }
                         }
                     }
-                    Column(
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(minSize = 150.dp),
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
+                            .padding(horizontal = 16.dp)
+                            .alpha(groupsRowAlpha)
+                            .offset(y = groupsRowOffsetY.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text(
-                            text = stringResource(Res.string.your_groups),
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.fillMaxWidth()
-                                .padding(horizontal = 16.dp)
-                                .padding(top = 12.dp, bottom = 4.dp)
-                        )
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            Text(
+                                text = stringResource(Res.string.your_groups),
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                         if (groups.isEmpty()) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(80.dp)
-                                    .alpha(emptyStateAlpha)
-                                    .offset(y = emptyStateOffsetY.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = stringResource(Res.string.you_have_no_groups),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    textAlign = TextAlign.Center,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                )
+                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(80.dp)
+                                        .alpha(emptyStateAlpha)
+                                        .offset(y = emptyStateOffsetY.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = stringResource(Res.string.you_have_no_groups),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        textAlign = TextAlign.Center,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                    )
+                                }
                             }
                         } else {
-                            LazyVerticalGrid(
-                                columns = GridCells.Adaptive(minSize = 150.dp),
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .alpha(groupsRowAlpha)
-                                    .offset(y = groupsRowOffsetY.dp)
-                                    .padding(horizontal = 16.dp)
-                                ,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                items(groups) { group ->
-                                    GroupCard(
-                                        group = group,
-                                        modifier = Modifier
-                                            .size(150.dp)
-                                            .clip(ShapeDefaults.Medium)
-                                    ) { onGroupClick(group.id) }
-                                }
+                            items(groups) { group ->
+                                GroupCard(
+                                    group = group,
+                                    modifier = Modifier
+                                        .size(150.dp)
+                                        .clip(ShapeDefaults.Medium)
+                                ) { onGroupClick(group.id) }
                             }
                         }
                     }
                 }
+
             }
         }
     }

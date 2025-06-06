@@ -38,6 +38,8 @@
     <string name="no_friend_requests_sent">You haven\'t sent any friend requests</string>
     <string name="accept">Accept</string>
     <string name="reject">Reject</string>
+    <string name="friend_removed">Friend removed</string>
+    <string name="failed_to_remove_friend">Failed to remove friend</string>
 
     <!-- Add/Edit Expense -->
     <string name="title_required">Title is required</string>
@@ -50,6 +52,7 @@
     <string name="two_people_must_pay">At least two people must pay</string>
     <string name="expense_already_paid">This expense has already been paid</string>
     <string name="no_individual_expenses">No individual expenses allowed</string>
+    <string name="congratulations">Congratulations! You finished paying %1$s</string>
 
     <!-- Expense Details -->
     <string name="error_deleting_payment">Error deleting payment</string>
@@ -67,10 +70,10 @@
     <!-- Notifications -->
     <string name="notification_title">%1$s</string>
     <string name="notification_body">Remember to pay %1$s</string>
-    <string name="notification_reminder_1">Don\'t forget to pay your %1$s! Keep your finances up to date.</string>
-    <string name="notification_reminder_2">Reminder: Your %1$s payment is pending. Avoid late fees!</string>
-    <string name="notification_reminder_3">It\'s time to pay your %1$s. Your wallet will thank you!</string>
-    <string name="notification_reminder_4">Your %1$s needs to be paid. Click to see the details!</string>
+    <string name="notification_reminder_1">Don\'t forget to pay %1$s! Keep your finances up to date.</string>
+    <string name="notification_reminder_2">Reminder: payment for %1$s is pending. Avoid late fees!</string>
+    <string name="notification_reminder_3">It\'s time to pay %1$s. Your wallet will thank you!</string>
+    <string name="notification_reminder_4">%1$s needs to be paid. Click to see the details!</string>
     <string name="notification_reminder_5">Payment alert! %1$s is waiting for your attention.</string>
-    <string name="notification_reminder_6">Have you paid your %1$s yet? It\'s time to catch up!</string>
+    <string name="notification_reminder_6">Have you paid %1$s yet? It\'s time to catch up!</string>
 </resources>

@@ -15,6 +15,8 @@
     <string name="send">Send</string>
     <string name="accept">Accept</string>
     <string name="reject">Reject</string>
+    <string name="discard">Discard</string>
+    <string name="unknown">Unknown</string>
 
     <!-- Authentication -->
     <string name="connect_with_social_media">Connect with Social Media</string>
@@ -49,11 +51,6 @@
     <string name="individual_expense">Individual\nExpense</string>
     <string name="group_expense">Group\nExpense</string>
     <string name="add_an_expense">Add an expense</string>
-    <string name="owed">You\'re owed $%1$s</string>
-    <string name="you_owe">You owe $%1$s</string>
-    <string name="see_all">See\nall</string>
-    <string name="owed_in_general">You're owed in general: </string>
-    <string name="owe_in_general">You owe in general: </string>
 
     <!-- Friends -->
     <string name="friends">Friends</string>
@@ -78,6 +75,10 @@
     <string name="friend_requests_sent">Friend Requests Sent</string>
     <string name="no_friend_requests_received">You have no friend requests</string>
     <string name="no_friend_requests_sent">You haven't sent any friend requests</string>
+    <string name="remove_friend">Remove Friend</string>
+    <string name="remove_friend_confirm">Are you sure you want to remove %1$s from your friends?</string>
+    <string name="friend_removed">Friend removed</string>
+    <string name="failed_to_remove_friend">Failed to remove friend</string>
 
     <!-- Add/Edit Expense -->
     <string name="add_expense">Add Expense</string>
@@ -148,7 +149,6 @@
     <string name="pending_expenses">Pending expenses</string>
     <string name="paid_expenses">Paid expenses</string>
     <string name="x_paid_y">%1$s paid %2$s</string>
-    <string name="settled">Settled</string>
 
     <!-- Groups -->
     <string name="add_group">Add Group</string>
@@ -176,9 +176,46 @@
 
     <!-- Events -->
     <string name="events">Events</string>
+    <string name="settled">Settled</string>
     <string name="add_event">Add Event</string>
+    <string name="no_events">There are no events</string>
+    <string name="edit_event">Edit Event</string>
+    <string name="new_event">New Event</string>
+    <string name="event_title">Event Title</string>
+    <string name="description">Description</string>
     <string name="delete_event">Delete Event</string>
     <string name="cannot_delete_event">You cannot delete the event while debts or credits exist</string>
+    <string name="settled_events">Settled events (%1$s)</string>
+    <string name="active">Active</string>
+    <string name="created_on">Created on %1$s</string>
+    <string name="activity">Activity</string>
+    <string name="no_activity">No activity to show</string>
+    <string name="settle_banner_title">Event ready to settle!</string>
+    <string name="settle_banner_message">No debts remaining. Click to settle the event</string>
+    <string name="reopen_banner_title">Event settled</string>
+    <string name="reopen_banner_message">Click to reopen the event and add more expenses</string>
+    <string name="settle_event">Settle Event</string>
+    <string name="settle">Settle</string>
+    <string name="settle_event_confirm">Are you sure you want to settle this event? This will mark it as completed and no more expenses or payments can be added.</string>
+    <string name="reopen_event">Reopen Event</string>
+    <string name="reopen_event_confirm">Are you sure you want to reopen this event? This will allow you to add more expenses and payments and will recalculate debts.</string>
+    <string name="reopen">Reopen</string>
+    <string name="active_events">%1$s active events</string>
+    <string name="delete_event_message">Are you sure you want to delete this event?\nTHIS CANNOT BE UNDONE.</string>
+
+    <!-- Debts Card -->
+    <string name="event_summary">Event Summary</string>
+    <string name="debts_summary">Debts Summary</string>
+    <string name="youre_owed">You're owed %1$s</string>
+    <string name="you_owe">You owe %1$s</string>
+    <string name="up_to_date">You're up to date</string>
+    <string name="no_debts">No debts</string>
+    <string name="x_debts">%1$s debts</string>
+    <string name="your_debts">Your debts</string>
+    <string name="other_debts">Other debts</string>
+    <string name="you">You</string>
+    <string name="pay_debt">Pay debt</string>
+    <string name="go_to_event">Go to event</string>
 
     <!-- Image Selection -->
     <string name="select_image_source">Select image source</string>
@@ -206,9 +243,15 @@
     <string name="notification_canceled">Notification %1$s canceled</string>
     <string name="warning_date_adjusted">Warning! Time adjusted since date was in the past</string>
     <string name="notification_scheduled_seconds">Notification %1$s scheduled for %2$s seconds from now</string>
+    <string name="notification_permission_rejected_title">Notification permission required</string>
+    <string name="notification_permission_rejected_message">The notification permission was denied. To enable reminders, you must manually turn on notifications in the app settings.</string>
 
     <!-- Currency and Formatting -->
     <string name="dollar_sign">$</string>
     <string name="percent_sign">%</string>
     <string name="currency_es_mx">es-MX</string>
+    
+    <!-- Reminders -->
+    <string name="reminders">Reminders</string>
+    <string name="save">Save</string>
 </resources>

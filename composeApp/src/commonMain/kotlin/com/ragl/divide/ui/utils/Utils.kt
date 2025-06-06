@@ -3,7 +3,6 @@ package com.ragl.divide.ui.utils
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,8 +17,6 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -34,7 +31,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
@@ -61,7 +57,7 @@ expect fun formatCurrency(value: Double, local: String): String
 
 expect fun formatDate(epochMilliseconds: Long, pattern: String = "dd/MM/yyyy hh:mm a"): String
 
-expect class Strings{
+expect class Strings {
     fun getAppName(): String
     fun getNotificationBodyString(title: String): String
     fun getTwoSelected(): String
@@ -103,8 +99,10 @@ expect class Strings{
     fun getFailedToAcceptFriendRequest(): String
     fun getFailedToRejectFriendRequest(): String
     fun getFailedToCancelFriendRequest(): String
+    fun getFriendRemoved(): String
+    fun getFailedToRemoveFriend(): String
     fun getExpenseAlreadyPaid(): String
-    fun getNoIndividualExpenses(): String
+    fun getCongratulations(title: String): String
 }
 
 fun Double.toTwoDecimals(): Double {
@@ -112,7 +110,7 @@ fun Double.toTwoDecimals(): Double {
 }
 
 fun validateQuantity(input: String, updateInput: (String) -> Unit) {
-    if (input.isEmpty()) updateInput("") else if(!input.contains(',')){
+    if (input.isEmpty()) updateInput("") else if (!input.contains(',')) {
         val parsed = input.toDoubleOrNull()
         parsed?.let {
             val decimalPart = input.substringAfter(".", "")
@@ -288,7 +286,7 @@ fun FriendItem(
         colors = colors
     ) {
         ListItem(
-            modifier = if(hasLeadingContent) Modifier.padding(vertical = 4.dp) else Modifier,
+            modifier = if (hasLeadingContent) Modifier.padding(vertical = 4.dp) else Modifier,
             colors = ListItemDefaults.colors(
                 containerColor = Color.Transparent,
             ),
@@ -411,18 +409,11 @@ fun Header(
     title: String,
     modifier: Modifier = Modifier
 ) {
-    Box(
+    Text(
+        text = title,
+        style = MaterialTheme.typography.headlineMedium,
         modifier = modifier
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-                .align(Alignment.Center)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineMedium
-            )
-        }
-    }
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+
+    )
 }

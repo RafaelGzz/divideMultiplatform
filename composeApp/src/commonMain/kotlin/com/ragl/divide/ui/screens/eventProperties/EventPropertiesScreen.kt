@@ -1,11 +1,11 @@
 package com.ragl.divide.ui.screens.eventProperties
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -21,7 +22,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -45,13 +45,17 @@ import com.ragl.divide.ui.screens.group.GroupScreen
 import com.ragl.divide.ui.utils.DivideTextField
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.add_event
+import dividemultiplatform.composeapp.generated.resources.back
 import dividemultiplatform.composeapp.generated.resources.cancel
 import dividemultiplatform.composeapp.generated.resources.cannot_delete_event
 import dividemultiplatform.composeapp.generated.resources.delete
 import dividemultiplatform.composeapp.generated.resources.delete_event
-import dividemultiplatform.composeapp.generated.resources.delete_group
-import dividemultiplatform.composeapp.generated.resources.delete_group_message
-import dividemultiplatform.composeapp.generated.resources.edit
+import dividemultiplatform.composeapp.generated.resources.delete_event_message
+import dividemultiplatform.composeapp.generated.resources.description
+import dividemultiplatform.composeapp.generated.resources.edit_event
+import dividemultiplatform.composeapp.generated.resources.event_title
+import dividemultiplatform.composeapp.generated.resources.new_event
+import dividemultiplatform.composeapp.generated.resources.save
 import org.jetbrains.compose.resources.stringResource
 
 class EventPropertiesScreen(
@@ -82,20 +86,20 @@ class EventPropertiesScreen(
 
         Scaffold(
             topBar = {
-                TopAppBar(
+                CenterAlignedTopAppBar(
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
                         navigationIconContentColor = MaterialTheme.colorScheme.primary
                     ),
                     title = {
                         Text(
-                            text = if (isEditMode) "Editar Evento" else "Nuevo Evento",
+                            text = if (isEditMode) stringResource(Res.string.edit_event) else stringResource(Res.string.new_event),
                             style = MaterialTheme.typography.titleLarge
                         )
                     },
                     navigationIcon = {
                         IconButton(onClick = { navigator.pop() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.back))
                         }
                     }
                 )
@@ -113,8 +117,8 @@ class EventPropertiesScreen(
                         )
                     },
                     icon = Icons.Default.Check,
-                    contentDescription = if (!isEditMode) stringResource(Res.string.add_event) else stringResource(Res.string.edit),
-                    text = if (!isEditMode) stringResource(Res.string.add_event) else stringResource(Res.string.edit),
+                    contentDescription = if (!isEditMode) stringResource(Res.string.add_event) else stringResource(Res.string.save),
+                    text = if (!isEditMode) stringResource(Res.string.add_event) else stringResource(Res.string.save),
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
@@ -125,13 +129,13 @@ class EventPropertiesScreen(
                     onDismissRequest = { dialogEnabled = false },
                     title = {
                         Text(
-                            stringResource(Res.string.delete_group),
+                            stringResource(Res.string.delete_event),
                             style = MaterialTheme.typography.titleLarge
                         )
                     },
                     text = {
                         Text(
-                            stringResource(Res.string.delete_group_message),
+                            stringResource(Res.string.delete_event_message),
                             style = MaterialTheme.typography.bodySmall
                         )
                     },
@@ -162,74 +166,75 @@ class EventPropertiesScreen(
                         }
                     }
                 )
-            Column(
+            LazyColumn(
                 modifier = Modifier
                     .padding(paddingValues)
-                    .padding(16.dp)
+                    .padding(horizontal = 16.dp)
             ) {
-                // Campo de título
-                DivideTextField(
-                    input = eventState.title,
-                    error = viewModel.titleError,
-                    onValueChange = viewModel::updateTitle,
-                    validate = viewModel::validateTitle,
-                    label = "Título del evento",
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                item{
+                    DivideTextField(
+                        input = eventState.title,
+                        error = viewModel.titleError,
+                        onValueChange = viewModel::updateTitle,
+                        validate = viewModel::validateTitle,
+                        label = stringResource(Res.string.event_title),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                // Campo de descripción
-                DivideTextField(
-                    input = eventState.description,
-                    onValueChange = viewModel::updateDescription,
-                    label = "Descripción",
-                    imeAction = ImeAction.Default,
-                    singleLine = false,
-                    modifier = Modifier
-                        .heightIn(max = 200.dp)
-                        .padding(bottom = 12.dp)
-                )
-                if (isEditMode) {
-                    Button(
-                        onClick = {
-                            dialogEnabled = true
-                            dialogEnabled = true
-                        },
-                        shape = ShapeDefaults.Medium,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                            contentColor = MaterialTheme.colorScheme.error,
-                            disabledContainerColor = MaterialTheme.colorScheme.errorContainer.copy(
-                                alpha = 0.38f
-                            ),
-                            disabledContentColor = MaterialTheme.colorScheme.error.copy(
-                                alpha = 0.38f
-                            )
-                        ),
-                        enabled = canDelete,
+                    // Campo de descripción
+                    DivideTextField(
+                        input = eventState.description,
+                        onValueChange = viewModel::updateDescription,
+                        label = stringResource(Res.string.description),
+                        imeAction = ImeAction.Default,
+                        singleLine = false,
                         modifier = Modifier
-                            .padding(vertical = 8.dp)
-                            .fillMaxWidth()
-                    ) {
-                        Icon(
-                            Icons.Filled.Delete,
-                            contentDescription = null,
-                            modifier = Modifier.padding(end = 8.dp)
-                        )
-                        Text(
-                            text = stringResource(Res.string.delete_event),
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(vertical = 12.dp)
-                        )
-                    }
-                    if (!canDelete) {
-                        Text(
-                            text = stringResource(Res.string.cannot_delete_event),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(bottom = 12.dp)
-                        )
+                            .heightIn(max = 200.dp)
+                            .padding(bottom = 12.dp)
+                    )
+                    if (isEditMode) {
+                        Button(
+                            onClick = {
+                                dialogEnabled = true
+                                dialogEnabled = true
+                            },
+                            shape = ShapeDefaults.Medium,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.error,
+                                disabledContainerColor = MaterialTheme.colorScheme.errorContainer.copy(
+                                    alpha = 0.38f
+                                ),
+                                disabledContentColor = MaterialTheme.colorScheme.error.copy(
+                                    alpha = 0.38f
+                                )
+                            ),
+                            enabled = canDelete,
+                            modifier = Modifier
+                                .padding(vertical = 8.dp)
+                                .fillMaxWidth()
+                        ) {
+                            Icon(
+                                Icons.Filled.Delete,
+                                contentDescription = null,
+                                modifier = Modifier.padding(end = 8.dp)
+                            )
+                            Text(
+                                text = stringResource(Res.string.delete_event),
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(vertical = 12.dp)
+                            )
+                        }
+                        if (!canDelete) {
+                            Text(
+                                text = stringResource(Res.string.cannot_delete_event),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(bottom = 12.dp)
+                            )
+                        }
                     }
                 }
             }

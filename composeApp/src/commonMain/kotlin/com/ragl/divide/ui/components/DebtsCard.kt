@@ -24,6 +24,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -53,8 +55,22 @@ import compose.icons.FontAwesomeIcons
 import compose.icons.fontawesomeicons.Solid
 import compose.icons.fontawesomeicons.solid.ArrowRight
 import compose.icons.fontawesomeicons.solid.ChevronRight
-import compose.icons.fontawesomeicons.solid.DollarSign
 import compose.icons.fontawesomeicons.solid.EllipsisV
+import compose.icons.fontawesomeicons.solid.PeopleArrows
+import dividemultiplatform.composeapp.generated.resources.Res
+import dividemultiplatform.composeapp.generated.resources.debts_summary
+import dividemultiplatform.composeapp.generated.resources.event_summary
+import dividemultiplatform.composeapp.generated.resources.go_to_event
+import dividemultiplatform.composeapp.generated.resources.no_debts
+import dividemultiplatform.composeapp.generated.resources.other_debts
+import dividemultiplatform.composeapp.generated.resources.pay_debt
+import dividemultiplatform.composeapp.generated.resources.up_to_date
+import dividemultiplatform.composeapp.generated.resources.x_debts
+import dividemultiplatform.composeapp.generated.resources.you
+import dividemultiplatform.composeapp.generated.resources.you_owe
+import dividemultiplatform.composeapp.generated.resources.your_debts
+import dividemultiplatform.composeapp.generated.resources.youre_owed
+import org.jetbrains.compose.resources.stringResource
 
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -65,7 +81,8 @@ fun CollapsedDebtsCard(
     currentUserId: String,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val userDebts = debts.filter { it.fromUserId == currentUserId }
     val userCredits = debts.filter { it.toUserId == currentUserId }
@@ -75,7 +92,7 @@ fun CollapsedDebtsCard(
 
     with(sharedTransitionScope) {
         Card(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxWidth()
                 .sharedBounds(
                     sharedContentState = rememberSharedContentState(key = "debts_card"),
@@ -84,6 +101,7 @@ fun CollapsedDebtsCard(
                     exit = fadeOut(tween(300)),
                     resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
                 )
+                .clip(CardDefaults.shape)
                 .clickable { onClick() },
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -98,7 +116,7 @@ fun CollapsedDebtsCard(
             ) {
                 Column {
                     Text(
-                        text = if (isGroup) "Resumen de eventos" else "Resumen de deudas",
+                        text = if (isGroup) stringResource(Res.string.event_summary) else stringResource(Res.string.debts_summary),
                         style = MaterialTheme.typography.titleSmall.copy(
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -107,9 +125,9 @@ fun CollapsedDebtsCard(
                     if (!isGroup)
                         Text(
                             text = when {
-                                balance > 0.01 -> "Te deben ${formatCurrency(balance, "es-MX")}"
-                                balance < -0.01 -> "Debes ${formatCurrency(-balance, "es-MX")}"
-                                else -> "Estás al día"
+                                balance > 0.01 -> stringResource(Res.string.youre_owed, formatCurrency(balance, "es-MX"))
+                                balance < -0.01 -> stringResource(Res.string.you_owe, formatCurrency(-balance, "es-MX"))
+                                else -> stringResource(Res.string.up_to_date)
                             },
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 color = when {
@@ -120,24 +138,31 @@ fun CollapsedDebtsCard(
                             ),
                         )
                 }
-
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Text(
-                        text = "${debts.size} deudas",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                    if (debts.isNotEmpty()) {
+                        Text(
+                            text = stringResource(Res.string.x_debts, debts.size),
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         )
-                    )
-
-                    Icon(
-                        imageVector = FontAwesomeIcons.Solid.ChevronRight,
-                        contentDescription = "Expandir",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(16.dp)
-                    )
+                        Icon(
+                            imageVector = FontAwesomeIcons.Solid.ChevronRight,
+                            contentDescription = "Expand",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    } else {
+                        Text(
+                            text = stringResource(Res.string.no_debts),
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        )
+                    }
                 }
             }
         }
@@ -154,7 +179,8 @@ fun ExpandedDebtsCard(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     onDismiss: () -> Unit,
-    onPayDebt: (DebtInfo) -> Unit = {},
+    onPayDebtClicked: (DebtInfo) -> Unit = {},
+    onGoToEventClicked: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val size = getWindowWidthSizeClass()
@@ -200,7 +226,7 @@ fun ExpandedDebtsCard(
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
-                        text = if (isGroup) "Resumen de eventos" else "Resumen de deudas",
+                        text = if (isGroup) stringResource(Res.string.event_summary) else stringResource(Res.string.debts_summary),
                         style = MaterialTheme.typography.titleLarge.copy(
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -209,58 +235,73 @@ fun ExpandedDebtsCard(
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
-                        val userDebts = debts.filter { it.isCurrentUserInvolved }
-                        val otherDebts = debts.filter { !it.isCurrentUserInvolved }
+                        if (debts.isNotEmpty()) {
+                            val userDebts = debts.filter { it.isCurrentUserInvolved }
+                            val otherDebts = debts.filter { !it.isCurrentUserInvolved }
+                            if (userDebts.isNotEmpty()) {
+                                item {
+                                    Text(
+                                        text = stringResource(Res.string.your_debts),
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            color = MaterialTheme.colorScheme.primary
+                                        ),
+                                        modifier = Modifier.padding(bottom = 2.dp)
+                                    )
+                                }
 
-                        if (userDebts.isNotEmpty()) {
-                            item {
-                                Text(
-                                    text = "Tus deudas",
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        color = MaterialTheme.colorScheme.primary
-                                    ),
-                                    modifier = Modifier.padding(bottom = 2.dp)
-                                )
+                                itemsIndexed(userDebts) { index, debt ->
+                                    DebtListItem(
+                                        debt = debt,
+                                        users = users,
+                                        showEvent = isGroup,
+                                        currentUserId = currentUserId,
+                                        isHighlighted = true,
+                                        listIndex = index,
+                                        isLast = index == userDebts.lastIndex,
+                                        onPayDebtClicked = onPayDebtClicked,
+                                        onGoToEventClicked = onGoToEventClicked
+                                    )
+                                }
+
+                                if (otherDebts.isNotEmpty()) {
+                                    item {
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            text = stringResource(Res.string.other_debts),
+                                            style = MaterialTheme.typography.titleMedium.copy(
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            ),
+                                            modifier = Modifier.padding(bottom = 2.dp)
+                                        )
+                                    }
+                                }
                             }
-
-                            itemsIndexed(userDebts) { index, debt ->
+                            itemsIndexed(otherDebts) { index, debt ->
                                 DebtListItem(
                                     debt = debt,
                                     users = users,
                                     showEvent = isGroup,
                                     currentUserId = currentUserId,
-                                    isHighlighted = true,
+                                    isHighlighted = false,
                                     listIndex = index,
-                                    isLast = index == userDebts.lastIndex,
-                                    onPayDebt = onPayDebt
+                                    isLast = index == otherDebts.lastIndex,
+                                    onPayDebtClicked = onPayDebtClicked
                                 )
                             }
-
-                            if (otherDebts.isNotEmpty()) {
-                                item {
-                                    Spacer(modifier = Modifier.height(8.dp))
+                        } else {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
                                     Text(
-                                        text = "Otras deudas",
-                                        style = MaterialTheme.typography.titleMedium.copy(
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        ),
-                                        modifier = Modifier.padding(bottom = 2.dp)
+                                        text = stringResource(Res.string.no_debts),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.fillMaxWidth()
                                     )
                                 }
                             }
-                        }
-
-                        itemsIndexed(otherDebts) { index, debt ->
-                            DebtListItem(
-                                debt = debt,
-                                users = users,
-                                showEvent = isGroup,
-                                currentUserId = currentUserId,
-                                isHighlighted = false,
-                                listIndex = index,
-                                isLast = index == otherDebts.lastIndex,
-                                onPayDebt = onPayDebt
-                            )
                         }
                     }
                 }
@@ -278,7 +319,8 @@ private fun DebtListItem(
     isHighlighted: Boolean,
     listIndex: Int,
     isLast: Boolean,
-    onPayDebt: (DebtInfo) -> Unit = {}
+    onPayDebtClicked: (DebtInfo) -> Unit = {},
+    onGoToEventClicked: (String) -> Unit = {}
 ) {
     val fromUser = users.find { it.uuid == debt.fromUserId }
     val toUser = users.find { it.uuid == debt.toUserId }
@@ -324,10 +366,7 @@ private fun DebtListItem(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Origen (avatar from)
             UserAvatarSmall(fromUser)
-            
-            // Información principal (centro)
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -338,7 +377,7 @@ private fun DebtListItem(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = if (debt.fromUserId == currentUserId) "Tú" else fromUser?.name
+                        text = if (debt.fromUserId == currentUserId) stringResource(Res.string.you) else fromUser?.name
                             ?: "?",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = if (debt.fromUserId == currentUserId) FontWeight.SemiBold else FontWeight.Normal,
@@ -355,7 +394,7 @@ private fun DebtListItem(
                     )
 
                     Text(
-                        text = if (debt.toUserId == currentUserId) "Tú" else toUser?.name ?: "?",
+                        text = if (debt.toUserId == currentUserId) stringResource(Res.string.you) else toUser?.name ?: "?",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = if (debt.toUserId == currentUserId) FontWeight.SemiBold else FontWeight.Normal,
                             textAlign = TextAlign.End
@@ -376,11 +415,7 @@ private fun DebtListItem(
                         modifier = Modifier.padding(top = 2.dp)
                     )
             }
-            
-            // Destino (avatar to)
             UserAvatarSmall(toUser)
-            
-            // Monto
             Text(
                 text = formatCurrency(debt.amount, "es-MX"),
                 style = MaterialTheme.typography.bodyMedium.copy(
@@ -392,8 +427,6 @@ private fun DebtListItem(
                 ),
                 modifier = Modifier.padding(horizontal = 4.dp)
             )
-            
-            // Menú de opciones
             Box {
                 IconButton(
                     onClick = { showMenu = true },
@@ -406,31 +439,52 @@ private fun DebtListItem(
                         modifier = Modifier.size(16.dp)
                     )
                 }
-                
+
                 DropdownMenu(
                     expanded = showMenu,
                     onDismissRequest = { showMenu = false }
                 ) {
                     DropdownMenuItem(
-                        text = { 
+                        text = {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Icon(
-                                    imageVector = FontAwesomeIcons.Solid.DollarSign,
+                                    imageVector = FontAwesomeIcons.Solid.PeopleArrows,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(16.dp)
                                 )
-                                Text("Pagar deuda")
+                                Text(stringResource(Res.string.pay_debt))
                             }
                         },
-                        onClick = { 
-                            onPayDebt(debt)
+                        onClick = {
+                            onPayDebtClicked(debt)
                             showMenu = false
                         }
                     )
+                    if (showEvent)
+                        DropdownMenuItem(
+                            text = {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.DateRange,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Text(stringResource(Res.string.go_to_event))
+                                }
+                            },
+                            onClick = {
+                                onGoToEventClicked(debt.eventId)
+                                showMenu = false
+                            }
+                        )
                 }
             }
         }

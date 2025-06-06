@@ -17,7 +17,6 @@ data class GroupExpense(
     val debtors: Map<String, Double> = emptyMap(),
     val activityLog: Map<String, ActivityLog> = emptyMap(),
     val deleted: Boolean = false,
-    val settled: Boolean = false,
     val expenseType: ExpenseType = ExpenseType.NORMAL,
     val eventId: String = "", // ID del evento al que pertenece (solo si expenseType es EVENT_BASED)
     val frequency: Frequency = Frequency.ONCE, // Solo relevante si expenseType es RECURRING

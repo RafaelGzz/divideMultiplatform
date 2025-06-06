@@ -14,8 +14,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -70,6 +73,7 @@ import com.ragl.divide.ui.components.AdaptiveFAB
 import com.ragl.divide.ui.components.DeleteDialog
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.expenseProperties.ExpensePropertiesScreen
+import com.ragl.divide.ui.screens.expenseReminder.ExpenseReminderScreen
 import com.ragl.divide.ui.utils.DivideTextField
 import com.ragl.divide.ui.utils.Strings
 import com.ragl.divide.ui.utils.formatCurrency
@@ -85,6 +89,7 @@ import dividemultiplatform.composeapp.generated.resources.amount
 import dividemultiplatform.composeapp.generated.resources.amount_must_be_greater_than_0
 import dividemultiplatform.composeapp.generated.resources.amount_must_be_less_than_remaining_balance
 import dividemultiplatform.composeapp.generated.resources.cancel
+import dividemultiplatform.composeapp.generated.resources.delete
 import dividemultiplatform.composeapp.generated.resources.delete_expense_confirm
 import dividemultiplatform.composeapp.generated.resources.delete_payment_confirm
 import dividemultiplatform.composeapp.generated.resources.make_a_payment
@@ -99,7 +104,8 @@ import org.koin.compose.koinInject
 
 class ExpenseScreen(private val expenseId: String) : Screen {
 
-    @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class,
+    @OptIn(
+        ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class,
         InternalVoyagerApi::class
     )
     @Composable
@@ -111,11 +117,12 @@ class ExpenseScreen(private val expenseId: String) : Screen {
 
         // Set the expense in the ViewModel
         LaunchedEffect(Unit) {
+            userViewModel.hideLoading()
             expenseViewModel.setExpense(userViewModel.getExpenseById(expenseId))
         }
         val expense by expenseViewModel.expense.collectAsState()
 
-        var showDeleteDialog by remember { mutableStateOf(false) }
+        var showDeleteExpenseDialog by remember { mutableStateOf(false) }
         var showAddPaymentDialog by remember { mutableStateOf(false) }
         var showDeletePaymentDialog by remember { mutableStateOf(false) }
         var selectedPayment by remember { mutableStateOf<Payment?>(null) }
@@ -128,22 +135,21 @@ class ExpenseScreen(private val expenseId: String) : Screen {
             expense.payments.entries.toList().sortedByDescending { it.value.createdAt }
         }
 
-        BackHandler(showDeleteDialog || showDeletePaymentDialog || showAddPaymentDialog) {
-            showDeleteDialog = false
+        BackHandler(showDeleteExpenseDialog || showDeletePaymentDialog || showAddPaymentDialog) {
+            showDeleteExpenseDialog = false
             showDeletePaymentDialog = false
             showAddPaymentDialog = false
         }
 
-        if (showDeleteDialog) {
+        if (showDeleteExpenseDialog) {
             DeleteDialog(
                 text = stringResource(Res.string.delete_expense_confirm),
-                onDismiss = { showDeleteDialog = false },
+                onDismiss = { showDeleteExpenseDialog = false },
                 onConfirm = {
                     userViewModel.showLoading()
                     expenseViewModel.deleteExpense(
-                        id = expense.id,
                         onSuccess = {
-                            showDeleteDialog = false
+                            showDeleteExpenseDialog = false
                             userViewModel.removeExpense(expense.id)
                             navigator.pop()
                             userViewModel.hideLoading()
@@ -209,14 +215,29 @@ class ExpenseScreen(private val expenseId: String) : Screen {
                             ),
                             navigationIcon = {
                                 IconButton(onClick = { navigator.pop() }) {
-                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = "Back"
+                                    )
                                 }
                             },
                             actions = {
-                                IconButton(onClick = { navigator.push(ExpensePropertiesScreen(expense.id)) }) {
+                                IconButton(onClick = { navigator.push(ExpenseReminderScreen(expense.id)) }) {
+                                    Icon(
+                                        Icons.Default.Notifications,
+                                        contentDescription = "Reminders"
+                                    )
+                                }
+                                IconButton(onClick = {
+                                    navigator.push(
+                                        ExpensePropertiesScreen(
+                                            expense.id
+                                        )
+                                    )
+                                }) {
                                     Icon(Icons.Default.Edit, contentDescription = "Edit")
                                 }
-                                IconButton(onClick = { showDeleteDialog = true }) {
+                                IconButton(onClick = { showDeleteExpenseDialog = true }) {
                                     Icon(Icons.Default.Delete, contentDescription = "Delete")
                                 }
                             }
@@ -235,6 +256,7 @@ class ExpenseScreen(private val expenseId: String) : Screen {
                                 },
                                 icon = FontAwesomeIcons.Solid.DollarSign,
                                 contentDescription = stringResource(Res.string.make_a_payment),
+                                containerColor = if (!showAddPaymentDialog) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
                                 text = stringResource(Res.string.make_a_payment),
                                 modifier = Modifier
                                     .sharedBounds(
@@ -248,230 +270,230 @@ class ExpenseScreen(private val expenseId: String) : Screen {
                         }
                     }
                 ) { paddingValues ->
-
-                    Column(
+                    LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(paddingValues)
-                            .padding(16.dp),
-                        //verticalArrangement = Arrangement.spacedBy(16.dp)
+                            .padding(horizontal = 16.dp)
                     ) {
-                        if (expense.paid) {
-                            Text(
-                                text = stringResource(Res.string.paid),
-                                textAlign = TextAlign.Center,
-                                style = MaterialTheme.typography.labelLarge.copy(color = MaterialTheme.colorScheme.primary),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                        if (remainingBalance != expense.amount && !expense.paid) {
-                            Text(
-                                text = formatCurrency(expense.amount, "es-MX"),
-                                textAlign = TextAlign.Center,
-                                style = MaterialTheme.typography.labelLarge.copy(
-                                    textDecoration = TextDecoration.LineThrough,
-                                    color = Color.Gray
-                                ),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Text(
-                                text = formatCurrency(remainingBalance, "es-MX"),
-                                textAlign = TextAlign.Center,
-                                style = MaterialTheme.typography.headlineLarge.copy(color = MaterialTheme.colorScheme.primary),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        } else {
-                            Text(
-                                text = formatCurrency(expense.amount, "es-MX"),
-                                textAlign = TextAlign.Center,
-                                style = MaterialTheme.typography.headlineLarge.copy(color = MaterialTheme.colorScheme.primary),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                        if (expense.notes != "") {
-                            Text(
-                                text = "${stringResource(Res.string.notes)}:",
-                                color = MaterialTheme.colorScheme.primary,
-                                textAlign = TextAlign.Center,
-                                style = MaterialTheme.typography.labelLarge,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 8.dp)
-                            )
-                            Text(
-                                text = expense.notes,
-                                textAlign = TextAlign.Center,
-                                style = MaterialTheme.typography.labelLarge,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                        Text(
-                            text = stringResource(
-                                Res.string.added_on,
-                                formatDate(expense.createdAt, "dd MMM yyyy, hh:mm a")
-                            ),
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 8.dp)
-                        )
-                        Text(
-                            text = stringResource(Res.string.movements),
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(top = 20.dp, bottom = 10.dp)
-                        )
-                        LazyColumn {
-                            if (expense.payments.isEmpty()) {
-                                item {
+                        item {
+                            Column {
+                                if (expense.paid) {
                                     Text(
-                                        stringResource(Res.string.no_movements_yet),
+                                        text = stringResource(Res.string.paid),
                                         textAlign = TextAlign.Center,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 20.dp)
+                                        style = MaterialTheme.typography.labelLarge.copy(color = MaterialTheme.colorScheme.primary),
+                                        modifier = Modifier.fillMaxWidth()
                                     )
                                 }
+                                if (remainingBalance != expense.amount && !expense.paid) {
+                                    Text(
+                                        text = formatCurrency(expense.amount, "es-MX"),
+                                        textAlign = TextAlign.Center,
+                                        style = MaterialTheme.typography.labelLarge.copy(
+                                            textDecoration = TextDecoration.LineThrough,
+                                            color = Color.Gray
+                                        ),
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    Text(
+                                        text = formatCurrency(remainingBalance, "es-MX"),
+                                        textAlign = TextAlign.Center,
+                                        style = MaterialTheme.typography.headlineLarge.copy(color = MaterialTheme.colorScheme.primary),
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                } else {
+                                    Text(
+                                        text = formatCurrency(expense.amount, "es-MX"),
+                                        textAlign = TextAlign.Center,
+                                        style = MaterialTheme.typography.headlineLarge.copy(color = MaterialTheme.colorScheme.primary),
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+                                if (expense.notes != "") {
+                                    Text(
+                                        text = "${stringResource(Res.string.notes)}:",
+                                        color = MaterialTheme.colorScheme.primary,
+                                        textAlign = TextAlign.Center,
+                                        style = MaterialTheme.typography.labelLarge,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = 8.dp)
+                                    )
+                                    Text(
+                                        text = expense.notes,
+                                        textAlign = TextAlign.Center,
+                                        style = MaterialTheme.typography.labelLarge,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+                                Text(
+                                    text = stringResource(
+                                        Res.string.added_on,
+                                        formatDate(expense.createdAt, "dd MMM yyyy, hh:mm a")
+                                    ),
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 8.dp)
+                                )
                             }
-                            itemsIndexed(
-                                payments,
-                                key = { _, entry -> entry.key }) { i, payment ->
+                            Text(
+                                text = stringResource(Res.string.movements),
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+                            if (expense.payments.isEmpty()) {
+                                Text(
+                                    stringResource(Res.string.no_movements_yet),
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 20.dp)
+                                )
+                            }
+                        }
+                        if (expense.payments.isNotEmpty())
+                            item {
                                 ListItem(
                                     colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
                                     leadingContent = {
-                                        Icon(
-                                            FontAwesomeIcons.Solid.DollarSign,
-                                            tint = MaterialTheme.colorScheme.onPrimary,
-                                            contentDescription = "Money icon",
-                                            modifier = Modifier
-                                                .clip(CircleShape)
-                                                .background(MaterialTheme.colorScheme.primary)
-                                                .padding(12.dp)
-                                                .size(24.dp)
+                                        Text(
+                                            stringResource(Res.string.total),
+                                            style = MaterialTheme.typography.labelLarge.copy(color = MaterialTheme.colorScheme.onSurface)
                                         )
                                     },
                                     headlineContent = {
                                         Text(
-                                            formatCurrency(payment.value.amount, "es-MX"),
-                                            style = MaterialTheme.typography.bodyMedium
+                                            formatCurrency(expense.amountPaid, "es-MX"),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            modifier = Modifier.padding(vertical = 16.dp)
                                         )
-                                    },
-                                    supportingContent = {
-                                        Text(
-                                            formatDate(payment.value.createdAt, "MMM dd"),
-                                            style = MaterialTheme.typography.bodySmall.copy(
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        )
-                                    },
-                                    trailingContent = {
-                                        IconButton(
-                                            onClick = {
-                                                selectedPayment = payment.value
-                                                showDeletePaymentDialog = true
-                                            },
-                                            colors = IconButtonDefaults.iconButtonColors(
-                                                containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                                                contentColor = MaterialTheme.colorScheme.error
-                                            )
-                                        ) {
-                                            Icon(
-                                                Icons.Outlined.Delete,
-                                                contentDescription = "Delete payment"
-                                            )
-                                        }
                                     },
                                     modifier = Modifier
                                         .padding(vertical = 1.dp)
                                         .clip(
-                                            if (i == 0) RoundedCornerShape(
-                                                topStart = 16.dp,
-                                                topEnd = 16.dp,
+                                            RoundedCornerShape(
+                                                bottomStart = 2.dp,
                                                 bottomEnd = 2.dp,
-                                                bottomStart = 2.dp
-                                            ) else {
-                                                RoundedCornerShape(2.dp)
-                                            }
+                                                topStart = 16.dp,
+                                                topEnd = 16.dp
+                                            )
                                         )
                                 )
                             }
-                            if (expense.payments.isNotEmpty())
-                                item {
-                                    ListItem(
-                                        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                                        leadingContent = {
-                                            Text(
-                                                stringResource(Res.string.total),
-                                                style = MaterialTheme.typography.labelLarge.copy(color = MaterialTheme.colorScheme.onSurface)
-                                            )
-                                        },
-                                        headlineContent = {
-                                            Text(
-                                                formatCurrency(expense.amountPaid, "es-MX"),
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                modifier = Modifier.padding(vertical = 16.dp)
-                                            )
-                                        },
+                        itemsIndexed(payments, key = { _, entry -> entry.key }) { i, payment ->
+                            ListItem(
+                                colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                                leadingContent = {
+                                    Icon(
+                                        FontAwesomeIcons.Solid.DollarSign,
+                                        tint = MaterialTheme.colorScheme.onPrimary,
+                                        contentDescription = "Money icon",
                                         modifier = Modifier
-                                            .padding(vertical = 1.dp)
-                                            .clip(
-                                                RoundedCornerShape(
-                                                    topStart = 2.dp,
-                                                    topEnd = 2.dp,
-                                                    bottomEnd = 16.dp,
-                                                    bottomStart = 16.dp
-                                                )
-                                            )
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.primary)
+                                            .padding(12.dp)
+                                            .size(24.dp)
                                     )
-                                }
+                                },
+                                headlineContent = {
+                                    Text(
+                                        formatCurrency(payment.value.amount, "es-MX"),
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                },
+                                supportingContent = {
+                                    Text(
+                                        formatDate(payment.value.createdAt, "MMM dd"),
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    )
+                                },
+                                trailingContent = {
+                                    IconButton(
+                                        onClick = {
+                                            selectedPayment = payment.value
+                                            showDeletePaymentDialog = true
+                                        },
+                                        colors = IconButtonDefaults.iconButtonColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                                            contentColor = MaterialTheme.colorScheme.error
+                                        )
+                                    ) {
+                                        Icon(
+                                            Icons.Outlined.Delete,
+                                            contentDescription = stringResource(Res.string.delete)
+                                        )
+                                    }
+                                },
+                                modifier = Modifier
+                                    .padding(vertical = 1.dp)
+                                    .clip(
+                                        if (i == payments.lastIndex) RoundedCornerShape(
+                                            topStart = 2.dp,
+                                            topEnd = 2.dp,
+                                            bottomEnd = 16.dp,
+                                            bottomStart = 16.dp
+                                        ) else {
+                                            RoundedCornerShape(2.dp)
+                                        }
+                                    )
+                            )
                         }
-
+                        item{
+                            Spacer(modifier = Modifier.height(100.dp))
+                        }
                     }
+
                 }
-                
-                AnimatedVisibility(
-                    visible = showAddPaymentDialog,
-                    enter = fadeIn(tween(100)),
-                    exit = fadeOut(tween(300))
-                ) {
-                    AddPaymentCard(
-                        remainingAmount = expense.amount - expense.amountPaid,
-                        onDismiss = { showAddPaymentDialog = false },
-                        onConfirm = { amount ->
-                            userViewModel.showLoading()
-                            expenseViewModel.addPayment(
-                                amount = amount,
-                                onSuccess = { savedPayment ->
-                                    showAddPaymentDialog = false
-                                    userViewModel.savePayment(expense.id, savedPayment)
-                                    userViewModel.hideLoading()
-                                },
-                                onFailure = { error ->
-                                    userViewModel.hideLoading()
-                                    userViewModel.handleError(error)
-                                },
-                                onPaidExpense = {
-                                    userViewModel.updatePaidExpense(expense.id, true)
-                                    navigator.pop()
-                                    userViewModel.handleSuccess("Felicidades! Terminaste de pagar ${expense.title}!")
-                                }
-                            )
-                        },
-                        modifier = Modifier
-                            .sharedBounds(
-                                sharedContentState = rememberSharedContentState(key = "add_payment_dialog"),
-                                animatedVisibilityScope = this@AnimatedVisibility,
-                                enter = fadeIn(tween(100)),
-                                exit = fadeOut(tween(300)),
-                                resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
-                            )
-                    )
-                }
+            }
+
+            AnimatedVisibility(
+                visible = showAddPaymentDialog,
+                enter = fadeIn(tween(100)),
+                exit = fadeOut(tween(300))
+            ) {
+                AddPaymentCard(
+                    remainingAmount = expense.amount - expense.amountPaid,
+                    onDismiss = { showAddPaymentDialog = false },
+                    onConfirm = { amount ->
+                        userViewModel.showLoading()
+                        expenseViewModel.addPayment(
+                            amount = amount,
+                            onSuccess = { savedPayment ->
+                                showAddPaymentDialog = false
+                                userViewModel.savePayment(expense.id, savedPayment)
+                                userViewModel.hideLoading()
+                            },
+                            onFailure = { error ->
+                                userViewModel.hideLoading()
+                                userViewModel.handleError(error)
+                            },
+                            onPaidExpense = {
+                                //userViewModel.updatePaidExpense(expense.id, true)
+                                navigator.pop()
+                                userViewModel.handleSuccess(strings.getCongratulations(expense.title))
+                            }
+                        )
+                    },
+                    modifier = Modifier
+                        .sharedBounds(
+                            sharedContentState = rememberSharedContentState(key = "add_payment_dialog"),
+                            animatedVisibilityScope = this@AnimatedVisibility,
+                            enter = fadeIn(tween(100)),
+                            exit = fadeOut(tween(300)),
+                            resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
+                        )
+                )
             }
         }
     }
 }
+
 
 @Composable
 fun AddPaymentCard(
@@ -483,7 +505,8 @@ fun AddPaymentCard(
     var amount by remember { mutableStateOf("") }
     var amountError by remember { mutableStateOf<String?>(null) }
 
-    val amountLessThanRemainingBalance = stringResource(Res.string.amount_must_be_less_than_remaining_balance)
+    val amountLessThanRemainingBalance =
+        stringResource(Res.string.amount_must_be_less_than_remaining_balance)
     val amountGreaterThanZero = stringResource(Res.string.amount_must_be_greater_than_0)
 
     Box(
@@ -521,7 +544,7 @@ fun AddPaymentCard(
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                
+
                 DivideTextField(
                     label = stringResource(Res.string.amount),
                     input = amount,
@@ -542,7 +565,7 @@ fun AddPaymentCard(
                         }
                     }
                 )
-                
+
                 Text(
                     text = stringResource(
                         Res.string.remaining_balance,
@@ -551,7 +574,7 @@ fun AddPaymentCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
@@ -562,7 +585,7 @@ fun AddPaymentCard(
                     ) {
                         Text(text = stringResource(Res.string.cancel))
                     }
-                    
+
                     TextButton(
                         onClick = {
                             if (amount.isNotEmpty() && amount.toDouble() > 0) {

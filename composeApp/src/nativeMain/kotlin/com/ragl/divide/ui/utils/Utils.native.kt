@@ -225,11 +225,19 @@ actual class Strings {
         return bundle.localizedStringForKey("failed_to_cancel_friend_request", "Failed to cancel friend request", null)
     }
 
+    actual fun getFriendRemoved(): String {
+        return bundle.localizedStringForKey("friend_removed", "Friend removed", null)
+    }
+
+    actual fun getFailedToRemoveFriend(): String {
+        return bundle.localizedStringForKey("failed_to_remove_friend", "Failed to remove friend", null)
+    }
+
     actual fun getExpenseAlreadyPaid(): String {
         return bundle.localizedStringForKey("expense_already_paid", "This expense has already been paid", null)
     }
 
-    actual fun getNoIndividualExpenses(): String {
-        return bundle.localizedStringForKey("no_individual_expenses", "No individual expenses allowed", null)
+    actual fun getCongratulations(title: String): String {
+        return bundle.localizedStringForKey("congratulations", "Congratulations! You finished paying $title", null)
     }
 }

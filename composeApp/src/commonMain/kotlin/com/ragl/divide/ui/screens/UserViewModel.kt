@@ -15,6 +15,7 @@ import com.ragl.divide.data.repositories.GroupRepository
 import com.ragl.divide.data.repositories.PreferencesRepository
 import com.ragl.divide.data.repositories.UserRepository
 import com.ragl.divide.data.services.GroupExpenseService
+import com.ragl.divide.data.services.ScheduleNotificationService
 import com.ragl.divide.ui.screens.groupProperties.PlatformImageUtils
 import com.ragl.divide.ui.utils.Strings
 import com.ragl.divide.ui.utils.logMessage
@@ -26,6 +27,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 
 data class AppState(
     val isLoading: Boolean = false,
@@ -44,6 +46,7 @@ class UserViewModel(
     private val preferencesRepository: PreferencesRepository,
     private val groupRepository: GroupRepository,
     private val groupExpenseService: GroupExpenseService,
+    private val scheduleNotificationService: ScheduleNotificationService,
     private val strings: Strings
 ) : ScreenModel {
 
@@ -67,34 +70,37 @@ class UserViewModel(
         private set
 
     init {
-        // Recolectar el modo oscuro en segundo plano
         screenModelScope.launch {
             preferencesRepository.darkModeFlow.collect {
                 isDarkMode.value = it
             }
         }
 
-        // Realizar la inicialización en un hilo de fondo sin bloquear
         screenModelScope.launch(Dispatchers.IO) {
+            val startTime = Clock.System.now().toEpochMilliseconds()
             try {
                 if (userRepository.getFirebaseUser() != null) {
-                    logMessage("UserViewModel", "User is logged in")
                     if (userRepository.isEmailVerified()) {
-                        logMessage("UserViewModel", "User is verified")
-                        getUserData()
                         startAtLogin.value = false
+                        logMessage("UserViewModel", "User is verified, getting data")
+                        getUserData()
                     } else {
-                        logMessage("UserViewModel", "User is not verified")
                         userRepository.signOut()
                         startAtLogin.value = true
+                        logMessage("UserViewModel", "User is not verified, signing out")
                     }
+                } else {
+                    startAtLogin.value = true
+                    logMessage("UserViewModel", "User is not logged in")
                 }
             } catch (e: Exception) {
-                logMessage("UserViewModel", "Error during initialization: ${e.message}")
                 startAtLogin.value = true
+                logMessage("UserViewModel", "Error during initialization: ${e.message}")
             } finally {
                 isInitializing.value = false
             }
+            val timeTaken = Clock.System.now().toEpochMilliseconds() - startTime
+            logMessage("UserViewModel", "Initialization completed in $timeTaken ms")
         }
     }
 
@@ -131,13 +137,20 @@ class UserViewModel(
     fun getUserData() {
         screenModelScope.launch {
             showLoading()
+            val startTime = Clock.System.now().toEpochMilliseconds()
             try {
                 val user = userRepository.getUser(userRepository.getFirebaseUser()!!.uid)
-                val groups = groupRepository.getGroups(user.groups)
-                val groupMembers = groups.mapValues { (id, group) ->
-                    friendsRepository.getFriends(group.users.values.toList()).values.toList()
-                }
+                val userInfo = UserInfo(user.uuid, user.name, user.photoUrl)
+
+                logMessage("UserViewModel", "getFriends: ${user.friends.size}")
                 val friends = friendsRepository.getFriends(user.friends.keys.toList())
+                val groups = groupRepository.getGroups(user.groups)
+                val groupMembers = groups.mapValues { (_, group) ->
+                    friendsRepository.getGroupMembers(
+                        group.users.values.toList(),
+                        friends + (user.uuid to userInfo)
+                    )
+                }
                 val friendRequestsReceived =
                     friendsRepository.getFriendRequestsReceived(user.friendRequestsReceived)
                 val friendRequestsSent =
@@ -154,10 +167,12 @@ class UserViewModel(
                     )
                 }
             } catch (e: Exception) {
-                logMessage("UserViewModel: getUserData", e.message.toString())
+                logMessage("UserViewModel", "getUserData: $e")
             } finally {
                 hideLoading()
             }
+            val timeTaken = Clock.System.now().toEpochMilliseconds() - startTime
+            logMessage("UserViewModel", "getUserData completed in $timeTaken ms")
         }
     }
 
@@ -264,14 +279,24 @@ class UserViewModel(
         screenModelScope.launch {
             try {
                 showLoading()
+                
+                // Cancelar todas las notificaciones de gastos antes de cerrar sesión
+                try {
+                    scheduleNotificationService.cancelAllNotifications()
+                    logMessage("UserViewModel", "Todas las notificaciones canceladas al cerrar sesión")
+                } catch (e: Exception) {
+                    logMessage("UserViewModel", "Error al cancelar notificaciones: ${e.message}")
+                }
+                
                 userRepository.signOut()
                 if (userRepository.getFirebaseUser() == null) {
                     //preferencesRepository.saveStartDestination(Screen.Login.route)
                     onSignOut()
-                    hideLoading()
                 }
             } catch (e: Exception) {
                 logMessage("UserViewModel", e.message.toString())
+            } finally {
+                hideLoading()
             }
         }
     }
@@ -329,7 +354,8 @@ class UserViewModel(
                 if (expense.key == expenseId) {
                     expense.value.copy(
                         payments = expense.value.payments + (payment.id to payment),
-                        amountPaid = expense.value.amountPaid + payment.amount
+                        amountPaid = expense.value.amountPaid + payment.amount,
+                        paid = expense.value.amountPaid + payment.amount == expense.value.amount
                     )
                 } else {
                     expense.value
@@ -445,15 +471,6 @@ class UserViewModel(
      */
     fun consolidateDebtsFromEvents(eventsMap: Map<String, GroupEvent>): Map<String, Map<String, Double>> {
         return groupExpenseService.consolidateDebtsFromEventsMap(eventsMap)
-    }
-
-    /**
-     * Obtiene un mapa con el ID del evento y sus currentDebts
-     * @param eventsMap Mapa de eventos del grupo
-     * @return Mapa donde la clave es el ID del evento y el valor son sus currentDebts
-     */
-    fun getEventDebtsMap(eventsMap: Map<String, GroupEvent>): Map<String, Map<String, Map<String, Double>>> {
-        return eventsMap.mapValues { (_, event) -> event.currentDebts }
     }
 
     fun saveGroupPayment(groupId: String, savedPayment: Payment) {
@@ -656,6 +673,26 @@ class UserViewModel(
         }
     }
 
+    fun removeFriend(friend: UserInfo) {
+        screenModelScope.launch {
+            try {
+                showLoading()
+                if (friendsRepository.removeFriend(friend.uuid)) {
+                    _state.update {
+                        it.copy(friends = it.friends - friend.uuid)
+                    }
+                    handleSuccess(strings.getFriendRemoved())
+                } else {
+                    handleError(strings.getFailedToRemoveFriend())
+                }
+            } catch (e: Exception) {
+                handleError(e.message ?: strings.getUnknownError())
+            } finally {
+                hideLoading()
+            }
+        }
+    }
+
     fun getGroupMembers(groupId: String): List<UserInfo> {
         return _state.value.groupMembers[groupId] ?: emptyList()
     }
@@ -719,6 +756,56 @@ class UserViewModel(
         }
     }
 
+    fun settleEvent(groupId: String, eventId: String) {
+        _state.update {
+            it.copy(
+                groups = it.groups.mapValues { group ->
+                    if (group.key == groupId) {
+                        group.value.copy(
+                            events = group.value.events.mapValues { event ->
+                                if (event.key == eventId) {
+                                    event.value.copy(
+                                        settled = true
+                                    )
+                                } else {
+                                    event.value
+                                }
+                            }
+                        )
+                    } else {
+                        group.value
+                    }
+                }
+            )
+        }
+    }
+
+    fun reopenEvent(groupId: String, eventId: String) {
+        _state.update {
+            it.copy(
+                groups = it.groups.mapValues { group ->
+                    if (group.key == groupId) {
+                        group.value.copy(
+                            events = group.value.events.mapValues { event ->
+                                if (event.key == eventId) {
+                                    event.value.copy(
+                                        settled = false
+                                    )
+                                } else {
+                                    event.value
+                                }
+                            }
+                        )
+                    } else {
+                        group.value
+                    }
+                }
+            )
+        }
+        // Recalcular las deudas del evento reabierto
+        recalculateEventDebts(groupId, eventId)
+    }
+
     private fun recalculateEventDebts(groupId: String, eventId: String) {
         val group = _state.value.groups[groupId] ?: return
         val simplifyDebts = group.simplifyDebts
@@ -728,8 +815,6 @@ class UserViewModel(
 
         val expenses = group.events[eventId]?.expenses?.values?.toList() ?: emptyList()
         val payments = group.events[eventId]?.payments?.values?.toList() ?: emptyList()
-
-        if (expenses.isEmpty() && payments.isEmpty()) return
 
         val currentDebts = groupExpenseService.calculateDebts(
             expenses,
@@ -748,28 +833,7 @@ class UserViewModel(
                                 if (event.key == eventId)
                                     event.value.copy(
                                         currentDebts = currentDebts,
-                                        expenses = if (expensesToSettle.isNotEmpty()) {
-                                            event.value.expenses.mapValues { expense ->
-                                                if (expense.key in expensesToSettle) {
-                                                    expense.value.copy(settled = true)
-                                                } else {
-                                                    expense.value
-                                                }
-                                            }
-                                        } else {
-                                            event.value.expenses
-                                        },
-                                        payments = if (paymentsToSettle.isNotEmpty()) {
-                                            event.value.payments.mapValues { payment ->
-                                                if (payment.key in paymentsToSettle) {
-                                                    payment.value.copy(settled = true)
-                                                } else {
-                                                    payment.value
-                                                }
-                                            }
-                                        } else {
-                                            event.value.payments
-                                        })
+                                    )
                                 else
                                     event.value
                             }

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 
 class ExpenseViewModel(
     private val userRepository: UserRepository,
@@ -30,10 +31,13 @@ class ExpenseViewModel(
         }
     }
 
-    fun deleteExpense(id: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
+    fun deleteExpense(onSuccess: () -> Unit, onFailure: (String) -> Unit) {
         screenModelScope.launch {
             try {
-                userRepository.deleteExpense(id)
+                userRepository.deleteExpense(_expense.value.id)
+                scheduleNotificationService.cancelNotification(
+                    _expense.value.id.takeLast(5).toInt()
+                )
                 onSuccess()
             } catch (e: Exception) {
                 logMessage("ExpenseViewModel", e.message ?: "")
@@ -41,31 +45,24 @@ class ExpenseViewModel(
             }
         }
     }
-    
-    fun updateExpense(expense: Expense, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
-        screenModelScope.launch {
-            try {
-                userRepository.saveExpense(expense)
-                _expense.update { expense }
-                onSuccess()
-            } catch (e: Exception) {
-                logMessage("ExpenseViewModel", e.message ?: "")
-                onFailure(e.message ?: strings.getSomethingWentWrong())
-            }
-        }
-    }   
 
-    fun deletePayment(paymentId: String, amount: Double, onFailure: (String) -> Unit, onSuccess: () -> Unit) {
+    fun deletePayment(
+        paymentId: String,
+        amount: Double,
+        onFailure: (String) -> Unit,
+        onSuccess: () -> Unit
+    ) {
         screenModelScope.launch {
             try {
-                userRepository.deleteExpensePayment(paymentId, amount, _expense.value.id)
                 _expense.update {
                     it.copy(
-                        payments = userRepository.getExpensePayments(_expense.value.id),
+                        payments = it.payments - paymentId,
                         amountPaid = it.amountPaid - amount,
                         paid = false
                     )
                 }
+                userRepository.saveExpense(_expense.value)
+                //userRepository.deleteExpensePayment(paymentId, amount, _expense.value.id)
                 onSuccess()
             } catch (e: Exception) {
                 logMessage("ExpenseViewModel", e.message ?: "")
@@ -74,25 +71,38 @@ class ExpenseViewModel(
         }
     }
 
-    fun addPayment(amount: Double, onSuccess: (Payment) -> Unit, onFailure: (String) -> Unit, onPaidExpense: () -> Unit) {
+    fun addPayment(
+        amount: Double,
+        onSuccess: (Payment) -> Unit,
+        onFailure: (String) -> Unit,
+        onPaidExpense: () -> Unit
+    ) {
         screenModelScope.launch {
             try {
-                val savedPayment = userRepository.saveExpensePayment(
-                    Payment(amount = amount),
-                    expenseId = _expense.value.id,
-                    expensePaid = _expense.value.amountPaid + amount == _expense.value.amount
+                val id = "id${Clock.System.now().toEpochMilliseconds()}"
+                val newPayment = Payment(
+                    amount = amount,
+                    id = id
                 )
-                onSuccess(savedPayment)
-                if (_expense.value.amountPaid + amount == _expense.value.amount) {
-                    scheduleNotificationService.cancelNotification(_expense.value.id.takeLast(5).toInt())
-                    onPaidExpense()
-                }
-                else _expense.update {
+                _expense.update {
                     it.copy(
-                        payments = userRepository.getExpensePayments(_expense.value.id),
+                        payments = it.payments + (id to newPayment),
                         amountPaid = it.amountPaid + amount,
                         paid = (it.amountPaid + amount) == it.amount
                     )
+                }
+                userRepository.saveExpense(_expense.value)
+//                val savedPayment = userRepository.saveExpensePayment(
+//                    Payment(amount = amount),
+//                    expenseId = _expense.value.id,
+//                    expensePaid = _expense.value.amountPaid + amount == _expense.value.amount
+//                )
+                onSuccess(newPayment)
+                if (_expense.value.paid) {
+                    scheduleNotificationService.cancelNotification(
+                        _expense.value.id.takeLast(5).toInt()
+                    )
+                    onPaidExpense()
                 }
             } catch (e: Exception) {
                 logMessage("ExpenseViewModel", e.message ?: "")

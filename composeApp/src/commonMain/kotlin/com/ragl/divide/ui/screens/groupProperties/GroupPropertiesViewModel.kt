@@ -41,7 +41,7 @@ class GroupPropertiesViewModel(
     var nameError by mutableStateOf("")
         private set
 
-    var simplifyDebts by mutableStateOf(false)
+    var simplifyDebts by mutableStateOf(true)
         private set
 
     private var _isLoading = MutableStateFlow(false)
@@ -181,12 +181,10 @@ class GroupPropertiesViewModel(
                     val imageFile = selectedImagePath?.let { path ->
                         PlatformImageUtils.createFirebaseFile(path)
                     }
-
                     val savedGroup = groupRepository.saveGroup(
                         _group.value,
                         imageFile
                     )
-
                     // Limpiar imagen temporal después de guardar
                     _temporaryImagePath.update { null }
                     selectedImagePath = null

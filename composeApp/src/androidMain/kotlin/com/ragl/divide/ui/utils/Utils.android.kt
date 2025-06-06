@@ -210,11 +210,19 @@ actual class Strings(private val context: Context) {
         return context.getString(R.string.failed_to_cancel_friend_request)
     }
 
+    actual fun getFriendRemoved(): String {
+        return context.getString(R.string.friend_removed)
+    }
+
+    actual fun getFailedToRemoveFriend(): String {
+        return context.getString(R.string.failed_to_remove_friend)
+    }
+
     actual fun getExpenseAlreadyPaid(): String {
         return context.getString(R.string.expense_already_paid)
     }
 
-    actual fun getNoIndividualExpenses(): String {
-        return context.getString(R.string.no_individual_expenses)
+    actual fun getCongratulations(title: String): String {
+        return context.getString(R.string.congratulations, title)
     }
 }

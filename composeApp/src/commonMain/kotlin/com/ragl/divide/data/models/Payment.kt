@@ -9,7 +9,6 @@ data class Payment(
     val createdAt: Long = Clock.System.now().toEpochMilliseconds(),
     val from: String = "",
     val to: String = "",
-    val settled: Boolean = false,
     val image: String = "",
     val type: PaymentType = PaymentType.CASH,
     val eventId: String = "",

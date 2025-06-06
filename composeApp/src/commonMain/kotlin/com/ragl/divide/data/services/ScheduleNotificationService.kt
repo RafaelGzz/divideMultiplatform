@@ -15,4 +15,8 @@ expect class ScheduleNotificationService {
     fun canScheduleExactAlarms(): Boolean
     fun requestScheduleExactAlarmPermission()
     fun cancelNotification(id: Int)
+    fun cancelAllNotifications()
+    fun hasNotificationPermission(): Boolean
+    fun requestNotificationPermission()
+    fun wasNotificationPermissionRejectedPermanently(): Boolean
 }

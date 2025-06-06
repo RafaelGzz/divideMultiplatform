@@ -7,7 +7,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,20 +20,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
-import androidx.compose.material3.PermanentDrawerSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
@@ -124,8 +119,6 @@ class MainScreen : Screen {
         val isDarkMode by userViewModel.isDarkMode.collectAsState()
         val windowSizeClass = getWindowWidthSizeClass()
 
-        var isDrawerExpanded by rememberSaveable(windowSizeClass) { mutableStateOf(windowSizeClass == WindowWidthSizeClass.Expanded) }
-
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
@@ -155,33 +148,12 @@ class MainScreen : Screen {
                         )
                     }
 
-                    WindowWidthSizeClass.Medium -> {
-                        MediumLayout(
-                            tabs = tabs,
-                            selectedTabIndex = selectedTabIndex,
-                            onTabSelected = { selectedTabIndex = it },
-                            isDrawerExpanded = isDrawerExpanded,
-                            onToggleDrawer = { isDrawerExpanded = !isDrawerExpanded },
-                            pullToRefreshState = pullToRefreshState,
-                            pullLoading = pullLoading,
-                            onRefresh = userViewModel::getUserData,
-                            expenses = expenses,
-                            groups = groups,
-                            friendRequests = friendRequests,
-                            state = state,
-                            userViewModel = userViewModel,
-                            navigator = navigator,
-                            isDarkMode = isDarkMode
-                        )
-                    }
-
+                    WindowWidthSizeClass.Medium,
                     WindowWidthSizeClass.Expanded -> {
                         ExpandedLayout(
                             tabs = tabs,
                             selectedTabIndex = selectedTabIndex,
                             onTabSelected = { selectedTabIndex = it },
-                            isDrawerExpanded = isDrawerExpanded,
-                            onToggleDrawer = { isDrawerExpanded = !isDrawerExpanded },
                             pullToRefreshState = pullToRefreshState,
                             pullLoading = pullLoading,
                             onRefresh = userViewModel::getUserData,
@@ -271,138 +243,10 @@ private fun CompactLayout(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MediumLayout(
-    tabs: List<Pair<StringResource, ImageVector>>,
-    selectedTabIndex: Int,
-    onTabSelected: (Int) -> Unit,
-    isDrawerExpanded: Boolean,
-    onToggleDrawer: () -> Unit,
-    pullToRefreshState: PullToRefreshState,
-    pullLoading: Boolean,
-    onRefresh: () -> Unit,
-    expenses: List<Expense>,
-    groups: List<Group>,
-    friendRequests: List<UserInfo>,
-    state: AppState,
-    userViewModel: UserViewModel,
-    navigator: Navigator,
-    isDarkMode: String?
-) {
-    Scaffold(
-        floatingActionButton = {
-            HomeFABGroup(
-                onAddExpenseClick = {
-                    navigator.push(ExpensePropertiesScreen())
-                },
-                onAddGroupClick = {
-                    navigator.push(GroupPropertiesScreen())
-                }
-            )
-        }
-    ) { paddingValues ->
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            if (isDrawerExpanded) {
-                PermanentDrawerSheet(
-                    modifier = Modifier.width(240.dp),
-                    drawerContainerColor = MaterialTheme.colorScheme.surfaceContainer
-                ) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        IconButton(
-                            onClick = onToggleDrawer,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Menu,
-                                contentDescription = "Toggle menu"
-                            )
-                        }
-                        tabs.forEachIndexed { index, tab ->
-                            NavigationDrawerItem(
-                                selected = selectedTabIndex == index,
-                                onClick = { onTabSelected(index) },
-                                icon = {
-                                    Icon(
-                                        tab.second,
-                                        contentDescription = stringResource(tab.first),
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                },
-                                label = {
-                                    Text(
-                                        text = stringResource(tab.first),
-                                        style = MaterialTheme.typography.labelMedium
-                                    )
-                                }
-                            )
-                        }
-                    }
-                }
-            } else {
-                NavigationRail(
-                    header = {
-                        IconButton(onClick = onToggleDrawer) {
-                            Icon(
-                                Icons.Default.Menu,
-                                contentDescription = "Toggle menu"
-                            )
-                        }
-                    }
-                ) {
-                    tabs.forEachIndexed { index, tab ->
-                        NavigationRailItem(
-                            selected = selectedTabIndex == index,
-                            onClick = { onTabSelected(index) },
-                            icon = {
-                                Icon(
-                                    tab.second,
-                                    contentDescription = stringResource(tab.first),
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            },
-                            label = {
-                                Text(
-                                    text = stringResource(tab.first),
-                                    style = MaterialTheme.typography.labelMedium
-                                )
-                            }
-                        )
-                    }
-                }
-            }
-
-            MainContent(
-                modifier = Modifier.weight(1f),
-                selectedTabIndex = selectedTabIndex,
-                pullToRefreshState = pullToRefreshState,
-                pullLoading = pullLoading,
-                onRefresh = onRefresh,
-                expenses = expenses,
-                groups = groups,
-                friendRequests = friendRequests,
-                state = state,
-                userViewModel = userViewModel,
-                navigator = navigator,
-                isDarkMode = isDarkMode
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
 private fun ExpandedLayout(
     tabs: List<Pair<StringResource, ImageVector>>,
     selectedTabIndex: Int,
     onTabSelected: (Int) -> Unit,
-    isDrawerExpanded: Boolean,
-    onToggleDrawer: () -> Unit,
     pullToRefreshState: PullToRefreshState,
     pullLoading: Boolean,
     onRefresh: () -> Unit,
@@ -431,74 +275,25 @@ private fun ExpandedLayout(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            if (isDrawerExpanded) {
-                PermanentDrawerSheet(
-                    modifier = Modifier.width(240.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        IconButton(
-                            onClick = onToggleDrawer,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        ) {
+            NavigationRail {
+                tabs.forEachIndexed { index, tab ->
+                    NavigationRailItem(
+                        selected = selectedTabIndex == index,
+                        onClick = { onTabSelected(index) },
+                        icon = {
                             Icon(
-                                Icons.Default.Menu,
-                                contentDescription = "Toggle menu"
+                                tab.second,
+                                contentDescription = stringResource(tab.first),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        },
+                        label = {
+                            Text(
+                                text = stringResource(tab.first),
+                                style = MaterialTheme.typography.labelMedium
                             )
                         }
-                        tabs.forEachIndexed { index, tab ->
-                            NavigationDrawerItem(
-                                selected = selectedTabIndex == index,
-                                onClick = { onTabSelected(index) },
-                                icon = {
-                                    Icon(
-                                        tab.second,
-                                        contentDescription = stringResource(tab.first),
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                },
-                                label = {
-                                    Text(
-                                        text = stringResource(tab.first),
-                                        style = MaterialTheme.typography.labelMedium
-                                    )
-                                }
-                            )
-                        }
-                    }
-                }
-            } else {
-                NavigationRail(
-                    header = {
-                        IconButton(onClick = onToggleDrawer) {
-                            Icon(
-                                Icons.Default.Menu,
-                                contentDescription = "Toggle menu"
-                            )
-                        }
-                    }
-                ) {
-                    tabs.forEachIndexed { index, tab ->
-                        NavigationRailItem(
-                            selected = selectedTabIndex == index,
-                            onClick = { onTabSelected(index) },
-                            icon = {
-                                Icon(
-                                    tab.second,
-                                    contentDescription = stringResource(tab.first),
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            },
-                            label = {
-                                Text(
-                                    text = stringResource(tab.first),
-                                    style = MaterialTheme.typography.labelMedium
-                                )
-                            }
-                        )
-                    }
+                    )
                 }
             }
 

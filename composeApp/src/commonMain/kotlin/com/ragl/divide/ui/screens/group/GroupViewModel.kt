@@ -8,7 +8,6 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.GroupEvent
 import com.ragl.divide.data.models.UserInfo
-import com.ragl.divide.ui.utils.logMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,20 +38,10 @@ class GroupViewModel() : ScreenModel {
 
     fun setGroup(group: Group, users: List<UserInfo>) {
         screenModelScope.launch {
-            logMessage("GroupViewModel", "old group: ${_group.value}, new group: $group")
-            //if (_group.value.id != group.id || _group.value.users != group.users) {
             members = users
-            //friendsRepository.getFriends(group.users.values.toList()).values.toList()
-            //}
             _group.update { group }
             updateExpensesAndPayments(group.expenses.values.toList() + group.payments.values.toList())
             updateEvents(group.events.values.toList())
         }
-    }
-
-    fun getPaidByNames(paidBy: List<String>): String {
-        return paidBy.map { uid ->
-            members.find { it.uuid == uid }?.name
-        }.joinToString(", ")
     }
 }

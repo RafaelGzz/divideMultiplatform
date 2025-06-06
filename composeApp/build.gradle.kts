@@ -76,7 +76,7 @@ kotlin {
             implementation(libs.landscapist.coil3)
             
             // Chart library
-            implementation("io.github.thechance101:chart:1.1.0")
+            //implementation(libs.chart)
         }
     }
 }

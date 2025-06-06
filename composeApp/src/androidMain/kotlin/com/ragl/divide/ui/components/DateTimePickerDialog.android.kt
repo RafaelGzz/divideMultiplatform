@@ -5,7 +5,6 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -55,6 +54,7 @@ actual fun DateTimePickerDialog(
     val timePickerState = rememberTimePickerState(
         initialHour = initialCalendar.get(Calendar.HOUR_OF_DAY),
         initialMinute = initialCalendar.get(Calendar.MINUTE),
+        is24Hour = false
     )
 
     if (!showTimePicker) {

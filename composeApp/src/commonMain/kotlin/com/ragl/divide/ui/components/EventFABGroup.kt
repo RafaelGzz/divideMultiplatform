@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import compose.icons.FontAwesomeIcons
 import compose.icons.fontawesomeicons.Solid
 import compose.icons.fontawesomeicons.solid.DollarSign
+import compose.icons.fontawesomeicons.solid.PeopleArrows
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.add_expense
 import dividemultiplatform.composeapp.generated.resources.make_a_payment
@@ -87,7 +88,11 @@ fun EventFABGroup(
                 contentPadding = PaddingValues(horizontal = 12.dp),
                 modifier = Modifier.height(60.dp).align(Alignment.End)
             ) {
-                Icon(Icons.Filled.Add, contentDescription = null)
+                Icon(
+                    FontAwesomeIcons.Solid.DollarSign,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp)
+                )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = stringResource(Res.string.add_expense),
@@ -110,7 +115,7 @@ fun EventFABGroup(
                 modifier = Modifier.height(60.dp).align(Alignment.End)
             ) {
                 Icon(
-                    FontAwesomeIcons.Solid.DollarSign,
+                    FontAwesomeIcons.Solid.PeopleArrows,
                     contentDescription = null,
                     modifier = Modifier.size(24.dp)
                 )

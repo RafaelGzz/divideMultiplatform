@@ -9,6 +9,7 @@ import com.ragl.divide.data.repositories.UserRepository
 import com.ragl.divide.data.repositories.UserRepositoryImpl
 import com.ragl.divide.data.services.GroupEventService
 import com.ragl.divide.data.services.GroupExpenseService
+import com.ragl.divide.data.services.ScheduleNotificationService
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.addFriends.AddFriendsViewModel
 import com.ragl.divide.ui.screens.event.EventViewModel

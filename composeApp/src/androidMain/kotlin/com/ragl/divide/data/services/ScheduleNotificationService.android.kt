@@ -1,5 +1,6 @@
 package com.ragl.divide.data.services
 
+import android.Manifest
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.ComponentName
@@ -8,6 +9,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import com.ragl.divide.data.models.Frequency
 import com.ragl.divide.data.models.getInMillis
@@ -26,6 +28,43 @@ actual class ScheduleNotificationService(
         alarmManager.canScheduleExactAlarms()
     } else {
         true
+    }
+
+    actual fun hasNotificationPermission(): Boolean = 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true
+        }
+
+    actual fun wasNotificationPermissionRejectedPermanently(): Boolean = 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            NotificationPermissionActivity.wasPermissionRejectedPermanently(context)
+        } else {
+            false
+        }
+
+    actual fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Verificar si el permiso fue rechazado permanentemente
+            if (NotificationPermissionActivity.wasPermissionRejectedPermanently(context)) {
+                // Si fue rechazado permanentemente, abrir configuración directamente
+                val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                }
+                context.startActivity(intent)
+            } else {
+                // Si no fue rechazado permanentemente, mostrar el diálogo
+                val intent = Intent(context, NotificationPermissionActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+            }
+        }
     }
 
     actual fun requestScheduleExactAlarmPermission() {
@@ -131,6 +170,17 @@ actual class ScheduleNotificationService(
             alarmManager.cancel(existingIntent)
             existingIntent.cancel() // Importante liberar el PendingIntent
             logMessage(logTag, "Notificación $id cancelada")
+        }
+    }
+
+    actual fun cancelAllNotifications() {
+        try {
+            // Cancelar todas las notificaciones mostradas
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            notificationManager.cancelAll()
+            logMessage(logTag, "Todas las notificaciones mostradas canceladas")
+        } catch (e: Exception) {
+            logMessage(logTag, "Error al cancelar todas las notificaciones: $e")
         }
     }
 }

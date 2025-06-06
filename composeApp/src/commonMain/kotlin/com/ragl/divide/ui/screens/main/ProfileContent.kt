@@ -65,7 +65,7 @@ import compose.icons.fontawesomeicons.solid.Sun
 import compose.icons.fontawesomeicons.solid.UserFriends
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.allow_notifications
-import dividemultiplatform.composeapp.generated.resources.bar_item_profile_text
+import dividemultiplatform.composeapp.generated.resources.bar_item_3_text
 import dividemultiplatform.composeapp.generated.resources.cancel
 import dividemultiplatform.composeapp.generated.resources.dark_mode
 import dividemultiplatform.composeapp.generated.resources.light_mode
@@ -220,7 +220,7 @@ fun ProfileContent(
 
         item {
             Header(
-                title = stringResource(Res.string.bar_item_profile_text),
+                title = stringResource(Res.string.bar_item_3_text),
                 modifier = Modifier
                     .alpha(headerAlpha)
                     .offset(y = headerOffsetY.dp)

@@ -46,7 +46,9 @@ class Notifications : BroadcastReceiver() {
             return
         }
 
-        val activityIntent = Intent(context, MainActivity::class.java)
+        val activityIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
         val activityPendingIntent = PendingIntent.getActivity(
             context,
             notificationId,

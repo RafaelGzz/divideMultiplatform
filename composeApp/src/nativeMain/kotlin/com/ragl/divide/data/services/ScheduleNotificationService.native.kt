@@ -26,6 +26,21 @@ actual class ScheduleNotificationService {
     private val logTag = "ScheduleNotification"
     private val notificationCenter = UNUserNotificationCenter.currentNotificationCenter()
     
+    actual fun hasNotificationPermission(): Boolean {
+        return true
+    }
+    
+    actual fun requestNotificationPermission() {
+        requestNotificationPermission { granted ->
+            logMessage(logTag, "Permisos de notificación solicitados: ${if (granted) "concedidos" else "denegados"}")
+        }
+    }
+    
+    actual fun wasNotificationPermissionRejectedPermanently(): Boolean {
+        // En iOS no hay concepto de "rechazado permanentemente" como en Android
+        return false
+    }
+    
     actual fun scheduleNotification(
         id: Int,
         title: String,
@@ -151,7 +166,7 @@ actual class ScheduleNotificationService {
     }
     
     // Método para cancelar todas las notificaciones
-    fun cancelAllNotifications() {
+    actual fun cancelAllNotifications() {
         try {
             notificationCenter.removeAllPendingNotificationRequests()
             notificationCenter.removeAllDeliveredNotifications()

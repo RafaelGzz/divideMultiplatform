@@ -1,6 +1,5 @@
 package com.ragl.divide.ui.components
 
-import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,12 +11,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -39,16 +37,10 @@ import compose.icons.fontawesomeicons.Solid
 import compose.icons.fontawesomeicons.solid.DollarSign
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.paid_by
-import dividemultiplatform.composeapp.generated.resources.pending
-import dividemultiplatform.composeapp.generated.resources.settled
 import dividemultiplatform.composeapp.generated.resources.x_paid_y
 import org.jetbrains.compose.resources.stringResource
 
-
-@OptIn(ExperimentalSharedTransitionApi::class)
-@Composable
-fun ExpenseListView(
-    modifier: Modifier = Modifier,
+fun LazyListScope.expenseListView(
     expensesAndPayments: List<Any>,
     getPaidByNames: (List<String>) -> String,
     members: List<UserInfo>,
@@ -68,22 +60,18 @@ fun ExpenseListView(
             else -> ""
         }
     }
-    LazyColumn(
-        modifier = modifier
-    ) {
-        items(expensesByMonth.keys.toList().sorted()) { month ->
-            MonthSection(
-                month = month,
-                expensesAndPayments = expensesByMonth[month] ?: emptyList(),
-                getPaidByNames = getPaidByNames,
-                members = members,
-                onExpenseClick = onExpenseClick,
-                onPaymentClick = onPaymentClick
-            )
-        }
-        item {
-            Spacer(Modifier.height(70.dp))
-        }
+    items(expensesByMonth.keys.toList().sorted()) { month ->
+        MonthSection(
+            month = month,
+            expensesAndPayments = expensesByMonth[month] ?: emptyList(),
+            getPaidByNames = getPaidByNames,
+            members = members,
+            onExpenseClick = onExpenseClick,
+            onPaymentClick = onPaymentClick
+        )
+    }
+    item {
+        Spacer(Modifier.height(70.dp))
     }
 }
 
@@ -165,11 +153,7 @@ private fun GroupExpenseItem(
         "MMM\ndd"
     )
 
-    val isSettled = when (item) {
-        is GroupExpense -> item.settled
-        is Payment -> item.settled
-        else -> false
-    }
+
 
     Row(
         modifier = modifier.padding(vertical = 16.dp),
@@ -254,33 +238,7 @@ private fun GroupExpenseItem(
                     fontWeight = FontWeight.Normal
                 ), softWrap = true, overflow = TextOverflow.Ellipsis, maxLines = 1
             )
-            if (item is GroupExpense) {
-                if (isSettled) {
-                    Text(
-                        text = stringResource(Res.string.settled),
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                            fontWeight = FontWeight.Medium
-                        ),
-                        modifier = Modifier.padding(top = 4.dp).background(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            shape = ShapeDefaults.Small
-                        ).padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                } else {
-                    Text(
-                        text = stringResource(Res.string.pending),
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
-                            fontWeight = FontWeight.Medium
-                        ),
-                        modifier = Modifier.padding(top = 4.dp).background(
-                            MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
-                            shape = ShapeDefaults.Small
-                        ).padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                }
-            }
+
         }
     }
 }

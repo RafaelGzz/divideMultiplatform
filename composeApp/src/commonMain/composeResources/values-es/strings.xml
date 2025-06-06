@@ -15,6 +15,8 @@
     <string name="send">Enviar</string>
     <string name="accept">Aceptar</string>
     <string name="reject">Rechazar</string>
+    <string name="discard">Descartar</string>
+    <string name="unknown">Desconocido</string>
 
     <!-- Authentication -->
     <string name="connect_with_social_media">Entra con Redes Sociales</string>
@@ -40,7 +42,6 @@
     <string name="bar_item_1_text">Inicio</string>
     <string name="bar_item_2_text">Actividad</string>
     <string name="bar_item_3_text">Perfil</string>
-    <string name="bar_item_profile_text">Perfil</string>
 
     <!-- Home Screen -->
     <string name="your_expenses">Tus gastos</string>
@@ -50,11 +51,6 @@
     <string name="individual_expense">Gasto\nIndividual</string>
     <string name="group_expense">Gasto\nGrupal</string>
     <string name="add_an_expense">Agrega un gasto</string>
-    <string name="owed">Te deben $%1$s</string>
-    <string name="you_owe">Debes $%1$s</string>
-    <string name="see_all">Ver\ntodos</string>
-    <string name="owed_in_general">Te deben en general: </string>
-    <string name="owe_in_general">Debes en general: </string>
 
     <!-- Friends -->
     <string name="friends">Amigos</string>
@@ -79,6 +75,10 @@
     <string name="friend_requests_sent">Solicitudes de amistad enviadas</string>
     <string name="no_friend_requests_received">No tienes solicitudes de amistad</string>
     <string name="no_friend_requests_sent">No has enviado ninguna solicitud de amistad</string>
+    <string name="remove_friend">Eliminar amigo</string>
+    <string name="remove_friend_confirm">¿Estás seguro de que quieres eliminar a %1$s de tus amigos?</string>
+    <string name="friend_removed">Amigo eliminado</string>
+    <string name="failed_to_remove_friend">No se pudo eliminar el amigo</string>
 
     <!-- Add/Edit Expense -->
     <string name="add_expense">Añadir Gasto</string>
@@ -149,7 +149,6 @@
     <string name="pending_expenses">Gastos pendientes</string>
     <string name="paid_expenses">Gastos pagados</string>
     <string name="x_paid_y">%1$s le pagó a %2$s</string>
-    <string name="settled">Resuelto</string>
 
     <!-- Groups -->
     <string name="add_group">Añadir Grupo</string>
@@ -163,8 +162,8 @@
     <string name="group_members">Miembros del grupo</string>
     <string name="delete_group">Eliminar Grupo</string>
     <string name="leave_group">Salir del Grupo</string>
-    <string name="delete_group_message">¿Estás seguro de eliminar este Grupo?\nESTA ACCIÓN NO SE PUEDE DESHACER</string>
-    <string name="leave_group_message">¿Estás seguro de salir del Grupo?</string>
+    <string name="delete_group_message">¿Quieres eliminar este Grupo?\nESTA ACCIÓN NO SE PUEDE DESHACER</string>
+    <string name="leave_group_message">¿Quieres salir del Grupo?</string>
     <string name="leave">Salir</string>
     <string name="configuration">Configuración</string>
     <string name="add_friends_to_group">Añadir amigos al grupo</string>
@@ -178,9 +177,46 @@
 
     <!-- Events -->
     <string name="events">Eventos</string>
+    <string name="settled">Liquidado</string>
     <string name="add_event">Añadir Evento</string>
+    <string name="no_events">No hay eventos</string>
+    <string name="edit_event">Editar Evento</string>
+    <string name="new_event">Nuevo Evento</string>
+    <string name="event_title">Título del evento</string>
+    <string name="description">Descripción</string>
     <string name="delete_event">Eliminar Evento</string>
     <string name="cannot_delete_event">No puedes eliminar el evento mientras existan deudas o créditos</string>
+    <string name="settled_events">Eventos liquidados (%1$s)</string>
+    <string name="active">Activo</string>
+    <string name="created_on">Creado el %1$s</string>
+    <string name="activity">Actividad</string>
+    <string name="no_activity">No hay actividad para mostrar</string>
+    <string name="settle_banner_title">¡Evento listo para liquidar!</string>
+    <string name="settle_banner_message">No hay deudas pendientes. Toca para liquidar el evento.</string>
+    <string name="reopen_banner_title">Evento liquidado</string>
+    <string name="reopen_banner_message">Toca para reabrir y agregar más gastos o pagos.</string>
+    <string name="settle_event">Liquidar Evento</string>
+    <string name="settle">Liquidar</string>
+    <string name="settle_event_confirm">¿Estás seguro de que quieres liquidar este evento? Esta acción marcará el evento como completado y no se podrán agregar más gastos o pagos.</string>
+    <string name="reopen_event">Reabrir Evento</string>
+    <string name="reopen_event_confirm">¿Estás seguro de que quieres reabrir este evento? Esto permitirá agregar nuevos gastos o pagos y recalculará las deudas pendientes.</string>
+    <string name="reopen">Reabrir</string>
+    <string name="active_events">%1$s eventos activos</string>
+    <string name="delete_event_message">¿Quieres eliminar este evento?\nESTA ACCIÓN NO SE PUEDE DESHACER</string>
+
+    <!-- Debts Card -->
+    <string name="event_summary">Resumen de eventos</string>
+    <string name="debts_summary">Resumen de deudas</string>
+    <string name="youre_owed">Te deben %1$s</string>
+    <string name="you_owe">Debes %1$s</string>
+    <string name="up_to_date">Estás al día</string>
+    <string name="no_debts">No hay deudas</string>
+    <string name="x_debts">%1$s deudas</string>
+    <string name="your_debts">Tus deudas</string>
+    <string name="other_debts">Otras deudas</string>
+    <string name="you">Tú</string>
+    <string name="pay_debt">Pagar deuda</string>
+    <string name="go_to_event">Ir al evento</string>
 
     <!-- Image Selection -->
     <string name="select_image_source">Selecciona origen de imagen</string>
@@ -208,9 +244,15 @@
     <string name="notification_canceled">Notificación %1$s cancelada</string>
     <string name="warning_date_adjusted">¡Aviso! Tiempo ajustado ya que la fecha estaba en el pasado</string>
     <string name="notification_scheduled_seconds">Notificación %1$s programada para dentro de %2$s segundos</string>
+    <string name="notification_permission_rejected_title">Permiso de notificaciones requerido</string>
+    <string name="notification_permission_rejected_message">El permiso de notificaciones fue rechazado. Para habilitar recordatorios, debe activar las notificaciones manualmente en la configuración de la aplicación.</string>
 
     <!-- Currency and Formatting -->
     <string name="dollar_sign">$</string>
     <string name="percent_sign">%</string>
     <string name="currency_es_mx">es-MX</string>
+    
+    <!-- Reminders -->
+    <string name="reminders">Recordatorios</string>
+    <string name="save">Guardar</string>
 </resources>

@@ -22,8 +22,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
-import com.aay.compose.barChart.BarChart
-import com.aay.compose.barChart.model.BarParameters
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.ui.utils.Header
 import com.ragl.divide.ui.utils.WindowWidthSizeClass
@@ -31,8 +29,6 @@ import com.ragl.divide.ui.utils.formatDate
 import com.ragl.divide.ui.utils.getWindowWidthSizeClass
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.bar_item_2_text
-import dividemultiplatform.composeapp.generated.resources.paid
-import dividemultiplatform.composeapp.generated.resources.pending
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
@@ -131,12 +127,12 @@ internal fun ActivityContent(
 
         if (expensesByMonth.isNotEmpty()) {
             item {
-                ExpenseChart(
-                    expensesByMonth = expensesByMonth,
-                    modifier = Modifier
-                        .alpha(chartAlpha)
-                        .offset(y = chartOffsetY.dp)
-                )
+//                ExpenseChart(
+//                    expensesByMonth = expensesByMonth,
+//                    modifier = Modifier
+//                        .alpha(chartAlpha)
+//                        .offset(y = chartOffsetY.dp)
+//                )
             }
         }
     }
@@ -176,36 +172,36 @@ private fun ExpenseChart(
         Box(
             modifier = Modifier.padding(16.dp)
         ) {
-            BarChart(
-                chartParameters = listOf(
-                    BarParameters(
-                        dataName = stringResource(Res.string.pending),
-                        data = pending,
-                        barColor = MaterialTheme.colorScheme.tertiaryContainer,
-                    ),
-                    BarParameters(
-                        dataName = stringResource(Res.string.paid),
-                        data = paid,
-                        barColor = MaterialTheme.colorScheme.inversePrimary,
-                    ),
-                ),
-                gridColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
-                xAxisData = xAxisLabels,
-                isShowGrid = true,
-                backgroundLineWidth = 1f,
-                showGridWithSpacer = true,
-                animateChart = false,
-                descriptionStyle = MaterialTheme.typography.labelLarge.copy(
-                    color = MaterialTheme.colorScheme.onPrimary,
-                ),
-                yAxisStyle = MaterialTheme.typography.labelSmall.copy(
-                    color = MaterialTheme.colorScheme.onPrimary,
-                ),
-                xAxisStyle = MaterialTheme.typography.labelSmall.copy(
-                    color = MaterialTheme.colorScheme.onPrimary,
-                ),
-                barCornerRadius = 8.dp,
-            )
+//            BarChart(
+//                chartParameters = listOf(
+//                    BarParameters(
+//                        dataName = stringResource(Res.string.pending),
+//                        data = pending,
+//                        barColor = MaterialTheme.colorScheme.tertiaryContainer,
+//                    ),
+//                    BarParameters(
+//                        dataName = stringResource(Res.string.paid),
+//                        data = paid,
+//                        barColor = MaterialTheme.colorScheme.inversePrimary,
+//                    ),
+//                ),
+//                gridColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
+//                xAxisData = xAxisLabels,
+//                isShowGrid = true,
+//                backgroundLineWidth = 1f,
+//                showGridWithSpacer = true,
+//                animateChart = false,
+//                descriptionStyle = MaterialTheme.typography.labelLarge.copy(
+//                    color = MaterialTheme.colorScheme.onPrimary,
+//                ),
+//                yAxisStyle = MaterialTheme.typography.labelSmall.copy(
+//                    color = MaterialTheme.colorScheme.onPrimary,
+//                ),
+//                xAxisStyle = MaterialTheme.typography.labelSmall.copy(
+//                    color = MaterialTheme.colorScheme.onPrimary,
+//                ),
+//                barCornerRadius = 8.dp,
+//            )
         }
     }
 } 

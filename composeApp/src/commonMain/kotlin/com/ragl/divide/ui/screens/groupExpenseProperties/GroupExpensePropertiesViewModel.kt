@@ -229,7 +229,7 @@ class GroupExpensePropertiesViewModel(
                     }
                 )
                 screenModelScope.launch {
-                    val savedExpense = groupRepository.saveExpense(
+                    val savedExpense = groupRepository.saveGroupExpense(
                         groupId = _group.value.id,
                         expense = expense
                     )

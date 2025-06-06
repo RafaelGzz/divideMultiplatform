@@ -54,7 +54,7 @@ class GroupExpenseViewModel(
     fun deleteExpense(groupId: String, onSuccess: (GroupExpense) -> Unit, onError: (String) -> Unit) {
         screenModelScope.launch {
             try {
-                groupRepository.deleteExpense(groupId, groupExpense.value)
+                groupRepository.deleteGroupExpense(groupId, groupExpense.value)
                 onSuccess(groupExpense.value)
             } catch (e: Exception) {
                 onError(e.message ?: "An error occurred")

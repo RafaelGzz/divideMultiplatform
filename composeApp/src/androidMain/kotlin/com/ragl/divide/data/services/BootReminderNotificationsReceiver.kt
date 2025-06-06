@@ -26,10 +26,13 @@ class BootReminderNotificationsReceiver : BroadcastReceiver(), KoinComponent {
     @OptIn(ExperimentalTime::class)
     override fun onReceive(context: Context, intent: Intent) = goAsync {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
-            logMessage(logTag, "Dispositivo reiniciado, reprogramando notificaciones")
-
             val scheduleNotificationService = ScheduleNotificationService(context)
-            val expenses = userRepository.getExpenses()
+
+            logMessage(logTag, "Dispositivo reiniciado, reprogramando notificaciones")
+            val currentUser = userRepository.getFirebaseUser()
+            if (currentUser == null) return@goAsync
+            val user = userRepository.getUser(currentUser.uid)
+            val expenses = user.expenses
 
             if (expenses.isEmpty()) {
                 logMessage(logTag, "No hay gastos para programar")
@@ -44,6 +47,7 @@ class BootReminderNotificationsReceiver : BroadcastReceiver(), KoinComponent {
 
                         val now = Clock.System.now().toEpochMilliseconds()
                         if (expense.startingDate >= now || expense.frequency != Frequency.ONCE) {
+                            scheduleNotificationService.cancelNotification(notificationId)
                             scheduleNotificationService.scheduleNotification(
                                 id = notificationId,
                                 title = strings.getAppName(),
@@ -52,7 +56,10 @@ class BootReminderNotificationsReceiver : BroadcastReceiver(), KoinComponent {
                                 expense.frequency,
                                 true
                             )
-                            logMessage(logTag, "${expense.title} reprogramada para: ${expense.title}")
+                            logMessage(
+                                logTag,
+                                "${expense.title} reprogramada cada ${expense.frequency} desde ${expense.startingDate}"
+                            )
                         }
                     } catch (e: Exception) {
                         logMessage(logTag, "Error al programar notificación: ${e.message}")

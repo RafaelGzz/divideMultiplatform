@@ -27,6 +27,7 @@ datastorePreferences = "1.1.7"
 landscapistCoil3 = "2.4.8"
 material3Android = "1.4.0-alpha15"
 
+chart = "1.1.0"
 [libraries]
 androidx-datastore = { module = "androidx.datastore:datastore", version.ref = "datastorePreferences" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
@@ -60,6 +61,8 @@ voyager-transitions = { module = "cafe.adriel.voyager:voyager-transitions", vers
 voyager-koin = { module = "cafe.adriel.voyager:voyager-koin", version.ref = "voyager" }
 
 landscapist-coil3 = { module = "com.github.skydoves:landscapist-coil3", version.ref = "landscapistCoil3" }
+
+chart = { module = "io.github.thechance101:chart", version.ref = "chart" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

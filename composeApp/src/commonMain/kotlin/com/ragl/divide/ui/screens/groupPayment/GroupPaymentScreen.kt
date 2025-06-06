@@ -88,7 +88,7 @@ class GroupPaymentScreen(
                         }
                     },
                     actions = {
-                        if(!payment.settled) {
+                        if(true) {
                             IconButton(onClick = {
                                 navigator.push(
                                     GroupPaymentPropertiesScreen(

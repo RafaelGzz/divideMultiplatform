@@ -131,7 +131,7 @@ class GroupPaymentPropertiesViewModel(
 
                 screenModelScope.launch {
                     val savedPayment =
-                        groupRepository.savePayment(
+                        groupRepository.saveGroupPayment(
                             groupId = _group.value.id,
                             payment = payment
                         )

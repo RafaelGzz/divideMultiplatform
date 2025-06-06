@@ -58,14 +58,32 @@ class ExpensePropertiesViewModel(
     var reminderPermissionMessageDialogEnabled by mutableStateOf(false)
         private set
 
+    var notificationPermissionRejectedDialogEnabled by mutableStateOf(false)
+        private set
+
     fun handleReminderPermissionCheck(checked: Boolean) {
         updateIsRemindersEnabled(false)
         when (checked) {
             true -> {
-                if (scheduleNotificationService.canScheduleExactAlarms()) {
+                val hasExactAlarmPermission = scheduleNotificationService.canScheduleExactAlarms()
+                val hasNotificationPermission = scheduleNotificationService.hasNotificationPermission()
+                
+                if (hasExactAlarmPermission && hasNotificationPermission) {
                     updateIsRemindersEnabled(true)
                 } else {
-                    reminderPermissionMessageDialogEnabled = true
+                    if (!hasNotificationPermission &&
+                        scheduleNotificationService.wasNotificationPermissionRejectedPermanently()) {
+                        // Mostrar diálogo específico para permiso rechazado
+                        notificationPermissionRejectedDialogEnabled = true
+                    } else {
+                        // Solicitar permisos faltantes automáticamente
+                        if (!hasNotificationPermission) {
+                            scheduleNotificationService.requestNotificationPermission()
+                        }
+                        if (!hasExactAlarmPermission) {
+                            showNotificationPermissionRejectedDialog()
+                        }
+                    }
                 }
             }
             false -> {
@@ -81,6 +99,19 @@ class ExpensePropertiesViewModel(
     fun onPermissionDialogConfirm() {
         reminderPermissionMessageDialogEnabled = false
         scheduleNotificationService.requestScheduleExactAlarmPermission()
+    }
+
+    fun onNotificationPermissionRejectedDialogDismiss() {
+        notificationPermissionRejectedDialogEnabled = false
+    }
+
+    fun onNotificationPermissionRejectedDialogConfirm() {
+        onNotificationPermissionRejectedDialogDismiss()
+        scheduleNotificationService.requestNotificationPermission()
+    }
+
+    fun showNotificationPermissionRejectedDialog() {
+        notificationPermissionRejectedDialogEnabled = true
     }
 
     fun updateTitle(title: String) {
@@ -196,7 +227,6 @@ class ExpensePropertiesViewModel(
             title = expense.title
             amount = expense.amount.toString()
             category = expense.category
-            isRemindersEnabled = expense.reminders
             //numberOfPayments = expense.numberOfPayments.toString()
             payments = expense.payments
             notes = expense.notes
@@ -205,6 +235,8 @@ class ExpensePropertiesViewModel(
             amountPaid = expense.amountPaid
             addedDate = expense.createdAt
             paid = expense.paid
+            if(scheduleNotificationService.hasNotificationPermission() && scheduleNotificationService.canScheduleExactAlarms())
+                isRemindersEnabled = expense.reminders
         }
     }
 }
