@@ -91,7 +91,6 @@ internal fun HomeContent(
     groups: List<Group>,
     onExpenseClick: (String) -> Unit,
     onGroupClick: (String) -> Unit,
-    onAddGroupClick: () -> Unit
 ) {
     val windowSizeClass = getWindowWidthSizeClass()
     var showPaidExpenses by rememberSaveable { mutableStateOf(false) }
@@ -605,7 +604,8 @@ internal fun HomeContent(
                         } else {
                             items(groups) { group ->
                                 GroupCard(
-                                    group = group,
+                                    image = group.image,
+                                    name = group.name,
                                     modifier = Modifier
                                         .size(150.dp)
                                         .clip(ShapeDefaults.Medium)
@@ -720,7 +720,8 @@ internal fun GroupsRow(
     ) {
         items(groups) { group ->
             GroupCard(
-                group = group,
+                image = group.image,
+                name = group.name,
                 modifier = Modifier
                     .size(150.dp)
                     .clip(ShapeDefaults.Medium)
@@ -731,9 +732,10 @@ internal fun GroupsRow(
 
 @Composable
 private fun GroupCard(
-    group: Group,
+    image: String,
+    name: String,
     modifier: Modifier = Modifier,
-    onGroupClick: () -> Unit
+    onGroupClick: () -> Unit = {}
 ) {
     Box(
         modifier = modifier
@@ -741,7 +743,7 @@ private fun GroupCard(
     ) {
         // Imagen de fondo
         NetworkImage(
-            imageUrl = group.image,
+            imageUrl = image,
             modifier = Modifier.fillMaxSize(),
             type = NetworkImageType.GROUP
         )
@@ -761,7 +763,7 @@ private fun GroupCard(
         )
 
         Text(
-            text = group.name,
+            text = name,
             style = MaterialTheme.typography.bodyMedium.copy(
                 textAlign = TextAlign.Center,
                 color = Color.White,

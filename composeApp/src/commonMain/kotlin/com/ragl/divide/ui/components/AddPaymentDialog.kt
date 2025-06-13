@@ -55,7 +55,7 @@ fun AddPaymentDialog(
             Column {
                 DivideTextField(
                     label = stringResource(Res.string.amount),
-                    input = amount,
+                    value = amount,
                     error = amountError,
                     keyboardType = KeyboardType.Number,
                     imeAction = ImeAction.Done,

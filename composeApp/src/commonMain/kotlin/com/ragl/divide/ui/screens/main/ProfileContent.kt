@@ -24,10 +24,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Badge
 import androidx.compose.material.BadgedBox
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -53,9 +53,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ragl.divide.data.models.User
 import com.ragl.divide.data.models.UserInfo
-import com.ragl.divide.ui.components.ImagePicker
 import com.ragl.divide.ui.utils.Header
 import com.ragl.divide.ui.utils.ProfileImage
 import compose.icons.FontAwesomeIcons
@@ -69,6 +70,7 @@ import dividemultiplatform.composeapp.generated.resources.bar_item_3_text
 import dividemultiplatform.composeapp.generated.resources.cancel
 import dividemultiplatform.composeapp.generated.resources.dark_mode
 import dividemultiplatform.composeapp.generated.resources.light_mode
+
 import dividemultiplatform.composeapp.generated.resources.sign_out
 import dividemultiplatform.composeapp.generated.resources.sign_out_confirmation
 import dividemultiplatform.composeapp.generated.resources.system_default
@@ -85,13 +87,10 @@ fun ProfileContent(
     friendRequests: List<UserInfo>,
     onSignOut: () -> Unit,
     onChangeDarkMode: (Boolean?) -> Unit,
-    onImageSelected: (String, () -> Unit, (String) -> Unit) -> Unit,
     onFriendsButtonClick: () -> Unit,
 ) {
+    val navigator = LocalNavigator.currentOrThrow
     val allowNotifications = remember { mutableStateOf(true) }
-    var isSignOutDialogVisible by remember { mutableStateOf(false) }
-    var showImagePicker by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     // Estados para controlar las animaciones escalonadas
     var showHeader by remember { mutableStateOf(true) }
@@ -144,80 +143,6 @@ fun ProfileContent(
     LazyColumn(
         modifier = Modifier.fillMaxSize()
     ) {
-        if (isSignOutDialogVisible) {
-            item {
-                AlertDialog(
-                    onDismissRequest = { isSignOutDialogVisible = false },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            isSignOutDialogVisible = false
-                            onSignOut()
-                        }) {
-                            Text(stringResource(Res.string.sign_out))
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { isSignOutDialogVisible = false }) {
-                            Text(stringResource(Res.string.cancel))
-                        }
-                    },
-                    title = {
-                        Text(
-                            stringResource(Res.string.sign_out),
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                    },
-                    text = {
-                        Text(
-                            stringResource(Res.string.sign_out_confirmation),
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                )
-            }
-        }
-
-        // ImagePicker (cuando showImagePicker es true)
-        if (showImagePicker) {
-            item {
-                ImagePicker(
-                    onImageSelected = { imagePath ->
-                        onImageSelected(
-                            imagePath,
-                            { showImagePicker = false },
-                            { error ->
-                                errorMessage = error
-                                showImagePicker = false
-                            })
-                    },
-                    onDismiss = { showImagePicker = false }
-                )
-            }
-        }
-
-        // Mostrar error si existe
-        if (errorMessage != null) {
-            item {
-                AlertDialog(
-                    onDismissRequest = { errorMessage = null },
-                    title = {
-                        Text("Error", style = MaterialTheme.typography.titleLarge)
-                    },
-                    text = {
-                        Text(errorMessage!!, style = MaterialTheme.typography.bodyMedium)
-                    },
-                    confirmButton = {
-                        TextButton(onClick = { errorMessage = null }) {
-                            Text("OK")
-                        }
-                    },
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onErrorContainer,
-                    textContentColor = MaterialTheme.colorScheme.onErrorContainer,
-                )
-            }
-        }
-
         item {
             Header(
                 title = stringResource(Res.string.bar_item_3_text),
@@ -238,10 +163,10 @@ fun ProfileContent(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    ProfileImage(user.photoUrl, modifier = Modifier.clickable {
-                        showImagePicker = true
-                    })
-                    Column {
+                    ProfileImage(user.photoUrl)
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
                         Text(
                             user.name,
                             style = MaterialTheme.typography.titleMedium,
@@ -254,12 +179,12 @@ fun ProfileContent(
                             ),
                         )
                     }
-                    Spacer(modifier = Modifier.weight(1f))
-                    IconButton(onClick = { isSignOutDialogVisible = true }) {
+                    IconButton(
+                        onClick = { navigator.push(UserScreen()) }
+                    ) {
                         Icon(
-                            Icons.AutoMirrored.Filled.ExitToApp,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error
+                            Icons.Default.Settings,
+                            contentDescription = "Settings",
                         )
                     }
                 }
@@ -277,11 +202,54 @@ fun ProfileContent(
                     isDarkMode = isDarkMode,
                     onChangeDarkMode = onChangeDarkMode,
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                FriendsButton(
-                    friendRequests = friendRequests,
-                    onFriendsButtonClick = onFriendsButtonClick,
-                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    var showSignOutDialog by remember { mutableStateOf(false) }
+
+                    TextButton(onClick = { showSignOutDialog = true }) {
+                        Text(
+                            stringResource(Res.string.sign_out),
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        )
+                    }
+
+                    // Diálogo de confirmación para cerrar sesión
+                    if (showSignOutDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showSignOutDialog = false },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    showSignOutDialog = false
+                                    onSignOut()
+                                }) {
+                                    Text(stringResource(Res.string.sign_out))
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showSignOutDialog = false }) {
+                                    Text(stringResource(Res.string.cancel))
+                                }
+                            },
+                            title = {
+                                Text(
+                                    stringResource(Res.string.sign_out),
+                                    style = MaterialTheme.typography.titleLarge
+                                )
+                            },
+                            text = {
+                                Text(
+                                    stringResource(Res.string.sign_out_confirmation),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        )
+                    }
+                }
             }
         }
     }
@@ -477,3 +445,4 @@ private fun DarkModeSetting(
         }
     }
 }
+

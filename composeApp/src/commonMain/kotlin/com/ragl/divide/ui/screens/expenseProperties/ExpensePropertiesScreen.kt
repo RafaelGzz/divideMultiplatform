@@ -1,19 +1,27 @@
 package com.ragl.divide.ui.screens.expenseProperties
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -22,27 +30,21 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -54,8 +56,10 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.internal.BackHandler
 import com.ragl.divide.data.models.Category
+import com.ragl.divide.data.models.getCategoryIcon
 import com.ragl.divide.ui.components.AdaptiveFAB
-import com.ragl.divide.ui.components.DateTimePickerDialog
+import com.ragl.divide.ui.components.CollapsedDropdownCard
+import com.ragl.divide.ui.components.ExpandedDropdownCard
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.utils.DivideTextField
 import dividemultiplatform.composeapp.generated.resources.Res
@@ -72,31 +76,39 @@ class ExpensePropertiesScreen(
     private val expenseId: String? = null
 ) : Screen {
 
-    @OptIn(ExperimentalMaterial3Api::class, InternalVoyagerApi::class)
+    @OptIn(
+        ExperimentalMaterial3Api::class,
+        InternalVoyagerApi::class,
+        ExperimentalSharedTransitionApi::class
+    )
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val vm = koinScreenModel<ExpensePropertiesViewModel>()
         val userViewModel = navigator.koinNavigatorScreenModel<UserViewModel>()
 
-        // Estado para el layout por pasos (solo para gastos nuevos)
         var currentStep by remember { mutableStateOf(0) }
+        var categoryDropdownExpanded by remember { mutableStateOf(false) }
         val totalSteps = 3
-
-        // Función para validar el paso actual
         val validateCurrentStep: () -> Boolean = {
             when (currentStep) {
-                0 -> vm.validateTitle() // Paso 1: validar título
-                1 -> vm.validateAmount() // Paso 2: validar cantidad
-                2 -> true // Paso 3: notas son opcionales
+                0 -> vm.validateTitle()
+                1 -> vm.validateAmount()
+                2 -> true
                 else -> true
             }
         }
 
-        // BackHandler para manejar navegación entre pasos
         if (expenseId == null) {
-            BackHandler(enabled = currentStep > 0) {
-                currentStep--
+            BackHandler(enabled = currentStep > 0 || categoryDropdownExpanded) {
+                when {
+                    categoryDropdownExpanded -> categoryDropdownExpanded = false
+                    currentStep > 0 -> currentStep--
+                }
+            }
+        } else {
+            BackHandler(enabled = categoryDropdownExpanded) {
+                categoryDropdownExpanded = false
             }
         }
 
@@ -106,112 +118,135 @@ class ExpensePropertiesScreen(
             }
         }
 
-        var categoryMenuExpanded by remember { mutableStateOf(false) }
-        var frequencyMenuExpanded by remember { mutableStateOf(false) }
-
-        var selectDateDialogEnabled by remember { mutableStateOf(false) }
         val scrollState = rememberScrollState()
 
-        var selectedDate = vm.startingDate
-
-        Scaffold(
-            topBar = {
-                AppBar(
-                    onBackClick = { 
-                        if (expenseId == null && currentStep > 0) {
-                            currentStep--
-                        } else {
-                            navigator.pop()
-                        }
-                    },
-                    currentStep = if (expenseId == null) currentStep else null,
-                    totalSteps = if (expenseId == null) totalSteps else null
-                )
-            },
-            floatingActionButton = {
-                if (expenseId != null || currentStep == totalSteps - 1) {
-                    AdaptiveFAB(
-                        onClick = {
-                            if (vm.validateTitle().and(vm.validateAmount())) {
-                                userViewModel.showLoading()
-                                vm.saveExpense(
-                                    onSuccess = {
-                                        userViewModel.saveExpense(it)
-                                        userViewModel.hideLoading()
-                                        navigator.pop()
-                                    },
-                                    onError = {
-                                        userViewModel.hideLoading()
-                                        userViewModel.handleError(it)
-                                    }
-                                )
+        SharedTransitionLayout {
+            Scaffold(
+                topBar = {
+                    AppBar(
+                        onBackClick = {
+                            when {
+                                categoryDropdownExpanded -> categoryDropdownExpanded = false
+                                expenseId == null && currentStep > 0 -> currentStep--
+                                else -> navigator.pop()
                             }
                         },
-                        icon = Icons.Default.Check,
-                        contentDescription = if (expenseId == null) stringResource(Res.string.add_expense) else stringResource(Res.string.edit),
-                        text = if (expenseId == null) stringResource(Res.string.add_expense) else stringResource(Res.string.edit),
+                        currentStep = if (expenseId == null) currentStep else null,
+                        totalSteps = if (expenseId == null) totalSteps else null
                     )
+                },
+                floatingActionButton = {
+                    if (expenseId != null || currentStep == totalSteps - 1) {
+                        AdaptiveFAB(
+                            onClick = {
+                                if (vm.validateTitle().and(vm.validateAmount())) {
+                                    userViewModel.showLoading()
+                                    vm.saveExpense(
+                                        onSuccess = {
+                                            userViewModel.saveExpense(it)
+                                            userViewModel.hideLoading()
+                                            navigator.pop()
+                                        },
+                                        onError = {
+                                            userViewModel.hideLoading()
+                                            userViewModel.handleError(it)
+                                        }
+                                    )
+                                }
+                            },
+                            icon = Icons.Default.Check,
+                            contentDescription = if (expenseId == null) stringResource(Res.string.add_expense) else stringResource(
+                                Res.string.edit
+                            ),
+                            text = if (expenseId == null) stringResource(Res.string.add_expense) else stringResource(
+                                Res.string.edit
+                            ),
+                            modifier = Modifier.imePadding()
+                        )
+                    }
+                }
+            ) { paddingValues ->
+                Column(
+                    Modifier
+                        .imePadding()
+                        .verticalScroll(state = scrollState)
+                        .padding(paddingValues)
+                        .padding(horizontal = 16.dp),
+                ) {
+                    if (expenseId == null) {
+                        StepByStepLayout(
+                            vm = vm,
+                            currentStep = currentStep,
+                            onNextStep = {
+                                if (validateCurrentStep() && currentStep < totalSteps - 1) {
+                                    currentStep++
+                                }
+                            },
+                            categoryDropdownExpanded = categoryDropdownExpanded,
+                            onCategoryDropdownExpandedChange = { categoryDropdownExpanded = it },
+                            sharedTransitionScope = this@SharedTransitionLayout
+                        )
+                    } else {
+                        ExistingExpenseLayout(
+                            vm = vm,
+                            categoryDropdownExpanded = categoryDropdownExpanded,
+                            onCategoryDropdownExpandedChange = { categoryDropdownExpanded = it },
+                            sharedTransitionScope = this@SharedTransitionLayout
+                        )
+                    }
                 }
             }
-        ) { paddingValues ->
-            Column(
-                Modifier
-                    .imePadding()
-                    .verticalScroll(state = scrollState)
-                    .padding(paddingValues)
-                    .padding(horizontal = 16.dp),
-            ) {
-                if (selectDateDialogEnabled) {
-                    DateTimePickerDialog(
-                        initialTime = selectedDate,
-                        onDismissRequest = { selectDateDialogEnabled = false },
-                        onConfirmClick = {
-                            vm.updateStartingDate(it)
-                            selectedDate = it
-                        }
-                    )
-                }
 
-                // Layout por pasos para gastos nuevos
-                if (expenseId == null) {
-                    StepByStepLayout(
-                        vm = vm,
-                        currentStep = currentStep,
-                        onNextStep = { 
-                            if (validateCurrentStep() && currentStep < totalSteps - 1) {
-                                currentStep++
-                            }
-                        },
-                        categoryMenuExpanded = categoryMenuExpanded,
-                        onCategoryMenuExpandedChange = { categoryMenuExpanded = it },
-                        validateCurrentStep = validateCurrentStep
-                    )
-                } else {
-                    // Layout original para gastos existentes
-                    ExistingExpenseLayout(
-                        vm = vm,
-                        categoryMenuExpanded = categoryMenuExpanded,
-                        onCategoryMenuExpandedChange = { categoryMenuExpanded = it },
-                        frequencyMenuExpanded = frequencyMenuExpanded,
-                        onFrequencyMenuExpandedChange = { frequencyMenuExpanded = it },
-                        selectDateDialogEnabled = selectDateDialogEnabled,
-                        onSelectDateDialogEnabledChange = { selectDateDialogEnabled = it },
-                        selectedDate = selectedDate
-                    )
-                }
+            // Overlay para el dropdown expandido - encima del Scaffold
+            AnimatedVisibility(
+                visible = categoryDropdownExpanded,
+                enter = fadeIn(tween(300)),
+                exit = fadeOut(tween(300))
+            ) {
+                ExpandedDropdownCard(
+                    items = Category.entries,
+                    selectedItem = vm.category,
+                    title = stringResource(Res.string.category),
+                    itemContent = { category, isSelected ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                getCategoryIcon(category),
+                                contentDescription = null,
+                                tint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = category.name,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this@AnimatedVisibility,
+                    contentKey = "category_dropdown",
+                    onDismiss = { categoryDropdownExpanded = false },
+                    onItemClick = { selectedCategory ->
+                        vm.updateCategory(selectedCategory)
+                    }
+                )
             }
         }
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
+    @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
     @Composable
     private fun StepByStepLayout(
         vm: ExpensePropertiesViewModel,
         currentStep: Int,
         onNextStep: () -> Unit,
-        categoryMenuExpanded: Boolean,
-        onCategoryMenuExpandedChange: (Boolean) -> Unit,
-        validateCurrentStep: () -> Boolean
+        categoryDropdownExpanded: Boolean,
+        onCategoryDropdownExpandedChange: (Boolean) -> Unit,
+        sharedTransitionScope: SharedTransitionScope
     ) {
         // Animación del progress indicator
         val animatedProgress by animateFloatAsState(
@@ -233,7 +268,7 @@ class ExpensePropertiesScreen(
                     .fillMaxWidth()
                     .padding(bottom = 24.dp)
             )
-            
+
             // Contenido animado con slide horizontal
             AnimatedContent(
                 targetState = currentStep,
@@ -266,7 +301,7 @@ class ExpensePropertiesScreen(
                         Column {
                             DivideTextField(
                                 label = stringResource(Res.string.title),
-                                input = vm.title,
+                                value = vm.title,
                                 error = vm.titleError,
                                 onValueChange = vm::updateTitle,
                                 validate = vm::validateTitle,
@@ -279,49 +314,39 @@ class ExpensePropertiesScreen(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
-                            ExposedDropdownMenuBox(
-                                modifier = Modifier
-                                    .padding(bottom = 32.dp)
-                                    .fillMaxWidth(),
-                                expanded = categoryMenuExpanded,
-                                onExpandedChange = onCategoryMenuExpandedChange
+                            AnimatedVisibility(
+                                visible = !categoryDropdownExpanded
                             ) {
-                                TextField(
-                                    value = vm.category.name,
-                                    onValueChange = {},
-                                    singleLine = true,
-                                    readOnly = true,
-                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryMenuExpanded) },
-                                    textStyle = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier
-                                        .menuAnchor(MenuAnchorType.PrimaryEditable)
-                                        .clip(ShapeDefaults.Medium)
-                                        .fillMaxWidth()
+                                CollapsedDropdownCard(
+                                    itemContent = {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Icon(
+                                                getCategoryIcon(vm.category),
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Text(
+                                                text = vm.category.name,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
+                                    },
+                                    sharedTransitionScope = sharedTransitionScope,
+                                    animatedVisibilityScope = this@AnimatedVisibility,
+                                    contentKey = "category_dropdown",
+                                    onClick = { onCategoryDropdownExpandedChange(true) },
+                                    modifier = Modifier.padding(bottom = 32.dp)
                                 )
-                                ExposedDropdownMenu(
-                                    expanded = categoryMenuExpanded,
-                                    onDismissRequest = { onCategoryMenuExpandedChange(false) },
-                                    modifier = Modifier.clip(CircleShape)
-                                ) {
-                                    Category.entries.forEach {
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    text = it.name,
-                                                    style = MaterialTheme.typography.bodyMedium
-                                                )
-                                            },
-                                            onClick = {
-                                                vm.updateCategory(it)
-                                                onCategoryMenuExpandedChange(false)
-                                            }
-                                        )
-                                    }
-                                }
                             }
 
                             Spacer(modifier = Modifier.weight(1f))
-                            
+
                             Button(
                                 onClick = onNextStep,
                                 modifier = Modifier
@@ -337,14 +362,20 @@ class ExpensePropertiesScreen(
                             }
                         }
                     }
+
                     1 -> {
                         // Paso 2: Cantidad
                         Column {
                             DivideTextField(
                                 label = stringResource(Res.string.amount),
                                 keyboardType = KeyboardType.Number,
-                                prefix = { Text(text = "$", style = MaterialTheme.typography.bodyMedium) },
-                                input = vm.amount,
+                                prefix = {
+                                    Text(
+                                        text = "$",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                },
+                                value = vm.amount,
                                 error = vm.amountError,
                                 enabled = vm.amountPaid == 0.0,
                                 validate = vm::validateAmount,
@@ -355,7 +386,7 @@ class ExpensePropertiesScreen(
                                         parsed?.let {
                                             val decimalPart = formatted.substringAfter(".", "")
                                             if (decimalPart.length <= 2 && parsed <= 999999.99) {
-                                                vm.updateAmount(input)
+                                                vm.updateAmount(formatted)
                                             }
                                         }
                                     }
@@ -364,7 +395,7 @@ class ExpensePropertiesScreen(
                             )
 
                             Spacer(modifier = Modifier.weight(1f))
-                            
+
                             Button(
                                 onClick = onNextStep,
                                 modifier = Modifier
@@ -380,12 +411,13 @@ class ExpensePropertiesScreen(
                             }
                         }
                     }
+
                     2 -> {
                         // Paso 3: Notas
                         Column {
                             DivideTextField(
                                 label = stringResource(Res.string.notes),
-                                input = vm.notes,
+                                value = vm.notes,
                                 onValueChange = vm::updateNotes,
                                 imeAction = ImeAction.Default,
                                 singleLine = false,
@@ -402,21 +434,17 @@ class ExpensePropertiesScreen(
         }
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
+    @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
     @Composable
     private fun ExistingExpenseLayout(
         vm: ExpensePropertiesViewModel,
-        categoryMenuExpanded: Boolean,
-        onCategoryMenuExpandedChange: (Boolean) -> Unit,
-        frequencyMenuExpanded: Boolean,
-        onFrequencyMenuExpandedChange: (Boolean) -> Unit,
-        selectDateDialogEnabled: Boolean,
-        onSelectDateDialogEnabledChange: (Boolean) -> Unit,
-        selectedDate: Long
+        categoryDropdownExpanded: Boolean,
+        onCategoryDropdownExpandedChange: (Boolean) -> Unit,
+        sharedTransitionScope: SharedTransitionScope
     ) {
         DivideTextField(
             label = stringResource(Res.string.title),
-            input = vm.title,
+            value = vm.title,
             error = vm.titleError,
             onValueChange = vm::updateTitle,
             validate = vm::validateTitle,
@@ -429,51 +457,41 @@ class ExpensePropertiesScreen(
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 8.dp)
         )
-        ExposedDropdownMenuBox(
-            modifier = Modifier
-                .padding(bottom = 16.dp)
-                .fillMaxWidth(),
-            expanded = categoryMenuExpanded,
-            onExpandedChange = onCategoryMenuExpandedChange
+        AnimatedVisibility(
+            visible = !categoryDropdownExpanded
         ) {
-            TextField(
-                value = vm.category.name,
-                onValueChange = {},
-                singleLine = true,
-                readOnly = true,
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryMenuExpanded) },
-                textStyle = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier
-                    .menuAnchor(MenuAnchorType.PrimaryEditable)
-                    .clip(ShapeDefaults.Medium)
-                    .fillMaxWidth()
+            CollapsedDropdownCard(
+                itemContent = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            getCategoryIcon(vm.category),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = vm.category.name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                },
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = this@AnimatedVisibility,
+                contentKey = "category_dropdown",
+                onClick = { onCategoryDropdownExpandedChange(true) },
+                modifier = Modifier.padding(bottom = 12.dp)
             )
-            ExposedDropdownMenu(
-                expanded = categoryMenuExpanded,
-                onDismissRequest = { onCategoryMenuExpandedChange(false) },
-                modifier = Modifier.clip(CircleShape)
-            ) {
-                Category.entries.forEach {
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = it.name,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        },
-                        onClick = {
-                            vm.updateCategory(it)
-                            onCategoryMenuExpandedChange(false)
-                        }
-                    )
-                }
-            }
         }
         DivideTextField(
             label = stringResource(Res.string.amount),
             keyboardType = KeyboardType.Number,
             prefix = { Text(text = "$", style = MaterialTheme.typography.bodyMedium) },
-            input = vm.amount,
+            value = vm.amount,
             error = vm.amountError,
             enabled = vm.amountPaid == 0.0,
             validate = vm::validateAmount,
@@ -493,7 +511,7 @@ class ExpensePropertiesScreen(
         )
         DivideTextField(
             label = stringResource(Res.string.notes),
-            input = vm.notes,
+            value = vm.notes,
             onValueChange = vm::updateNotes,
             imeAction = ImeAction.Default,
             singleLine = false,

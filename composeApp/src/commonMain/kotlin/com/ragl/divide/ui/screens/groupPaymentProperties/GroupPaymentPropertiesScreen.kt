@@ -1,48 +1,55 @@
 package com.ragl.divide.ui.screens.groupPaymentProperties
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.core.annotation.InternalVoyagerApi
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinNavigatorScreenModel
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import cafe.adriel.voyager.navigator.internal.BackHandler
 import com.ragl.divide.data.models.UserInfo
+import com.ragl.divide.ui.components.AdaptiveFAB
+import com.ragl.divide.ui.components.CollapsedDropdownCard
 import com.ragl.divide.ui.components.DebtInfo
+import com.ragl.divide.ui.components.ExpandedDropdownCard
+import com.ragl.divide.ui.components.NetworkImage
+import com.ragl.divide.ui.components.NetworkImageType
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.utils.DivideTextField
 import dividemultiplatform.composeapp.generated.resources.Res
@@ -62,7 +69,9 @@ class GroupPaymentPropertiesScreen(
     private val eventId: String? = null,
     private val currentDebtInfo: DebtInfo? = null,
 ) : Screen {
-    @OptIn(ExperimentalMaterial3Api::class)
+    @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class,
+        InternalVoyagerApi::class
+    )
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
@@ -77,8 +86,8 @@ class GroupPaymentPropertiesScreen(
             vm.setGroupAndPayment(group, members, payment, event, currentDebtInfo)
         }
 
-        var fromMenuExpanded by remember { mutableStateOf(false) }
-        var toMenuExpanded by remember { mutableStateOf(false) }
+        var fromDropdownExpanded by remember { mutableStateOf(false) }
+        var toDropdownExpanded by remember { mutableStateOf(false) }
 
         val sortedMembers = remember(vm.members) {
             vm.members.sortedWith(compareBy { it.name.lowercase() })
@@ -89,170 +98,41 @@ class GroupPaymentPropertiesScreen(
                 vm.updateTo(sortedMembers.firstOrNull { it.uuid != vm.from.uuid } ?: UserInfo())
         }
 
-        Scaffold(
-            topBar = {
-                CenterAlignedTopAppBar(
-                    title = {
-                        Text(
-                            text = stringResource(if (vm.isUpdate.value) Res.string.update_payment else Res.string.make_a_payment),
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(
-                            onClick = { navigator.pop() },
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(Res.string.back),
-                                tint = MaterialTheme.colorScheme.primary
+        BackHandler(enabled = fromDropdownExpanded || toDropdownExpanded) {
+            if (fromDropdownExpanded) fromDropdownExpanded = false
+            if (toDropdownExpanded) toDropdownExpanded = false
+        }
+
+        SharedTransitionLayout {
+            Scaffold(
+                topBar = {
+                    CenterAlignedTopAppBar(
+                        title = {
+                            Text(
+                                text = stringResource(if (vm.isUpdate.value) Res.string.update_payment else Res.string.make_a_payment),
+                                style = MaterialTheme.typography.titleLarge
                             )
-                        }
-                    }
-                )
-            }
-        ) { paddingValues ->
-            Column(
-                modifier = Modifier
-                    .padding(paddingValues)
-                    .fillMaxSize()
-                    .imePadding()
-            ) {
-                // Amount field
-                DivideTextField(
-                    input = vm.amount,
-                    keyboardType = KeyboardType.Number,
-                    prefix = { Text(text = "$", style = MaterialTheme.typography.bodyMedium) },
-                    label = stringResource(Res.string.amount),
-                    error = vm.amountError,
-                    validate = vm::validateAmount,
-                    onValueChange = { input ->
-                        if (input.isEmpty()) vm.updateAmount("") else {
-                            val formatted = input.replace(",", ".")
-                            val parsed = formatted.toDoubleOrNull()
-                            parsed?.let {
-                                val decimalPart = formatted.substringAfter(".", "")
-                                if (decimalPart.length <= 2 && parsed <= 999999.99) {
-                                    vm.updateAmount(input)
-                                }
+                        },
+                        navigationIcon = {
+                            IconButton(
+                                onClick = { navigator.pop() },
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(Res.string.back),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
                             }
                         }
-                    },
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp).padding(bottom = 20.dp)
-                )
-
-                // Solo mostrar selectores si la cantidad es válida
-                AnimatedVisibility(
-                    vm.amount.toDoubleOrNull() != null,
-                    enter = fadeIn(),
-                    exit = fadeOut()
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp)
+                    )
+                },
+                floatingActionButton = {
+                    AnimatedVisibility(
+                        vm.amount.toDoubleOrNull() != null,
+                        enter = fadeIn(),
+                        exit = fadeOut()
                     ) {
-                        // From field (sender)
-                        Text(
-                            text = stringResource(Res.string.from),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        ExposedDropdownMenuBox(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 20.dp),
-                            expanded = fromMenuExpanded,
-                            onExpandedChange = {
-                                if (currentDebtInfo == null)
-                                    fromMenuExpanded = !fromMenuExpanded
-                            }
-                        ) {
-                            TextField(
-                                value = vm.from.name,
-                                textStyle = MaterialTheme.typography.bodyMedium,
-                                onValueChange = {},
-                                singleLine = true,
-                                readOnly = true,
-                                trailingIcon =
-                                    if (currentDebtInfo == null) {
-                                        { ExposedDropdownMenuDefaults.TrailingIcon(expanded = fromMenuExpanded) }
-                                    } else null,
-                                modifier = Modifier
-                                    .menuAnchor(MenuAnchorType.PrimaryEditable)
-                                    .clip(ShapeDefaults.Medium)
-                                    .fillMaxWidth()
-                            )
-                            ExposedDropdownMenu(
-                                expanded = fromMenuExpanded,
-                                onDismissRequest = { fromMenuExpanded = false },
-                            ) {
-                                sortedMembers.forEach { user ->
-                                    DropdownMenuItem(
-                                        text = { Text(user.name) },
-                                        onClick = {
-                                            vm.updateFrom(user)
-                                            fromMenuExpanded = false
-                                        },
-                                    )
-                                }
-                            }
-                        }
-
-                        // To field (receiver)
-                        Text(
-                            text = stringResource(Res.string.to),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        ExposedDropdownMenuBox(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 20.dp),
-                            expanded = toMenuExpanded,
-                            onExpandedChange = {
-                                if (currentDebtInfo == null)
-                                    toMenuExpanded = !toMenuExpanded
-                            }
-                        ) {
-                            TextField(
-                                value = vm.to.name,
-                                textStyle = MaterialTheme.typography.bodyMedium,
-                                onValueChange = {},
-                                singleLine = true,
-                                readOnly = true,
-                                trailingIcon =
-                                    if (currentDebtInfo == null) {
-                                        { ExposedDropdownMenuDefaults.TrailingIcon(expanded = toMenuExpanded) }
-                                    } else null,
-                                modifier = Modifier
-                                    .menuAnchor(MenuAnchorType.PrimaryEditable)
-                                    .clip(ShapeDefaults.Medium)
-                                    .fillMaxWidth()
-                            )
-                            ExposedDropdownMenu(
-                                expanded = toMenuExpanded,
-                                onDismissRequest = { toMenuExpanded = false }
-                            ) {
-                                // Filtrar la lista para excluir al emisor (from)
-                                sortedMembers.filter { user -> user.uuid != vm.from.uuid }
-                                    .forEach { user ->
-                                        DropdownMenuItem(
-                                            text = { Text(user.name) },
-                                            onClick = {
-                                                vm.updateTo(user)
-                                                toMenuExpanded = false
-                                            }
-                                        )
-                                    }
-                            }
-                        }
-
-                    }
-                    Column {
-                        Spacer(modifier = Modifier.weight(1f))
-
-                        Button(
+                        AdaptiveFAB(
                             onClick = {
                                 userViewModel.showLoading()
                                 vm.savePayment(
@@ -267,23 +147,220 @@ class GroupPaymentPropertiesScreen(
                                     }
                                 )
                             },
-                            shape = ShapeDefaults.Medium,
+                            icon = Icons.Default.Check,
+                            contentDescription = stringResource(
+                                if (vm.isUpdate.value) Res.string.update else Res.string.add,
+                            ),
+                            text = stringResource(
+                                if (vm.isUpdate.value) Res.string.update else Res.string.add,
+                            ),
+                            modifier = Modifier.imePadding()
+                        )
+                    }
+                }
+            ) { paddingValues ->
+                Column(
+                    modifier = Modifier
+                        .padding(paddingValues)
+                        .fillMaxSize()
+                        .imePadding()
+                ) {
+                    DivideTextField(
+                        value = vm.amount,
+                        keyboardType = KeyboardType.Number,
+                        prefix = { Text(text = "$", style = MaterialTheme.typography.bodyMedium) },
+                        label = stringResource(Res.string.amount),
+                        error = vm.amountError,
+                        validate = vm::validateAmount,
+                        onValueChange = { input ->
+                            if (input.isEmpty()) vm.updateAmount("") else {
+                                val formatted = input.replace(",", ".")
+                                val parsed = formatted.toDoubleOrNull()
+                                parsed?.let {
+                                    val decimalPart = formatted.substringAfter(".", "")
+                                    if (decimalPart.length <= 2 && parsed <= 999999.99) {
+                                        vm.updateAmount(input)
+                                    }
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp).padding(bottom = 20.dp)
+                    )
+
+                    AnimatedVisibility(
+                        vm.amount.toDoubleOrNull() != null,
+                        enter = fadeIn(),
+                        exit = fadeOut()
+                    ) {
+                        Column(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .navigationBarsPadding()
-                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                                .padding(horizontal = 16.dp)
                         ) {
                             Text(
-                                text = stringResource(
-                                    if (vm.isUpdate.value) Res.string.update else Res.string.add,
-                                ),
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.padding(vertical = 12.dp)
+                                text = stringResource(Res.string.from),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(bottom = 8.dp)
                             )
+                            AnimatedVisibility(
+                                visible = !fromDropdownExpanded
+                            ) {
+                                CollapsedDropdownCard(
+                                    itemContent = {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            NetworkImage(
+                                                imageUrl = vm.from.photoUrl,
+                                                modifier = Modifier
+                                                    .size(52.dp)
+                                                    .clip(CircleShape),
+                                                type = NetworkImageType.PROFILE
+                                            )
+                                            Text(
+                                                text = vm.from.name,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
+                                    },
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = this@AnimatedVisibility,
+                                    contentKey = "from_dropdown",
+                                    showMenu = currentDebtInfo == null,
+                                    onClick = {
+                                        if (currentDebtInfo == null) fromDropdownExpanded = true
+                                    },
+                                    modifier = Modifier.padding(bottom = 20.dp)
+                                )
+                            }
+
+                            Text(
+                                text = stringResource(Res.string.to),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                            AnimatedVisibility(
+                                visible = !toDropdownExpanded
+                            ) {
+                                CollapsedDropdownCard(
+                                    itemContent = {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            NetworkImage(
+                                                imageUrl = vm.to.photoUrl,
+                                                modifier = Modifier
+                                                    .size(52.dp)
+                                                    .clip(CircleShape),
+                                                type = NetworkImageType.PROFILE
+                                            )
+                                            Text(
+                                                text = vm.to.name,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
+                                    },
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = this@AnimatedVisibility,
+                                    contentKey = "to_dropdown",
+                                    showMenu = currentDebtInfo == null,
+                                    onClick = {
+                                        if (currentDebtInfo == null) toDropdownExpanded = true
+                                    },
+                                    modifier = Modifier.padding(bottom = 20.dp)
+                                )
+                            }
                         }
                     }
                 }
             }
+            // Overlays para los dropdowns expandidos
+            AnimatedVisibility(
+                visible = fromDropdownExpanded,
+                enter = fadeIn(tween(300)),
+                exit = fadeOut(tween(300))
+            ) {
+                ExpandedDropdownCard(
+                    items = sortedMembers,
+                    selectedItem = vm.from,
+                    title = stringResource(Res.string.from),
+                    itemContent = { user, isSelected ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            NetworkImage(
+                                imageUrl = user.photoUrl,
+                                modifier = Modifier
+                                    .size(52.dp)
+                                    .clip(CircleShape),
+                                type = NetworkImageType.PROFILE
+                            )
+                            Text(
+                                text = user.name,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this@AnimatedVisibility,
+                    contentKey = "from_dropdown",
+                    onDismiss = { fromDropdownExpanded = false },
+                    onItemClick = { selectedUser ->
+                        vm.updateFrom(selectedUser)
+                    }
+                )
+            }
+
+            AnimatedVisibility(
+                visible = toDropdownExpanded,
+                enter = fadeIn(tween(300)),
+                exit = fadeOut(tween(300))
+            ) {
+                ExpandedDropdownCard(
+                    items = sortedMembers.filter { it.uuid != vm.from.uuid },
+                    selectedItem = vm.to,
+                    title = stringResource(Res.string.to),
+                    itemContent = { user, isSelected ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            NetworkImage(
+                                imageUrl = user.photoUrl,
+                                modifier = Modifier
+                                    .size(52.dp)
+                                    .clip(CircleShape),
+                                type = NetworkImageType.PROFILE
+                            )
+                            Text(
+                                text = user.name,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this@AnimatedVisibility,
+                    contentKey = "to_dropdown",
+                    onDismiss = { toDropdownExpanded = false },
+                    onItemClick = { selectedUser ->
+                        vm.updateTo(selectedUser)
+                    }
+                )
+            }
+
         }
     }
-} 
+}

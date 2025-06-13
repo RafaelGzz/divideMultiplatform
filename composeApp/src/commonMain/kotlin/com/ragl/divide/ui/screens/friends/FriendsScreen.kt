@@ -45,10 +45,12 @@ import com.ragl.divide.ui.components.AdaptiveFAB
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.addFriends.AddFriendsScreen
 import com.ragl.divide.ui.utils.FriendItem
+import com.ragl.divide.ui.utils.Header
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.accept
 import dividemultiplatform.composeapp.generated.resources.add_friends
 import dividemultiplatform.composeapp.generated.resources.back
+import dividemultiplatform.composeapp.generated.resources.bar_item_2_text
 import dividemultiplatform.composeapp.generated.resources.cancel
 import dividemultiplatform.composeapp.generated.resources.delete
 import dividemultiplatform.composeapp.generated.resources.friend_requests_received
@@ -132,6 +134,11 @@ fun FriendsBody(
     var friendToRemove by remember { mutableStateOf<UserInfo?>(null) }
     var showRemoveDialog by remember { mutableStateOf(false) }
     LazyColumn(modifier = modifier) {
+        item {
+            Header(
+                title = stringResource(Res.string.bar_item_2_text),
+            )
+        }
         if (friendRequestsReceived.isNotEmpty() || friendRequestsSent.isNotEmpty()) {
             if (friendRequestsReceived.isNotEmpty()) {
                 item {
@@ -215,7 +222,7 @@ fun FriendsBody(
         } else {
             items(friends, key = { it.uuid }) { friend ->
                 var showMenu by remember { mutableStateOf(false) }
-                
+
                 FriendItem(
                     headline = friend.name,
                     photoUrl = friend.photoUrl,
@@ -264,12 +271,12 @@ fun FriendsBody(
     // Diálogo de confirmación para eliminar amigo
     if (showRemoveDialog && friendToRemove != null) {
         AlertDialog(
-            onDismissRequest = { 
+            onDismissRequest = {
                 showRemoveDialog = false
                 friendToRemove = null
             },
             title = { Text(stringResource(Res.string.remove_friend)) },
-            text = { 
+            text = {
                 Text(stringResource(Res.string.remove_friend_confirm, friendToRemove!!.name))
             },
             confirmButton = {

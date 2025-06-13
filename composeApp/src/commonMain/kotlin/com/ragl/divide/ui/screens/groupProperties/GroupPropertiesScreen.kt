@@ -223,6 +223,7 @@ class GroupPropertiesScreen(
                                     icon = Icons.Default.Check,
                                     contentDescription = if (!isUpdate) stringResource(Res.string.add_group) else stringResource(Res.string.edit),
                                     text = if (!isUpdate) stringResource(Res.string.add_group) else stringResource(Res.string.edit),
+                                    modifier = Modifier.imePadding()
                                 )
                             }
                         }
@@ -352,7 +353,7 @@ class GroupPropertiesScreen(
                                     }
                                     DivideTextField(
                                         label = stringResource(Res.string.name),
-                                        input = groupState.name,
+                                        value = groupState.name,
                                         error = viewModel.nameError,
                                         onValueChange = { viewModel.updateName(it) })
                                 }
@@ -642,7 +643,7 @@ class GroupPropertiesScreen(
                     .imePadding()
             ) {
                 DivideTextField(
-                    input = searchText,
+                    value = searchText,
                     onValueChange = {
                         onSearchTextChange(it) {
                             filteredFriends =

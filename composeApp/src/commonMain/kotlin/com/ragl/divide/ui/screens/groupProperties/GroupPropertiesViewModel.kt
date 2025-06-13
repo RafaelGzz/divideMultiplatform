@@ -129,7 +129,6 @@ class GroupPropertiesViewModel(
             members = users
             canLeaveGroup = canLeaveGroup()
             canDeleteGroup = canDeleteGroup()
-            //friendsRepository.getFriends(_group.value.users.values.toList()).values.toList()
             _isLoading.update { false }
         }
     }

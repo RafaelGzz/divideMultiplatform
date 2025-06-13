@@ -221,6 +221,7 @@ class GroupExpenseScreen(
                             sortedDebtors.forEach { (member, debt) ->
                                 FriendItem(
                                     headline = member.name,
+                                    photoUrl = member.photoUrl,
                                     hasLeadingContent = false,
                                     trailingContent = {
                                         Text(
@@ -245,6 +246,7 @@ class GroupExpenseScreen(
                                 val debt = groupExpenseState.amount * (percentage / 100)
                                 FriendItem(
                                     headline = member.name,
+                                    photoUrl = member.photoUrl,
                                     hasLeadingContent = false,
                                     trailingContent = {
                                         Text(
@@ -268,6 +270,7 @@ class GroupExpenseScreen(
                             sortedDebtors.forEach { (member, debt) ->
                                 FriendItem(
                                     headline = member.name,
+                                    photoUrl = member.photoUrl,
                                     hasLeadingContent = false,
                                     trailingContent = {
                                         Text(

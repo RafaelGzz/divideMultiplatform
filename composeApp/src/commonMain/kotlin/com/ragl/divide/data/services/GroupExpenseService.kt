@@ -20,19 +20,14 @@ class GroupExpenseService {
     ): Map<String, Map<String, Double>> {
         val balances = mutableMapOf<String, MutableMap<String, Double>>()
         
-        // Procesar gastos activos (solo filtrar por deleted)
-        val activeExpenses = expenses.filter { !it.deleted }
-        processExpenses(activeExpenses, balances)
-        
-        // Procesar todos los pagos
+        processExpenses(expenses, balances)
         processPayments(payments, balances, simplify)
         
-        // Limpiar y formatear deudas
         val debts = cleanAndFormatDebts(balances)
         
         // Manejar liquidación automática si no hay deudas
         if (debts.isEmpty()) {
-            expensesToSettle?.addAll(activeExpenses.map { it.id })
+            expensesToSettle?.addAll(expenses.map { it.id })
             paymentsToSettle?.addAll(payments.map { it.id })
             return emptyMap()
         }
@@ -41,7 +36,7 @@ class GroupExpenseService {
         return if (simplify) {
             val simplified = simplifyDebts(debts)
             if (simplified.isEmpty()) {
-                expensesToSettle?.addAll(activeExpenses.map { it.id })
+                expensesToSettle?.addAll(expenses.map { it.id })
                 paymentsToSettle?.addAll(payments.map { it.id })
             }
             simplified

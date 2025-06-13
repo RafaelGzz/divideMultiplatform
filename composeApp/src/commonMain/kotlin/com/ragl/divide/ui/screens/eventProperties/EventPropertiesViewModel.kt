@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import com.ragl.divide.data.models.Category
 import com.ragl.divide.data.models.GroupEvent
 import com.ragl.divide.data.repositories.GroupRepository
 import com.ragl.divide.ui.utils.Strings
@@ -47,6 +48,10 @@ class EventPropertiesViewModel(
 
     fun updateDescription(description: String) {
         _event.value = _event.value.copy(description = description)
+    }
+
+    fun updateCategory(category: Category) {
+        _event.value = _event.value.copy(category = category)
     }
 
     fun validateTitle(): Boolean {

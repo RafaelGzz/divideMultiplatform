@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -481,6 +482,7 @@ class ExpenseScreen(private val expenseId: String) : Screen {
                         )
                     },
                     modifier = Modifier
+                        .imePadding()
                         .sharedBounds(
                             sharedContentState = rememberSharedContentState(key = "add_payment_dialog"),
                             animatedVisibilityScope = this@AnimatedVisibility,
@@ -512,7 +514,7 @@ fun AddPaymentCard(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.8f))
+            .background(Color.Black.copy(alpha = 0.7f))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -547,7 +549,7 @@ fun AddPaymentCard(
 
                 DivideTextField(
                     label = stringResource(Res.string.amount),
-                    input = amount,
+                    value = amount,
                     error = amountError,
                     keyboardType = KeyboardType.Number,
                     imeAction = ImeAction.Done,
@@ -559,7 +561,7 @@ fun AddPaymentCard(
                             parsed?.let {
                                 val decimalPart = formatted.substringAfter(".", "")
                                 if (decimalPart.length <= 2 && parsed <= 999999.99) {
-                                    amount = input
+                                    amount = formatted
                                 }
                             }
                         }

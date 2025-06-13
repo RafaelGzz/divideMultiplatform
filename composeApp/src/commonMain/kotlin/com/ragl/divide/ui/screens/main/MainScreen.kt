@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.Badge
+import androidx.compose.material.BadgedBox
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
@@ -52,20 +54,27 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.core.annotation.InternalVoyagerApi
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinNavigatorScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import cafe.adriel.voyager.navigator.internal.BackHandler
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.UserInfo
+import com.ragl.divide.ui.components.AdaptiveFAB
 import com.ragl.divide.ui.screens.AppState
 import com.ragl.divide.ui.screens.UserViewModel
+import com.ragl.divide.ui.screens.addFriends.AddFriendsScreen
 import com.ragl.divide.ui.screens.expense.ExpenseScreen
 import com.ragl.divide.ui.screens.expenseProperties.ExpensePropertiesScreen
+import com.ragl.divide.ui.screens.friends.FriendsBody
 import com.ragl.divide.ui.screens.friends.FriendsScreen
 import com.ragl.divide.ui.screens.group.GroupScreen
 import com.ragl.divide.ui.screens.groupProperties.GroupPropertiesScreen
@@ -74,23 +83,25 @@ import com.ragl.divide.ui.utils.WindowWidthSizeClass
 import com.ragl.divide.ui.utils.getWindowWidthSizeClass
 import compose.icons.FontAwesomeIcons
 import compose.icons.fontawesomeicons.Solid
-import compose.icons.fontawesomeicons.solid.ChartBar
 import compose.icons.fontawesomeicons.solid.DollarSign
 import compose.icons.fontawesomeicons.solid.Home
 import compose.icons.fontawesomeicons.solid.User
+import compose.icons.fontawesomeicons.solid.UserFriends
+import compose.icons.fontawesomeicons.solid.UserPlus
 import compose.icons.fontawesomeicons.solid.Users
 import dividemultiplatform.composeapp.generated.resources.Res
-import dividemultiplatform.composeapp.generated.resources.add_expense
-import dividemultiplatform.composeapp.generated.resources.add_group
+import dividemultiplatform.composeapp.generated.resources.add_friends
 import dividemultiplatform.composeapp.generated.resources.bar_item_1_text
 import dividemultiplatform.composeapp.generated.resources.bar_item_2_text
 import dividemultiplatform.composeapp.generated.resources.bar_item_3_text
+import dividemultiplatform.composeapp.generated.resources.new_expense
+import dividemultiplatform.composeapp.generated.resources.new_group
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
 class MainScreen : Screen {
 
-    @OptIn(ExperimentalMaterial3Api::class)
+    @OptIn(ExperimentalMaterial3Api::class, InternalVoyagerApi::class)
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
@@ -106,7 +117,7 @@ class MainScreen : Screen {
 
         val tabs: List<Pair<StringResource, ImageVector>> = listOf(
             Pair(Res.string.bar_item_1_text, FontAwesomeIcons.Solid.Home),
-            Pair(Res.string.bar_item_2_text, FontAwesomeIcons.Solid.ChartBar),
+            Pair(Res.string.bar_item_2_text, FontAwesomeIcons.Solid.UserFriends),
             Pair(Res.string.bar_item_3_text, FontAwesomeIcons.Solid.User)
         )
         var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
@@ -116,8 +127,16 @@ class MainScreen : Screen {
             pullLoading = state.isLoading
         }
 
+        BackHandler(selectedTabIndex != 0) {
+            selectedTabIndex = 0
+        }
+
         val isDarkMode by userViewModel.isDarkMode.collectAsState()
         val windowSizeClass = getWindowWidthSizeClass()
+
+        val friends = remember(state.friends) {
+            state.friends.values.toList().sortedBy { it.name.lowercase() }
+        }
 
         Box(
             contentAlignment = Alignment.Center,
@@ -144,7 +163,8 @@ class MainScreen : Screen {
                             state = state,
                             userViewModel = userViewModel,
                             navigator = navigator,
-                            isDarkMode = isDarkMode
+                            isDarkMode = isDarkMode,
+                            friends = friends
                         )
                     }
 
@@ -163,7 +183,8 @@ class MainScreen : Screen {
                             state = state,
                             userViewModel = userViewModel,
                             navigator = navigator,
-                            isDarkMode = isDarkMode
+                            isDarkMode = isDarkMode,
+                            friends = friends
                         )
                     }
                 }
@@ -187,18 +208,30 @@ private fun CompactLayout(
     state: AppState,
     userViewModel: UserViewModel,
     navigator: Navigator,
-    isDarkMode: String?
+    isDarkMode: String?,
+    friends: List<UserInfo>
 ) {
     Scaffold(
         floatingActionButton = {
-            HomeFABGroup(
-                onAddExpenseClick = {
-                    navigator.push(ExpensePropertiesScreen())
-                },
-                onAddGroupClick = {
-                    navigator.push(GroupPropertiesScreen())
-                }
-            )
+            when (selectedTabIndex) {
+                0 -> HomeFABGroup(
+                    onAddExpenseClick = {
+                        navigator.push(ExpensePropertiesScreen())
+                    },
+                    onAddGroupClick = {
+                        navigator.push(GroupPropertiesScreen())
+                    }
+                )
+
+                1 -> AdaptiveFAB(
+                    onClick = {
+                        navigator.push(AddFriendsScreen())
+                    },
+                    icon = FontAwesomeIcons.Solid.UserPlus,
+                    contentDescription = stringResource(Res.string.add_friends),
+                    text = stringResource(Res.string.add_friends)
+                )
+            }
         },
         bottomBar = {
             NavigationBar {
@@ -207,7 +240,37 @@ private fun CompactLayout(
                         selected = selectedTabIndex == index,
                         onClick = { onTabSelected(index) },
                         icon = {
-                            Icon(
+                            if (index == 1) {
+                                if (friendRequests.isNotEmpty()) {
+                                    BadgedBox(
+                                        badge = {
+                                            Badge {
+                                                Text(
+                                                    "${friendRequests.size}",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = Color.White,
+                                                    modifier = Modifier.semantics {
+                                                        contentDescription =
+                                                            "${friendRequests.size} friend requests"
+                                                    })
+                                            }
+                                        },
+                                        modifier = Modifier.semantics {
+                                            contentDescription = "Friend requests"
+                                        }
+                                    ) {
+                                        Icon(
+                                            tab.second,
+                                            contentDescription = stringResource(tab.first),
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                } else Icon(
+                                    tab.second,
+                                    contentDescription = stringResource(tab.first),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            } else Icon(
                                 tab.second,
                                 contentDescription = stringResource(tab.first),
                                 modifier = Modifier.size(24.dp)
@@ -236,7 +299,8 @@ private fun CompactLayout(
             state = state,
             userViewModel = userViewModel,
             navigator = navigator,
-            isDarkMode = isDarkMode
+            isDarkMode = isDarkMode,
+            friends = friends
         )
     }
 }
@@ -256,19 +320,31 @@ private fun ExpandedLayout(
     state: AppState,
     userViewModel: UserViewModel,
     navigator: Navigator,
-    isDarkMode: String?
+    isDarkMode: String?,
+    friends: List<UserInfo>
 ) {
     Scaffold(
         floatingActionButton = {
-            HomeFABGroup(
-                onAddExpenseClick = {
-                    navigator.push(ExpensePropertiesScreen())
-                },
-                onAddGroupClick = {
-                    navigator.push(GroupPropertiesScreen())
-                }
-            )
-        }
+            when (selectedTabIndex) {
+                0 -> HomeFABGroup(
+                    onAddExpenseClick = {
+                        navigator.push(ExpensePropertiesScreen())
+                    },
+                    onAddGroupClick = {
+                        navigator.push(GroupPropertiesScreen())
+                    }
+                )
+
+                1 -> AdaptiveFAB(
+                    onClick = {
+                        navigator.push(AddFriendsScreen())
+                    },
+                    icon = FontAwesomeIcons.Solid.UserPlus,
+                    contentDescription = stringResource(Res.string.add_friends),
+                    text = stringResource(Res.string.add_friends)
+                )
+            }
+        },
     ) { paddingValues ->
         Row(
             modifier = Modifier
@@ -281,7 +357,37 @@ private fun ExpandedLayout(
                         selected = selectedTabIndex == index,
                         onClick = { onTabSelected(index) },
                         icon = {
-                            Icon(
+                            if (index == 1) {
+                                if (friendRequests.isNotEmpty()) {
+                                    BadgedBox(
+                                        badge = {
+                                            Badge {
+                                                Text(
+                                                    "${friendRequests.size}",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = Color.White,
+                                                    modifier = Modifier.semantics {
+                                                        contentDescription =
+                                                            "${friendRequests.size} friend requests"
+                                                    })
+                                            }
+                                        },
+                                        modifier = Modifier.semantics {
+                                            contentDescription = "Friend requests"
+                                        }
+                                    ) {
+                                        Icon(
+                                            tab.second,
+                                            contentDescription = stringResource(tab.first),
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                } else Icon(
+                                    tab.second,
+                                    contentDescription = stringResource(tab.first),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            } else Icon(
                                 tab.second,
                                 contentDescription = stringResource(tab.first),
                                 modifier = Modifier.size(24.dp)
@@ -309,7 +415,8 @@ private fun ExpandedLayout(
                 state = state,
                 userViewModel = userViewModel,
                 navigator = navigator,
-                isDarkMode = isDarkMode
+                isDarkMode = isDarkMode,
+                friends = friends
             )
         }
     }
@@ -329,7 +436,8 @@ private fun MainContent(
     state: AppState,
     userViewModel: UserViewModel,
     navigator: Navigator,
-    isDarkMode: String?
+    isDarkMode: String?,
+    friends: List<UserInfo>
 ) {
     Column(
         modifier = modifier
@@ -364,11 +472,6 @@ private fun MainContent(
                         },
                         onGroupClick = {
                             navigator.push(GroupScreen(it))
-                        },
-                        onAddGroupClick = {
-                            if (state.friends.isNotEmpty())
-                                navigator.push(GroupPropertiesScreen())
-                            else userViewModel.handleError("Add friends to create a group.")
                         }
                     )
                 }
@@ -377,8 +480,14 @@ private fun MainContent(
                     enter = fadeIn(animationSpec = tween(300)),
                     exit = ExitTransition.None
                 ) {
-                    ActivityContent(
-                        expenses = expenses
+                    FriendsBody(
+                        friends = friends,
+                        friendRequestsReceived = friendRequests,
+                        friendRequestsSent = state.friendRequestsSent.values.toList(),
+                        onAcceptFriendRequest = userViewModel::acceptFriendRequest,
+                        onRejectFriendRequest = userViewModel::rejectFriendRequest,
+                        onCancelFriendRequest = userViewModel::cancelFriendRequest,
+                        onRemoveFriend = userViewModel::removeFriend
                     )
                 }
                 AnimatedVisibility(
@@ -398,13 +507,6 @@ private fun MainContent(
                         friendRequests = friendRequests,
                         onFriendsButtonClick = {
                             navigator.push(FriendsScreen())
-                        },
-                        onImageSelected = { imagePath, onSuccess, onError ->
-                            userViewModel.updateProfileImage(
-                                imagePath,
-                                onSuccess = onSuccess,
-                                onError = onError
-                            )
                         }
                     )
                 }
@@ -418,10 +520,10 @@ fun HomeFABGroup(
     fabIcon: ImageVector = Icons.Default.Add,
     onAddExpenseClick: () -> Unit,
     onAddGroupClick: () -> Unit,
-    containerColor: Color = MaterialTheme.colorScheme.tertiaryContainer,
-    contentColor: Color = MaterialTheme.colorScheme.onTertiaryContainer,
-    expandedContainerColor: Color = MaterialTheme.colorScheme.tertiary,
-    expandedContentColor: Color = MaterialTheme.colorScheme.onTertiary,
+    containerColor: Color = MaterialTheme.colorScheme.primary,
+    contentColor: Color = MaterialTheme.colorScheme.onPrimary,
+    expandedContainerColor: Color = MaterialTheme.colorScheme.secondary,
+    expandedContentColor: Color = MaterialTheme.colorScheme.onSecondary,
 ) {
     var isExpanded by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
@@ -450,32 +552,6 @@ fun HomeFABGroup(
             ).scale(scale)
         ) {
             Button(
-                onClick = { onAddExpenseClick() },
-                shape = ShapeDefaults.Medium,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = containerColor,
-                    contentColor = contentColor
-                ),
-                contentPadding = PaddingValues(horizontal = 12.dp),
-                modifier = Modifier.height(60.dp).align(Alignment.End)
-            ) {
-                Icon(
-                    FontAwesomeIcons.Solid.DollarSign,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(Res.string.add_expense),
-                    maxLines = 1,
-                    softWrap = true,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(
                 onClick = { onAddGroupClick() },
                 shape = ShapeDefaults.Medium,
                 colors = ButtonDefaults.buttonColors(
@@ -492,7 +568,33 @@ fun HomeFABGroup(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = stringResource(Res.string.add_group),
+                    text = stringResource(Res.string.new_group),
+                    maxLines = 1,
+                    softWrap = true,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = { onAddExpenseClick() },
+                shape = ShapeDefaults.Medium,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = containerColor,
+                    contentColor = contentColor
+                ),
+                contentPadding = PaddingValues(horizontal = 12.dp),
+                modifier = Modifier.height(60.dp).align(Alignment.End)
+            ) {
+                Icon(
+                    FontAwesomeIcons.Solid.DollarSign,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(Res.string.new_expense),
                     maxLines = 1,
                     softWrap = true,
                     overflow = TextOverflow.Ellipsis,

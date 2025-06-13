@@ -130,7 +130,7 @@ class AddFriendsScreen : Screen {
                 ) {
                     DivideTextField(
                         label = stringResource(Res.string.search_by_name),
-                        input = viewModel.searchText,
+                        value = viewModel.searchText,
                         onValueChange = viewModel::updateSearchText,
                         imeAction = ImeAction.Done,
                         onAction = viewModel::searchUser,

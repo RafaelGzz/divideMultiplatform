@@ -1,6 +1,7 @@
 <resources>
     <!-- App General -->
     <string name="app_name">Divide</string>
+    <string name="app_subtitle">Maneja tus gastos con facilidad</string>
     <string name="press_again_to_exit">Presiona de nuevo para salir</string>
     <string name="back">Atrás</string>
     <string name="cancel">Cancelar</string>
@@ -17,10 +18,11 @@
     <string name="reject">Rechazar</string>
     <string name="discard">Descartar</string>
     <string name="unknown">Desconocido</string>
+    <string name="or">o</string>
 
     <!-- Authentication -->
     <string name="connect_with_social_media">Entra con Redes Sociales</string>
-    <string name="connect_with_google">Inicia con Google</string>
+    <string name="connect_with_google">Continua con Google</string>
     <string name="connect_with_facebook">Inicia con Facebook</string>
     <string name="log_in">Iniciar Sesión</string>
     <string name="sign_up">Registrarse</string>
@@ -40,17 +42,17 @@
 
     <!-- Navigation Bar -->
     <string name="bar_item_1_text">Inicio</string>
-    <string name="bar_item_2_text">Actividad</string>
+    <string name="bar_item_2_text">Amigos</string>
     <string name="bar_item_3_text">Perfil</string>
 
     <!-- Home Screen -->
-    <string name="your_expenses">Tus gastos</string>
+    <string name="your_expenses">Tus gastos personales</string>
     <string name="you_have_no_expenses">No tienes gastos.</string>
     <string name="your_groups">Tus grupos</string>
     <string name="you_have_no_groups">No tienes grupos.</string>
-    <string name="individual_expense">Gasto\nIndividual</string>
     <string name="group_expense">Gasto\nGrupal</string>
-    <string name="add_an_expense">Agrega un gasto</string>
+    <string name="new_expense">Nuevo gasto personal</string>
+    <string name="new_group">Nuevo grupo</string>
 
     <!-- Friends -->
     <string name="friends">Amigos</string>
@@ -197,9 +199,9 @@
     <string name="reopen_banner_message">Toca para reabrir y agregar más gastos o pagos.</string>
     <string name="settle_event">Liquidar Evento</string>
     <string name="settle">Liquidar</string>
-    <string name="settle_event_confirm">¿Estás seguro de que quieres liquidar este evento? Esta acción marcará el evento como completado y no se podrán agregar más gastos o pagos.</string>
+    <string name="settle_event_confirm">¿Quieres marcar este evento como liquidado?</string>
     <string name="reopen_event">Reabrir Evento</string>
-    <string name="reopen_event_confirm">¿Estás seguro de que quieres reabrir este evento? Esto permitirá agregar nuevos gastos o pagos y recalculará las deudas pendientes.</string>
+    <string name="reopen_event_confirm">¿Quieres reabrir este evento?</string>
     <string name="reopen">Reabrir</string>
     <string name="active_events">%1$s eventos activos</string>
     <string name="delete_event_message">¿Quieres eliminar este evento?\nESTA ACCIÓN NO SE PUEDE DESHACER</string>
@@ -217,13 +219,26 @@
     <string name="you">Tú</string>
     <string name="pay_debt">Pagar deuda</string>
     <string name="go_to_event">Ir al evento</string>
+    <string name="you_owe_to">Debes a %1$s</string>
+    <string name="owes_you">%1$s te debe</string>
+    <string name="owes_to">%1$s debe a %2$s</string>
+    <string name="options">Opciones</string>
 
     <!-- Image Selection -->
     <string name="select_image_source">Selecciona origen de imagen</string>
     <string name="select_image_from_gallery">De la galería</string>
     <string name="take_photo">Tomar foto</string>
+    <string name="profile_photo">Foto de Perfil</string>
+    <string name="change_photo">Cambiar Foto</string>
+    <string name="save_photo">Guardar Foto</string>
+    <string name="user_profile">Perfil de Usuario</string>
+    <string name="save_changes">Guardar Cambios</string>
+    <string name="username_empty_error">El nombre de usuario no puede estar vacío</string>
+    <string name="username_special_chars_error">El nombre de usuario no puede contener caracteres especiales</string>
+    <string name="username_too_long_error">El nombre de usuario no puede tener más de 20 caracteres</string>
 
     <!-- Settings/Profile -->
+    <string name="settings">Ajustes</string>
     <string name="theme">Tema</string>
     <string name="dark_mode">Modo oscuro</string>
     <string name="light_mode">Modo claro</string>

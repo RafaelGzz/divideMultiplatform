@@ -7,7 +7,6 @@ import com.ragl.divide.data.repositories.GroupRepositoryImpl
 import com.ragl.divide.data.repositories.PreferencesRepository
 import com.ragl.divide.data.repositories.UserRepository
 import com.ragl.divide.data.repositories.UserRepositoryImpl
-import com.ragl.divide.data.services.GroupEventService
 import com.ragl.divide.data.services.GroupExpenseService
 import com.ragl.divide.data.services.ScheduleNotificationService
 import com.ragl.divide.ui.screens.UserViewModel
@@ -62,7 +61,6 @@ val sharedModule = module {
     factoryOf(::EventPropertiesViewModel)
 
     singleOf(::GroupExpenseService)
-    singleOf(::GroupEventService)
 
     // FIREBASE DEPENDENCIES
     single {

@@ -279,18 +279,9 @@ class UserViewModel(
         screenModelScope.launch {
             try {
                 showLoading()
-                
-                // Cancelar todas las notificaciones de gastos antes de cerrar sesión
-                try {
-                    scheduleNotificationService.cancelAllNotifications()
-                    logMessage("UserViewModel", "Todas las notificaciones canceladas al cerrar sesión")
-                } catch (e: Exception) {
-                    logMessage("UserViewModel", "Error al cancelar notificaciones: ${e.message}")
-                }
-                
+                scheduleNotificationService.cancelAllNotifications()
                 userRepository.signOut()
                 if (userRepository.getFirebaseUser() == null) {
-                    //preferencesRepository.saveStartDestination(Screen.Login.route)
                     onSignOut()
                 }
             } catch (e: Exception) {
@@ -580,6 +571,35 @@ class UserViewModel(
                 } else {
                     logMessage("UserViewModel", "Could not process image")
                     onError(strings.getCouldNotProcessImage())
+                }
+            } catch (e: Exception) {
+                logMessage("UserViewModel", e.toString())
+                onError(e.message ?: strings.getUnknownError())
+            } finally {
+                hideLoading()
+            }
+        }
+    }
+
+    fun updateUserName(newName: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        screenModelScope.launch {
+            try {
+                showLoading()
+                val trimmedName = newName.trim()
+                
+                if (trimmedName.isBlank()) {
+                    onError(strings.getUsernameEmpty())
+                    return@launch
+                }
+                
+                val success = userRepository.updateUserName(trimmedName)
+                if (success) {
+                    _state.update {
+                        it.copy(user = it.user.copy(name = trimmedName))
+                    }
+                    onSuccess()
+                } else {
+                    onError(strings.getUnknownError())
                 }
             } catch (e: Exception) {
                 logMessage("UserViewModel", e.toString())

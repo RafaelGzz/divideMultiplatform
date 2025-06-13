@@ -147,10 +147,10 @@ fun MessageBar(
         Box(
             modifier = modifier
                 .fillMaxWidth()
-                .imePadding() // Esto hará que el MessageBar se desplace hacia arriba cuando el teclado esté visible
+                .imePadding()
                 .padding(
                     horizontal = 16.dp,
-                    vertical = 16.dp
+                    vertical = 24.dp
                 ),
             contentAlignment = when (position) {
                 MessageBarPosition.TOP -> Alignment.TopCenter

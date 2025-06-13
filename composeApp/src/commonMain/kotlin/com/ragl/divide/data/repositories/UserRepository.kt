@@ -35,6 +35,7 @@ interface UserRepository {
     suspend fun isEmailVerified(): Boolean
     suspend fun saveProfilePhoto(photo: File): String
     suspend fun getProfilePhoto(userId: String): String
+    suspend fun updateUserName(newName: String): Boolean
 }
 
 class UserRepositoryImpl(
@@ -321,5 +322,26 @@ class UserRepositoryImpl(
         groupRef.child(groupId).removeValue()
         val executionTime = Clock.System.now().toEpochMilliseconds() - startTime
         logMessage("UserRepository", "removeGroupFromUser: $groupId - executed in ${executionTime}ms")
+    }
+
+    override suspend fun updateUserName(newName: String): Boolean {
+        val startTime = Clock.System.now().toEpochMilliseconds()
+        return try {
+            val userId = getFirebaseUser()?.uid ?: throw Exception("User not signed in")
+            
+            // Actualizar en Firebase Auth
+            getFirebaseUser()?.updateProfile(displayName = newName)
+            
+            // Actualizar en Firebase Database
+            val userRef = database.reference("users/$userId")
+            userRef.child("name").setValue(newName)
+            
+            val executionTime = Clock.System.now().toEpochMilliseconds() - startTime
+            logMessage("UserRepository", "updateUserName: $newName - executed in ${executionTime}ms")
+            true
+        } catch (e: Exception) {
+            logMessage("UserRepository", "updateUserName failed: ${e.message}")
+            false
+        }
     }
 }

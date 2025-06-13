@@ -19,19 +19,12 @@ class GroupViewModel() : ScreenModel {
     private val _group = MutableStateFlow(Group())
     val group: StateFlow<Group> = _group.asStateFlow()
 
-    var expensesAndPayments by mutableStateOf<List<Any>>(listOf())
-        private set
-
     var members by mutableStateOf<List<UserInfo>>(listOf())
         private set
         
     var events by mutableStateOf<List<GroupEvent>>(listOf())
         private set
 
-    private fun updateExpensesAndPayments(expensesAndPayments: List<Any>) {
-        this.expensesAndPayments = expensesAndPayments
-    }
-    
     private fun updateEvents(events: List<GroupEvent>) {
         this.events = events
     }
@@ -40,7 +33,6 @@ class GroupViewModel() : ScreenModel {
         screenModelScope.launch {
             members = users
             _group.update { group }
-            updateExpensesAndPayments(group.expenses.values.toList() + group.payments.values.toList())
             updateEvents(group.events.values.toList())
         }
     }

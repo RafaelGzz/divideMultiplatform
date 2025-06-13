@@ -215,7 +215,7 @@ class EventScreen(
                     ) {
                         item {
                             Column {
-                                EventInfoHeader(event = eventState)
+                                //EventInfoHeader(event = eventState)
                                 if (canSettleEvent && showSettleBanner) {
                                     SettleBanner(
                                         onSettleClick = { showSettleDialog = true },
@@ -231,21 +231,24 @@ class EventScreen(
                             }
                         }
                         item {
-                            AnimatedVisibility(
-                                !isDebtsExpanded
-                            ) {
-                                CollapsedDebtsCard(
-                                    debts = allDebts,
-                                    currentUserId = uuid,
-                                    sharedTransitionScope = this@SharedTransitionLayout,
-                                    animatedVisibilityScope = this@AnimatedVisibility,
-                                    onClick = {
-                                        if (allDebts.isNotEmpty())
-                                            isDebtsExpanded = true
-                                    }
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(16.dp))
+                            if (!(canReopenEvent && showReopenBanner))
+                                AnimatedVisibility(
+                                    !isDebtsExpanded
+                                ) {
+                                    CollapsedDebtsCard(
+                                        debts = allDebts,
+                                        currentUserId = uuid,
+                                        sharedTransitionScope = this@SharedTransitionLayout,
+                                        animatedVisibilityScope = this@AnimatedVisibility,
+                                        onClick = {
+                                            if (allDebts.isNotEmpty())
+                                                isDebtsExpanded = true
+                                        },
+                                        modifier = Modifier.padding(bottom = 16.dp)
+                                    )
+                                }
+                        }
+                        item {
                             Text(
                                 text = stringResource(Res.string.activity),
                                 style = MaterialTheme.typography.titleMedium,
@@ -274,18 +277,20 @@ class EventScreen(
                                 getPaidByNames = viewModel::getPaidByNames,
                                 members = viewModel.members,
                                 onExpenseClick = {
-                                    navigator.push(
-                                        GroupExpenseScreen(
-                                            groupId, it, eventId
+                                    if (!eventState.settled)
+                                        navigator.push(
+                                            GroupExpenseScreen(
+                                                groupId, it, eventId
+                                            )
                                         )
-                                    )
                                 },
                                 onPaymentClick = { paymentId ->
-                                    navigator.push(
-                                        GroupPaymentScreen(
-                                            groupId, paymentId, eventId
+                                    if (!eventState.settled)
+                                        navigator.push(
+                                            GroupPaymentScreen(
+                                                groupId, paymentId, eventId
+                                            )
                                         )
-                                    )
                                 }
                             )
                         }
@@ -411,7 +416,10 @@ private fun EventDetailsAppBar(
         },
         navigationIcon = {
             IconButton(onClick = onBackClick) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.back))
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(Res.string.back)
+                )
             }
         },
         actions = {
@@ -440,7 +448,9 @@ private fun EventInfoHeader(event: GroupEvent) {
                     MaterialTheme.colorScheme.secondary
             ) {
                 Text(
-                    text = if (event.settled) stringResource(Res.string.settled) else stringResource(Res.string.active),
+                    text = if (event.settled) stringResource(Res.string.settled) else stringResource(
+                        Res.string.active
+                    ),
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     color = if (event.settled)
                         MaterialTheme.colorScheme.onPrimary
@@ -457,7 +467,10 @@ private fun EventInfoHeader(event: GroupEvent) {
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = stringResource(Res.string.created_on, formatDate(event.createdAt, "dd MMM yyyy")),
+                text = stringResource(
+                    Res.string.created_on,
+                    formatDate(event.createdAt, "dd MMM yyyy")
+                ),
                 style = MaterialTheme.typography.bodyMedium
             )
         }

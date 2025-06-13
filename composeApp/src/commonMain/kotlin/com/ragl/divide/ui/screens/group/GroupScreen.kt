@@ -70,6 +70,7 @@ import cafe.adriel.voyager.navigator.internal.BackHandler
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.GroupEvent
 import com.ragl.divide.data.models.UserInfo
+import com.ragl.divide.data.models.getCategoryIcon
 import com.ragl.divide.ui.components.AdaptiveFAB
 import com.ragl.divide.ui.components.CollapsedDebtsCard
 import com.ragl.divide.ui.components.DebtInfo
@@ -228,13 +229,7 @@ class GroupScreen(
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(100.dp)
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(
-                                            MaterialTheme.colorScheme.surfaceVariant.copy(
-                                                alpha = 0.5f
-                                            )
-                                        ),
+                                        .height(100.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
@@ -452,7 +447,7 @@ private fun EventItem(
             modifier = Modifier.fillMaxWidth()
         ) {
             Icon(
-                imageVector = Icons.Default.DateRange,
+                imageVector = getCategoryIcon(event.category),
                 contentDescription = null,
                 tint = if (settled) settledContainerColor else containerColor,
                 modifier = Modifier

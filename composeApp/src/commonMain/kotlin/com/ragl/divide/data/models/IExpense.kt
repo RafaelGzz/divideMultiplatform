@@ -7,5 +7,4 @@ interface IExpense{
     val amount: Double
     val notes: String
     val createdAt: Long
-    val updatedAt: Long
 }

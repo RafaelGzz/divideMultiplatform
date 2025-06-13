@@ -1,12 +1,19 @@
 package com.ragl.divide.ui.screens.signIn
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -15,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
@@ -43,74 +51,98 @@ class EmailVerificationScreen : Screen {
         val countdown by userViewModel.countdown.collectAsState()
         val strings: Strings = koinInject()
 
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .background(MaterialTheme.colorScheme.primary)
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(16.dp)
         ) {
-            Text(
-                text = stringResource(Res.string.email_not_verified),
-                style = MaterialTheme.typography.headlineSmall,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-            Text(
-                stringResource(Res.string.check_email_for_verification),
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(bottom = 32.dp)
-            )
-
-            Button(
-                onClick = {
-                    scope.launch {
-                        userViewModel.resendVerificationEmail()
-                    }
-                },
-                enabled = countdown == 0,
+            Column(
                 modifier = Modifier
+                    .clip(ShapeDefaults.Medium)
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                    .wrapContentHeight()
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp)
+                    .padding(16.dp)
+                    .align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = if (countdown == 0) stringResource(Res.string.resend_verification) else "${stringResource(Res.string.resend_verification)} ($countdown)",
-                    modifier = Modifier.padding(vertical = 8.dp)
+                    text = stringResource(Res.string.email_not_verified),
+                    style = MaterialTheme.typography.headlineSmall,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 16.dp)
                 )
-            }
-
-            Button(
-                onClick = {
-                    scope.launch {
-                        if (userViewModel.isEmailVerified()) {
-                            navigator.replaceAll(MainScreen())
-                        } else {
-                            userViewModel.handleError(strings.getEmailNotVerified())
-                        }
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
-            ) {
                 Text(
-                    text = stringResource(Res.string.verify_email),
-                    modifier = Modifier.padding(vertical = 8.dp)
+                    stringResource(Res.string.check_email_for_verification),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(bottom = 32.dp)
                 )
-            }
 
-            TextButton(
-                onClick = {
-                    scope.launch {
-                        userViewModel.signOut {
-                            navigator.pop()
+                Button(
+                    onClick = userViewModel::resendVerificationEmail,
+                    enabled = countdown == 0,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp)
+                ) {
+                    Text(
+                        text = if (countdown == 0) stringResource(Res.string.resend_verification) else "${
+                            stringResource(
+                                Res.string.resend_verification
+                            )
+                        } ($countdown)",
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
+
+                Button(
+                    onClick = {
+                        scope.launch {
+                            if (userViewModel.isEmailVerified()) {
+                                userViewModel.getUserData()
+                                navigator.replaceAll(MainScreen())
+                            } else {
+                                userViewModel.handleError(strings.getEmailNotVerified())
+                            }
                         }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(stringResource(Res.string.cancel))
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp)
+                ) {
+                    Text(
+                        text = stringResource(Res.string.verify_email),
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
+
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            userViewModel.signOut {
+                                navigator.pop()
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(Res.string.cancel))
+                }
             }
         }
     }

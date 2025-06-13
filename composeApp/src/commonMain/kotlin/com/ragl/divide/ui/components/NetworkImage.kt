@@ -9,7 +9,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
@@ -22,11 +21,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.unit.dp
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil3.CoilImage
 import compose.icons.FontAwesomeIcons
@@ -96,7 +93,7 @@ fun NetworkImage(
                     LaunchedEffect(Unit) {
                         showImage = true
                     }
-                    FallbackImage(type = type, modifier = Modifier.fillMaxSize().alpha(state))
+                    FallbackImage(type = type, modifier = Modifier.fillMaxSize())
                 },
                 modifier = Modifier.fillMaxSize()
             )
@@ -110,7 +107,7 @@ fun NetworkImage(
             LaunchedEffect(Unit) {
                 showImage = true
             }
-            FallbackImage(type = type, modifier = Modifier.fillMaxSize().alpha(state))
+            FallbackImage(type = type, modifier = Modifier.fillMaxSize())
         }
     }
 }
@@ -121,8 +118,7 @@ fun NetworkImage(
 enum class NetworkImageType {
     PROFILE,
     GROUP,
-    DEFAULT,
-    ADD_GROUP
+    DEFAULT
 }
 
 /**
@@ -174,7 +170,7 @@ fun FallbackImage(type: NetworkImageType, modifier: Modifier = Modifier) {
                     imageVector = Icons.Filled.Person,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.fillMaxSize(.8f)
                 )
             }
 
@@ -183,7 +179,7 @@ fun FallbackImage(type: NetworkImageType, modifier: Modifier = Modifier) {
                     imageVector = FontAwesomeIcons.Solid.Users,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.fillMaxSize(.8f)
                 )
             }
 
@@ -192,16 +188,7 @@ fun FallbackImage(type: NetworkImageType, modifier: Modifier = Modifier) {
                     painter = painterResource(Res.drawable.ic_divide),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            NetworkImageType.ADD_GROUP -> {
-                Icon(
-                    imageVector = FontAwesomeIcons.Solid.Users,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.fillMaxSize(.8f)
                 )
             }
         }

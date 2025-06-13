@@ -22,8 +22,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -123,22 +124,20 @@ fun validateQuantity(input: String, updateInput: (String) -> Unit) {
 
 @Composable
 fun DivideTextField(
+    label: String,
+    value: String,
     modifier: Modifier = Modifier,
     prefix: @Composable (() -> Unit)? = null,
     suffix: @Composable (() -> Unit)? = null,
-    label: String,
-    input: String,
     enabled: Boolean = true,
     placeholder: @Composable (() -> Unit)? = null,
-    //keyboardActions: KeyboardActions = KeyboardActions(),
     singleLine: Boolean = true,
-//    errorText: Boolean = true,
     error: String? = null,
     keyboardType: KeyboardType = KeyboardType.Text,
     imeAction: ImeAction = ImeAction.Next,
     autoCorrect: Boolean = true,
     capitalizeFirstLetter: Boolean = true,
-    onValueChange: (String) -> Unit,
+    onValueChange: (String) -> Unit = {},
     onAction: () -> Unit = {},
     validate: () -> Unit = {}
 ) {
@@ -148,8 +147,8 @@ fun DivideTextField(
     var icon by remember { mutableStateOf<@Composable (() -> Unit)?>(null) }
     var isFocused by remember { mutableStateOf(false) }
 
-    LaunchedEffect(input) {
-        if (input.isNotEmpty()) {
+    LaunchedEffect(value) {
+        if (value.isNotEmpty() && enabled) {
             icon = when (keyboardType) {
                 KeyboardType.Password -> {
                     {
@@ -191,26 +190,28 @@ fun DivideTextField(
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 8.dp)
         )
-        TextField(
-//            colors = TextFieldDefaults.colors(
-//                focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-//                unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-//                focusedIndicatorColor = Color.Transparent,
-//                unfocusedIndicatorColor = Color.Transparent,
-//                unfocusedPrefixColor = MaterialTheme.colorScheme.onPrimaryContainer,
-//                focusedPrefixColor = MaterialTheme.colorScheme.onPrimaryContainer,
-//                disabledContainerColor = MaterialTheme.colorScheme.primaryContainer,
-//                disabledIndicatorColor = Color.Transparent,
-//                disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-//                disabledPrefixColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-//            ),
+        OutlinedTextField(
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                unfocusedIndicatorColor = Color.Transparent,
+                unfocusedPrefixColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                focusedPrefixColor = MaterialTheme.colorScheme.onSurface,
+                disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                disabledIndicatorColor = Color.Transparent,
+                disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                disabledPrefixColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                errorContainerColor = MaterialTheme.colorScheme.errorContainer,
+                errorTextColor = MaterialTheme.colorScheme.onErrorContainer,
+            ),
             enabled = enabled,
             isError = !error.isNullOrEmpty(),
             prefix = prefix,
             suffix = suffix,
             placeholder = placeholder,
             singleLine = singleLine,
-            value = input,
+            value = value,
             visualTransformation = if (!passwordVisible && keyboardType == KeyboardType.Password) PasswordVisualTransformation() else VisualTransformation.None,
             trailingIcon = icon,
             keyboardOptions = KeyboardOptions.Default.copy(
@@ -224,9 +225,9 @@ fun DivideTextField(
             ),
             onValueChange = { onValueChange(it) },
             textStyle = MaterialTheme.typography.bodyMedium,
+            shape = MaterialTheme.shapes.medium,
             modifier = Modifier
                 .fillMaxWidth()
-//                .clip(ShapeDefaults.Medium)
                 .onFocusChanged { focusState ->
                     if (isFocused && !focusState.isFocused) {
                         validate()
@@ -258,7 +259,6 @@ fun FriendItem(
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         contentColor = MaterialTheme.colorScheme.onSurface
     ),
-    icon: ImageVector = Icons.Filled.Person,
     trailingContent: @Composable (() -> Unit)? = null,
     onClick: (() -> Unit)? = null
 ) {
@@ -305,32 +305,11 @@ fun FriendItem(
             supportingContent = supportingContent,
             leadingContent = if (hasLeadingContent) {
                 {
-                    if (photoUrl.isNotEmpty()) {
-                        ProfileImage(
-                            photoUrl = photoUrl,
-                            icon = icon,
-                            enabled = enabled,
-                            supporting = supporting.isNotEmpty()
-                        )
-                    } else {
-                        Icon(
-                            icon,
-                            contentDescription = null,
-                            tint = if (enabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary.copy(
-                                alpha = 0.5f
-                            ),
-                            modifier = Modifier
-                                .padding(vertical = if (supporting.isNotEmpty()) 0.dp else 2.dp)
-                                .clip(CircleShape)
-                                .size(52.dp)
-                                .background(
-                                    if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(
-                                        alpha = 0.5f
-                                    )
-                                )
-                                .padding(12.dp)
-                        )
-                    }
+                   NetworkImage(
+                       imageUrl = photoUrl,
+                       modifier = Modifier.size(52.dp).clip(CircleShape),
+                       type = NetworkImageType.PROFILE
+                   )
                 }
             } else {
                 null

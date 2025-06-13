@@ -13,10 +13,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -43,9 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ragl.divide.data.models.UserInfo
 import com.ragl.divide.ui.utils.WindowWidthSizeClass
@@ -53,7 +49,6 @@ import com.ragl.divide.ui.utils.formatCurrency
 import com.ragl.divide.ui.utils.getWindowWidthSizeClass
 import compose.icons.FontAwesomeIcons
 import compose.icons.fontawesomeicons.Solid
-import compose.icons.fontawesomeicons.solid.ArrowRight
 import compose.icons.fontawesomeicons.solid.ChevronRight
 import compose.icons.fontawesomeicons.solid.EllipsisV
 import compose.icons.fontawesomeicons.solid.PeopleArrows
@@ -62,13 +57,14 @@ import dividemultiplatform.composeapp.generated.resources.debts_summary
 import dividemultiplatform.composeapp.generated.resources.event_summary
 import dividemultiplatform.composeapp.generated.resources.go_to_event
 import dividemultiplatform.composeapp.generated.resources.no_debts
-import dividemultiplatform.composeapp.generated.resources.other_debts
+import dividemultiplatform.composeapp.generated.resources.options
+import dividemultiplatform.composeapp.generated.resources.owes_to
+import dividemultiplatform.composeapp.generated.resources.owes_you
 import dividemultiplatform.composeapp.generated.resources.pay_debt
 import dividemultiplatform.composeapp.generated.resources.up_to_date
 import dividemultiplatform.composeapp.generated.resources.x_debts
-import dividemultiplatform.composeapp.generated.resources.you
 import dividemultiplatform.composeapp.generated.resources.you_owe
-import dividemultiplatform.composeapp.generated.resources.your_debts
+import dividemultiplatform.composeapp.generated.resources.you_owe_to
 import dividemultiplatform.composeapp.generated.resources.youre_owed
 import org.jetbrains.compose.resources.stringResource
 
@@ -219,7 +215,7 @@ fun ExpandedDebtsCard(
                         resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
                     ),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    containerColor = MaterialTheme.colorScheme.surface
                 ),
             ) {
                 Column(
@@ -228,77 +224,51 @@ fun ExpandedDebtsCard(
                     Text(
                         text = if (isGroup) stringResource(Res.string.event_summary) else stringResource(Res.string.debts_summary),
                         style = MaterialTheme.typography.titleLarge.copy(
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                            color = MaterialTheme.colorScheme.onSurface,
+                        ),
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(2.dp)
-                    ) {
+                    LazyColumn {
                         if (debts.isNotEmpty()) {
-                            val userDebts = debts.filter { it.isCurrentUserInvolved }
-                            val otherDebts = debts.filter { !it.isCurrentUserInvolved }
-                            if (userDebts.isNotEmpty()) {
+                            val debtsByEvent = debts.groupBy { it.eventName }
+                            debtsByEvent.forEach { (eventName, eventDebts) ->
                                 item {
                                     Text(
-                                        text = stringResource(Res.string.your_debts),
-                                        style = MaterialTheme.typography.titleMedium.copy(
-                                            color = MaterialTheme.colorScheme.primary
+                                        text = eventName,
+                                        style = MaterialTheme.typography.titleSmall.copy(
+                                            color = MaterialTheme.colorScheme.onSurface,
                                         ),
+                                        modifier = Modifier.padding(vertical = 8.dp)
+                                    )
+                                }
+                                val sortedDebts = eventDebts.sortedByDescending { it.fromUserId == currentUserId || it.toUserId == currentUserId }
+                                itemsIndexed(sortedDebts) { index, debt ->
+                                    EventDebtItem(
+                                        debt = debt,
+                                        users = users,
+                                        currentUserId = currentUserId,
+                                        showEvent = isGroup,
+                                        onPayDebtClicked = onPayDebtClicked,
+                                        onGoToEventClicked = onGoToEventClicked,
+                                        isLast = index == sortedDebts.lastIndex,
+                                        isFirst = index == 0,
+                                        isSingle = sortedDebts.size == 1,
                                         modifier = Modifier.padding(bottom = 2.dp)
                                     )
                                 }
-
-                                itemsIndexed(userDebts) { index, debt ->
-                                    DebtListItem(
-                                        debt = debt,
-                                        users = users,
-                                        showEvent = isGroup,
-                                        currentUserId = currentUserId,
-                                        isHighlighted = true,
-                                        listIndex = index,
-                                        isLast = index == userDebts.lastIndex,
-                                        onPayDebtClicked = onPayDebtClicked,
-                                        onGoToEventClicked = onGoToEventClicked
-                                    )
-                                }
-
-                                if (otherDebts.isNotEmpty()) {
-                                    item {
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Text(
-                                            text = stringResource(Res.string.other_debts),
-                                            style = MaterialTheme.typography.titleMedium.copy(
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            ),
-                                            modifier = Modifier.padding(bottom = 2.dp)
-                                        )
-                                    }
-                                }
-                            }
-                            itemsIndexed(otherDebts) { index, debt ->
-                                DebtListItem(
-                                    debt = debt,
-                                    users = users,
-                                    showEvent = isGroup,
-                                    currentUserId = currentUserId,
-                                    isHighlighted = false,
-                                    listIndex = index,
-                                    isLast = index == otherDebts.lastIndex,
-                                    onPayDebtClicked = onPayDebtClicked
-                                )
                             }
                         } else {
                             item {
                                 Box(
-                                    modifier = Modifier.fillMaxSize(),
+                                    modifier = Modifier.fillMaxWidth().padding(32.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
                                         text = stringResource(Res.string.no_debts),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        textAlign = TextAlign.Center,
-                                        modifier = Modifier.fillMaxWidth()
+                                        style = MaterialTheme.typography.bodyLarge.copy(
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        ),
+                                        textAlign = TextAlign.Center
                                     )
                                 }
                             }
@@ -311,121 +281,70 @@ fun ExpandedDebtsCard(
 }
 
 @Composable
-private fun DebtListItem(
+private fun EventDebtItem(
     debt: DebtInfo,
-    showEvent: Boolean = false,
     users: List<UserInfo>,
     currentUserId: String,
-    isHighlighted: Boolean,
-    listIndex: Int,
+    showEvent: Boolean,
+    onPayDebtClicked: (DebtInfo) -> Unit,
+    onGoToEventClicked: (String) -> Unit,
     isLast: Boolean,
-    onPayDebtClicked: (DebtInfo) -> Unit = {},
-    onGoToEventClicked: (String) -> Unit = {}
+    isFirst: Boolean,
+    isSingle: Boolean,
+    modifier: Modifier = Modifier
 ) {
     val fromUser = users.find { it.uuid == debt.fromUserId }
     val toUser = users.find { it.uuid == debt.toUserId }
+    val isUserOwing = debt.fromUserId == currentUserId
+    val isUserOwed = debt.toUserId == currentUserId
     var showMenu by remember { mutableStateOf(false) }
 
+    val shape = when {
+        isSingle -> RoundedCornerShape(16.dp)
+        isFirst -> RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomEnd = 2.dp, bottomStart = 2.dp)
+        isLast -> RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp, bottomEnd = 16.dp, bottomStart = 16.dp)
+        else -> RoundedCornerShape(2.dp)
+    }
+
     Card(
-        modifier = Modifier
-            .fillMaxWidth(),
-        shape =
-            if (listIndex == 0 && !isLast)
-                RoundedCornerShape(
-                    topStart = 16.dp,
-                    topEnd = 16.dp,
-                    bottomEnd = 2.dp,
-                    bottomStart = 2.dp
-                )
-            else if (listIndex == 0 && isLast)
-                RoundedCornerShape(16.dp)
-            else if (listIndex != 0 && isLast)
-                RoundedCornerShape(
-                    topStart = 2.dp,
-                    topEnd = 2.dp,
-                    bottomEnd = 16.dp,
-                    bottomStart = 16.dp
-                )
-            else
-                RoundedCornerShape(2.dp),
+        modifier = modifier.fillMaxWidth(),
+        shape = shape,
         colors = CardDefaults.cardColors(
-            containerColor = if (isHighlighted)
-                MaterialTheme.colorScheme.secondaryContainer
-            else
-                MaterialTheme.colorScheme.surfaceContainerHigh,
-            contentColor = if (isHighlighted)
-                MaterialTheme.colorScheme.onSecondaryContainer
-            else
-                MaterialTheme.colorScheme.onSurface
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            contentColor = MaterialTheme.colorScheme.onSurface
         )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            UserAvatarSmall(fromUser)
+            UserAvatarSmall(if (isUserOwing) toUser else fromUser)
             Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 4.dp)
+                modifier = Modifier.weight(1f)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = if (debt.fromUserId == currentUserId) stringResource(Res.string.you) else fromUser?.name
-                            ?: "?",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = if (debt.fromUserId == currentUserId) FontWeight.SemiBold else FontWeight.Normal,
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                Text(
+                    text = when {
+                        isUserOwing -> stringResource(Res.string.you_owe_to, toUser?.name ?: "?")
+                        isUserOwed -> stringResource(Res.string.owes_you, fromUser?.name ?: "?")
+                        else -> stringResource(Res.string.owes_to, fromUser?.name ?: "?", toUser?.name ?: "?")
+                    },
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = MaterialTheme.colorScheme.onSurface
                     )
-
-                    Icon(
-                        imageVector = FontAwesomeIcons.Solid.ArrowRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(12.dp)
-                    )
-
-                    Text(
-                        text = if (debt.toUserId == currentUserId) stringResource(Res.string.you) else toUser?.name ?: "?",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = if (debt.toUserId == currentUserId) FontWeight.SemiBold else FontWeight.Normal,
-                            textAlign = TextAlign.End
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-
-                if (showEvent)
-                    Text(
-                        text = debt.eventName,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 2.dp)
-                    )
+                )
             }
-            UserAvatarSmall(toUser)
             Text(
                 text = formatCurrency(debt.amount, "es-MX"),
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Normal,
-                    color = if (debt.fromUserId == currentUserId)
-                        MaterialTheme.colorScheme.error
-                    else
-                        MaterialTheme.colorScheme.primary
-                ),
-                modifier = Modifier.padding(horizontal = 4.dp)
+                    color = when {
+                        isUserOwed -> MaterialTheme.colorScheme.primary
+                        isUserOwing -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.onSurface
+                    }
+                )
             )
             Box {
                 IconButton(
@@ -434,12 +353,11 @@ private fun DebtListItem(
                 ) {
                     Icon(
                         imageVector = FontAwesomeIcons.Solid.EllipsisV,
-                        contentDescription = "Opciones",
+                        contentDescription = stringResource(Res.string.options),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(16.dp)
                     )
                 }
-
                 DropdownMenu(
                     expanded = showMenu,
                     onDismissRequest = { showMenu = false }
@@ -464,7 +382,7 @@ private fun DebtListItem(
                             showMenu = false
                         }
                     )
-                    if (showEvent)
+                    if (showEvent) {
                         DropdownMenuItem(
                             text = {
                                 Row(
@@ -485,6 +403,7 @@ private fun DebtListItem(
                                 showMenu = false
                             }
                         )
+                    }
                 }
             }
         }
