@@ -84,8 +84,8 @@ class UserRepositoryImpl(
 
         val userData = User(
             user.uid,
-            providerData.email ?: user.email.orEmpty(),
-            providerData.email?.split("@")?.get(0) ?: user.displayName.orEmpty(),
+            user.email ?: providerData.email.orEmpty(),
+            user.displayName ?: providerData.email?.split("@")?.get(0).orEmpty(),
             (providerData.photoURL ?: "").toString()
         )
         userRef.setValue(userData)
@@ -125,19 +125,19 @@ class UserRepositoryImpl(
     override suspend fun saveProfilePhoto(photo: File): String {
         val startTime = Clock.System.now().toEpochMilliseconds()
         val userId = getFirebaseUser()?.uid ?: throw Exception("User not signed in")
-        
+
         val photoRef = storage.reference("userPictures/$userId.jpg")
         photoRef.putFile(photo)
-        
+
         val downloadUrl = photoRef.getDownloadUrl()
-        
+
         val userRef = database.reference("users/$userId")
         userRef.child("photoUrl").setValue(downloadUrl)
         val executionTime = Clock.System.now().toEpochMilliseconds() - startTime
         logMessage("UserRepository", "saveProfilePhoto: $downloadUrl - executed in ${executionTime}ms")
         return downloadUrl
     }
-    
+
     override suspend fun getProfilePhoto(userId: String): String {
         val startTime = Clock.System.now().toEpochMilliseconds()
         val storageRef = storage.reference("userPictures/$userId.jpg")
@@ -163,7 +163,7 @@ class UserRepositoryImpl(
         val user = getFirebaseUser() ?: return@coroutineScope expenses
         val userRef = database.reference("users/${user.uid}/expenses")
         val snapshot = userRef.valueEvents.firstOrNull()
-        
+
         // Paralelizar el procesamiento de los gastos
         val children = snapshot?.children?.toList() ?: emptyList()
         val deferredResults = children.map { childSnapshot ->
@@ -171,12 +171,12 @@ class UserRepositoryImpl(
                 childSnapshot.value<Expense>()
             }
         }
-        
+
         val results = deferredResults.awaitAll()
         results.forEach { expense ->
             expenses[expense.id] = expense
         }
-        
+
         val executionTime = Clock.System.now().toEpochMilliseconds() - startTime
         logMessage("UserRepository", "getExpenses: ${expenses.size} - executed in ${executionTime}ms")
         expenses
@@ -194,29 +194,29 @@ class UserRepositoryImpl(
     }
 
     override suspend fun getExpensePayments(expenseId: String): Map<String, Payment> = coroutineScope {
-        val startTime = Clock.System.now().toEpochMilliseconds()
-        val payments = mutableMapOf<String, Payment>()
-        val user = getFirebaseUser() ?: return@coroutineScope payments
-        val userRef = database.reference("users/${user.uid}/expenses/$expenseId/payments")
-        val snapshot = userRef.valueEvents.firstOrNull()
-        
-        // Paralelizar el procesamiento de los pagos
-        val children = snapshot?.children?.toList() ?: emptyList()
-        val deferredResults = children.map { childSnapshot ->
-            async {
-                childSnapshot.value<Payment>()
+            val startTime = Clock.System.now().toEpochMilliseconds()
+            val payments = mutableMapOf<String, Payment>()
+            val user = getFirebaseUser() ?: return@coroutineScope payments
+            val userRef = database.reference("users/${user.uid}/expenses/$expenseId/payments")
+            val snapshot = userRef.valueEvents.firstOrNull()
+
+            // Paralelizar el procesamiento de los pagos
+            val children = snapshot?.children?.toList() ?: emptyList()
+            val deferredResults = children.map { childSnapshot ->
+                async {
+                    childSnapshot.value<Payment>()
+                }
             }
+
+            val results = deferredResults.awaitAll()
+            results.forEach { payment ->
+                payments[payment.id] = payment
+            }
+
+            val executionTime = Clock.System.now().toEpochMilliseconds() - startTime
+            logMessage("UserRepository", "getExpensePayments: ${payments.size} - executed in ${executionTime}ms")
+            payments
         }
-        
-        val results = deferredResults.awaitAll()
-        results.forEach { payment ->
-            payments[payment.id] = payment
-        }
-        
-        val executionTime = Clock.System.now().toEpochMilliseconds() - startTime
-        logMessage("UserRepository", "getExpensePayments: ${payments.size} - executed in ${executionTime}ms")
-        payments
-    }
 
     override suspend fun saveExpensePayment(payment: Payment, expenseId: String, expensePaid: Boolean): Payment = coroutineScope {
         val startTime = Clock.System.now().toEpochMilliseconds()
@@ -235,10 +235,10 @@ class UserRepositoryImpl(
 
         val savedPayment = payment.copy(id = id)
         val paymentsRef = database.reference("users/${user.uid}/expenses/$expenseId/payments")
-        
+
         // Ejecutar operaciones en paralelo
         val amountPaid = amountPaidDeferred.await()
-        
+
         val updateAmountDeferred = async { amountPaidRef.setValue(amountPaid) }
         val savePaymentDeferred = async { paymentsRef.child(id).setValue(savedPayment) }
         val updatePaidDeferred = async {
@@ -246,7 +246,7 @@ class UserRepositoryImpl(
                 database.reference("users/${user.uid}/expenses/$expenseId/paid").setValue(true)
             }
         }
-        
+
         // Esperar a que todas las operaciones terminen
         updateAmountDeferred.await()
         savePaymentDeferred.await()
@@ -273,7 +273,7 @@ class UserRepositoryImpl(
                 amountPaidRef.valueEvents.firstOrNull()?.value<Long>()?.minus(amount)
             }
         }
-        
+
         val paidStatusDeferred = async {
             paidRef.valueEvents.firstOrNull()?.value<Boolean>()
         }
@@ -328,14 +328,14 @@ class UserRepositoryImpl(
         val startTime = Clock.System.now().toEpochMilliseconds()
         return try {
             val userId = getFirebaseUser()?.uid ?: throw Exception("User not signed in")
-            
+
             // Actualizar en Firebase Auth
             getFirebaseUser()?.updateProfile(displayName = newName)
-            
+
             // Actualizar en Firebase Database
             val userRef = database.reference("users/$userId")
             userRef.child("name").setValue(newName)
-            
+
             val executionTime = Clock.System.now().toEpochMilliseconds() - startTime
             logMessage("UserRepository", "updateUserName: $newName - executed in ${executionTime}ms")
             true

@@ -228,7 +228,7 @@ class EventPropertiesScreen(
                                 itemContent = {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.fillMaxWidth()
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                                     ) {
                                         Icon(
                                             getCategoryIcon(eventState.category),
@@ -238,7 +238,7 @@ class EventPropertiesScreen(
                                         )
                                         Spacer(modifier = Modifier.width(12.dp))
                                         Text(
-                                            text = eventState.category.name,
+                                            text = eventState.category.getCategoryName(),
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.onSurface
                                         )
@@ -310,7 +310,7 @@ class EventPropertiesScreen(
                     itemContent = { category, isSelected ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                         ) {
                             Icon(
                                 getCategoryIcon(category),
@@ -320,7 +320,7 @@ class EventPropertiesScreen(
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                text = category.name,
+                                text = category.getCategoryName(),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
                             )

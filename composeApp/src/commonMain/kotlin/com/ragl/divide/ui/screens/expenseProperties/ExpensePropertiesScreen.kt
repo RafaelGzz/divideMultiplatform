@@ -210,7 +210,7 @@ class ExpensePropertiesScreen(
                     itemContent = { category, isSelected ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                         ) {
                             Icon(
                                 getCategoryIcon(category),
@@ -220,7 +220,7 @@ class ExpensePropertiesScreen(
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                text = category.name,
+                                text = category.getCategoryName(),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
                             )
@@ -321,7 +321,7 @@ class ExpensePropertiesScreen(
                                     itemContent = {
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier.fillMaxWidth()
+                                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                                         ) {
                                             Icon(
                                                 getCategoryIcon(vm.category),
@@ -331,7 +331,7 @@ class ExpensePropertiesScreen(
                                             )
                                             Spacer(modifier = Modifier.width(12.dp))
                                             Text(
-                                                text = vm.category.name,
+                                                text = vm.category.getCategoryName(),
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 color = MaterialTheme.colorScheme.onSurface
                                             )
@@ -464,7 +464,7 @@ class ExpensePropertiesScreen(
                 itemContent = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                     ) {
                         Icon(
                             getCategoryIcon(vm.category),
@@ -474,7 +474,7 @@ class ExpensePropertiesScreen(
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = vm.category.name,
+                            text = vm.category.getCategoryName(),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )

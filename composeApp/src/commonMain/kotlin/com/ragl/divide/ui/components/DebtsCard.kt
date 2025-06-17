@@ -1,8 +1,10 @@
 package com.ragl.divide.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -32,6 +34,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -112,7 +115,9 @@ fun CollapsedDebtsCard(
             ) {
                 Column {
                     Text(
-                        text = if (isGroup) stringResource(Res.string.event_summary) else stringResource(Res.string.debts_summary),
+                        text = if (isGroup) stringResource(Res.string.event_summary) else stringResource(
+                            Res.string.debts_summary
+                        ),
                         style = MaterialTheme.typography.titleSmall.copy(
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -121,8 +126,16 @@ fun CollapsedDebtsCard(
                     if (!isGroup)
                         Text(
                             text = when {
-                                balance > 0.01 -> stringResource(Res.string.youre_owed, formatCurrency(balance, "es-MX"))
-                                balance < -0.01 -> stringResource(Res.string.you_owe, formatCurrency(-balance, "es-MX"))
+                                balance > 0.01 -> stringResource(
+                                    Res.string.youre_owed,
+                                    formatCurrency(balance, "es-MX")
+                                )
+
+                                balance < -0.01 -> stringResource(
+                                    Res.string.you_owe,
+                                    formatCurrency(-balance, "es-MX")
+                                )
+
                                 else -> stringResource(Res.string.up_to_date)
                             },
                             style = MaterialTheme.typography.bodyMedium.copy(
@@ -180,6 +193,12 @@ fun ExpandedDebtsCard(
     modifier: Modifier = Modifier
 ) {
     val size = getWindowWidthSizeClass()
+    var showOtherDebts by remember { mutableStateOf(false) }
+
+    // Separar deudas del usuario y otras deudas
+    val userDebts = debts.filter { it.fromUserId == currentUserId || it.toUserId == currentUserId }
+    val otherDebts = debts.filter { it.fromUserId != currentUserId && it.toUserId != currentUserId }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -219,19 +238,54 @@ fun ExpandedDebtsCard(
                 ),
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier
+                        .padding(16.dp)
                 ) {
                     Text(
-                        text = if (isGroup) stringResource(Res.string.event_summary) else stringResource(Res.string.debts_summary),
+                        text = if (isGroup) stringResource(Res.string.event_summary) else stringResource(
+                            Res.string.debts_summary
+                        ),
                         style = MaterialTheme.typography.titleLarge.copy(
                             color = MaterialTheme.colorScheme.onSurface,
                         ),
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    LazyColumn {
-                        if (debts.isNotEmpty()) {
-                            val debtsByEvent = debts.groupBy { it.eventName }
-                            debtsByEvent.forEach { (eventName, eventDebts) ->
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .animateContentSize(
+                                animationSpec = tween(300)
+                            )
+                    ) {
+                        // Agrupar todas las deudas por evento
+                        val allDebtsByEvent = debts.groupBy { it.eventName }
+
+                        // Separar eventos con deudas del usuario y eventos solo con otras deudas
+                        val eventsWithUserDebts = mutableMapOf<String, List<DebtInfo>>()
+                        val eventsWithOnlyOtherDebts = mutableMapOf<String, List<DebtInfo>>()
+
+                        allDebtsByEvent.forEach { (eventName, eventDebts) ->
+                            val eventUserDebts =
+                                eventDebts.filter { it.fromUserId == currentUserId || it.toUserId == currentUserId }
+                            val eventOtherDebts =
+                                eventDebts.filter { it.fromUserId != currentUserId && it.toUserId != currentUserId }
+
+                            if (eventUserDebts.isNotEmpty()) {
+                                eventsWithUserDebts[eventName] = eventDebts
+                            } else if (eventOtherDebts.isNotEmpty()) {
+                                eventsWithOnlyOtherDebts[eventName] = eventOtherDebts
+                            }
+                        }
+
+                        if (eventsWithUserDebts.isNotEmpty() || eventsWithOnlyOtherDebts.isNotEmpty()) {
+                            // Mostrar eventos con deudas del usuario
+                            eventsWithUserDebts.forEach { (eventName, eventDebts) ->
+                                val eventUserDebts =
+                                    eventDebts.filter { it.fromUserId == currentUserId || it.toUserId == currentUserId }
+                                val eventOtherDebts =
+                                    eventDebts.filter { it.fromUserId != currentUserId && it.toUserId != currentUserId }
+
+                                // Título del evento
                                 item {
                                     Text(
                                         text = eventName,
@@ -241,8 +295,9 @@ fun ExpandedDebtsCard(
                                         modifier = Modifier.padding(vertical = 8.dp)
                                     )
                                 }
-                                val sortedDebts = eventDebts.sortedByDescending { it.fromUserId == currentUserId || it.toUserId == currentUserId }
-                                itemsIndexed(sortedDebts) { index, debt ->
+
+                                // Deudas del usuario para este evento
+                                itemsIndexed(eventUserDebts) { index, debt ->
                                     EventDebtItem(
                                         debt = debt,
                                         users = users,
@@ -250,14 +305,151 @@ fun ExpandedDebtsCard(
                                         showEvent = isGroup,
                                         onPayDebtClicked = onPayDebtClicked,
                                         onGoToEventClicked = onGoToEventClicked,
-                                        isLast = index == sortedDebts.lastIndex,
+                                        isLast = index == eventUserDebts.lastIndex,
                                         isFirst = index == 0,
-                                        isSingle = sortedDebts.size == 1,
+                                        isSingle = eventUserDebts.size == 1,
                                         modifier = Modifier.padding(bottom = 2.dp)
                                     )
                                 }
+
+                                // Botón para ver otras deudas de este evento (solo si hay deudas del usuario)
+                                if (eventOtherDebts.isNotEmpty()) {
+                                    item {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            TextButton(
+                                                onClick = {
+                                                    showOtherDebts = !showOtherDebts
+                                                }
+                                            ) {
+                                                Text(
+                                                    text = if (showOtherDebts)
+                                                        "Ocultar"
+                                                    else
+                                                        "Ver más deudas (${eventOtherDebts.size})",
+                                                    style = MaterialTheme.typography.bodySmall
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    // Otras deudas con animación
+                                    itemsIndexed(eventOtherDebts) { index, debt ->
+                                        AnimatedVisibility(
+                                            visible = showOtherDebts,
+                                        ) {
+                                            EventDebtItem(
+                                                debt = debt,
+                                                users = users,
+                                                currentUserId = currentUserId,
+                                                showEvent = isGroup,
+                                                onPayDebtClicked = onPayDebtClicked,
+                                                onGoToEventClicked = onGoToEventClicked,
+                                                isLast = index == eventOtherDebts.lastIndex,
+                                                isFirst = index == 0,
+                                                isSingle = eventOtherDebts.size == 1,
+                                                modifier = Modifier.padding(bottom = 2.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                                                                                        // Label "Estás al día" y botón para ver otros eventos (solo con deudas de otros usuarios)
+                            if (eventsWithOnlyOtherDebts.isNotEmpty()) {
+                                val totalOtherDebts = eventsWithOnlyOtherDebts.values.flatten().size
+                                
+                                // Mostrar "Estás al día" solo si no hay deudas del usuario
+                                if (eventsWithUserDebts.isEmpty()) {
+                                    item {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 16.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = stringResource(Res.string.up_to_date),
+                                                style = MaterialTheme.typography.bodyLarge.copy(
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                ),
+                                                textAlign = TextAlign.Center
+                                            )
+                                        }
+                                    }
+                                }
+                                
+                                item {
+                                    Card(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = if (eventsWithUserDebts.isNotEmpty()) 16.dp else 0.dp)
+                                            .clickable { 
+                                                showOtherDebts = !showOtherDebts 
+                                            },
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                                        ),
+                                        shape = RoundedCornerShape(16.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center
+                                        ) {
+                                            Text(
+                                                text = if (showOtherDebts) 
+                                                    "Ocultar" 
+                                                else 
+                                                    "Ver otras deudas (${totalOtherDebts})",
+                                                style = MaterialTheme.typography.bodyMedium.copy(
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // Mostrar eventos con solo otras deudas
+                                eventsWithOnlyOtherDebts.forEach { (eventName, eventDebts) ->
+                                    item {
+                                        AnimatedVisibility(
+                                            visible = showOtherDebts,
+                                        ) {
+                                            Column {
+                                                Text(
+                                                    text = eventName,
+                                                    style = MaterialTheme.typography.titleSmall.copy(
+                                                        color = MaterialTheme.colorScheme.onSurface,
+                                                    ),
+                                                    modifier = Modifier.padding(vertical = 8.dp)
+                                                )
+                                                eventDebts.forEachIndexed { index, debt ->
+                                                    EventDebtItem(
+                                                        debt = debt,
+                                                        users = users,
+                                                        currentUserId = currentUserId,
+                                                        showEvent = isGroup,
+                                                        onPayDebtClicked = onPayDebtClicked,
+                                                        onGoToEventClicked = onGoToEventClicked,
+                                                        isLast = index == eventDebts.lastIndex,
+                                                        isFirst = index == 0,
+                                                        isSingle = eventDebts.size == 1,
+                                                        modifier = Modifier.padding(bottom = 2.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         } else {
+                            // Solo mostrar "no debts" si no hay deudas
                             item {
                                 Box(
                                     modifier = Modifier.fillMaxWidth().padding(32.dp),
@@ -301,8 +493,20 @@ private fun EventDebtItem(
 
     val shape = when {
         isSingle -> RoundedCornerShape(16.dp)
-        isFirst -> RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomEnd = 2.dp, bottomStart = 2.dp)
-        isLast -> RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp, bottomEnd = 16.dp, bottomStart = 16.dp)
+        isFirst -> RoundedCornerShape(
+            topStart = 16.dp,
+            topEnd = 16.dp,
+            bottomEnd = 2.dp,
+            bottomStart = 2.dp
+        )
+
+        isLast -> RoundedCornerShape(
+            topStart = 2.dp,
+            topEnd = 2.dp,
+            bottomEnd = 16.dp,
+            bottomStart = 16.dp
+        )
+
         else -> RoundedCornerShape(2.dp)
     }
 
@@ -329,7 +533,11 @@ private fun EventDebtItem(
                     text = when {
                         isUserOwing -> stringResource(Res.string.you_owe_to, toUser?.name ?: "?")
                         isUserOwed -> stringResource(Res.string.owes_you, fromUser?.name ?: "?")
-                        else -> stringResource(Res.string.owes_to, fromUser?.name ?: "?", toUser?.name ?: "?")
+                        else -> stringResource(
+                            Res.string.owes_to,
+                            fromUser?.name ?: "?",
+                            toUser?.name ?: "?"
+                        )
                     },
                     style = MaterialTheme.typography.bodyMedium.copy(
                         color = MaterialTheme.colorScheme.onSurface

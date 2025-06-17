@@ -7,8 +7,8 @@ import com.ragl.divide.data.repositories.GroupRepositoryImpl
 import com.ragl.divide.data.repositories.PreferencesRepository
 import com.ragl.divide.data.repositories.UserRepository
 import com.ragl.divide.data.repositories.UserRepositoryImpl
+import com.ragl.divide.data.services.AnalyticsService
 import com.ragl.divide.data.services.GroupExpenseService
-import com.ragl.divide.data.services.ScheduleNotificationService
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.addFriends.AddFriendsViewModel
 import com.ragl.divide.ui.screens.event.EventViewModel
@@ -24,8 +24,12 @@ import com.ragl.divide.ui.screens.groupProperties.GroupPropertiesViewModel
 import com.ragl.divide.ui.screens.signIn.LogInViewModel
 import com.ragl.divide.ui.screens.signIn.SignUpViewModel
 import dev.gitlive.firebase.Firebase
+import dev.gitlive.firebase.analytics.FirebaseAnalytics
+import dev.gitlive.firebase.analytics.analytics
 import dev.gitlive.firebase.auth.FirebaseAuth
 import dev.gitlive.firebase.auth.auth
+import dev.gitlive.firebase.crashlytics.FirebaseCrashlytics
+import dev.gitlive.firebase.crashlytics.crashlytics
 import dev.gitlive.firebase.database.FirebaseDatabase
 import dev.gitlive.firebase.database.database
 import dev.gitlive.firebase.storage.FirebaseStorage
@@ -61,6 +65,7 @@ val sharedModule = module {
     factoryOf(::EventPropertiesViewModel)
 
     singleOf(::GroupExpenseService)
+    singleOf(::AnalyticsService)
 
     // FIREBASE DEPENDENCIES
     single {
@@ -74,4 +79,12 @@ val sharedModule = module {
     single {
         Firebase.database
     }.bind<FirebaseDatabase>()
+
+    single{
+        Firebase.crashlytics
+    }.bind<FirebaseCrashlytics>()
+
+    single{
+        Firebase.analytics
+    }.bind<FirebaseAnalytics>()
 }

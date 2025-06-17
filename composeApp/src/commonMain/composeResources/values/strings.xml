@@ -269,4 +269,18 @@
     <!-- Reminders -->
     <string name="reminders">Reminders</string>
     <string name="save">Save</string>
+    
+    <!-- Categories -->
+    <string name="category_general">General</string>
+    <string name="category_electronics">Electronics</string>
+    <string name="category_food">Food</string>
+    <string name="category_transport">Transport</string>
+    <string name="category_housing">Housing</string>
+    <string name="category_entertainment">Entertainment</string>
+    <string name="category_health">Health</string>
+    <string name="category_education">Education</string>
+    <string name="category_clothing">Clothing</string>
+    <string name="category_travel">Travel</string>
+    <string name="category_utilities">Utilities</string>
+    <string name="category_gifts">Gifts</string>
 </resources>

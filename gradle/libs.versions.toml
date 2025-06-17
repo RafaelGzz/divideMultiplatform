@@ -14,9 +14,7 @@ koinComposeMultiplatform = "4.0.0"
 materialIconsCore = "1.7.3"
 windowSizeClass = "1.7.3"
 gservices = "4.4.2"
-firebaseAuth = "2.1.0"
-firebaseDatabase = "2.1.0"
-firebaseStorage = "2.1.0"
+firebase = "2.1.0"
 datetime = "0.6.0"
 kmpauthGoogle = "2.4.0-alpha01"
 composeIcons = "1.1.1"
@@ -46,9 +44,11 @@ koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", ver
 material-icons-core = { module = "org.jetbrains.compose.material:material-icons-core", version.ref = "materialIconsCore" }
 composeIcons-fontAwesome = { module = "br.com.devsrsouza.compose.icons:font-awesome", version.ref = "composeIcons" }
 
-firebase-auth = { module = "dev.gitlive:firebase-auth", version.ref = "firebaseAuth" }
-firebase-database = { module = "dev.gitlive:firebase-database", version.ref = "firebaseDatabase" }
-firebase-storage = { module = "dev.gitlive:firebase-storage", version.ref = "firebaseStorage" }
+firebase-auth = { module = "dev.gitlive:firebase-auth", version.ref = "firebase" }
+firebase-database = { module = "dev.gitlive:firebase-database", version.ref = "firebase" }
+firebase-storage = { module = "dev.gitlive:firebase-storage", version.ref = "firebase" }
+firebase-analytics = { module = "dev.gitlive:firebase-analytics", version.ref = "firebase" }
+firebase-crashlytics = { module = "dev.gitlive:firebase-crashlytics", version.ref = "firebase" }
 
 kmpauth-firebase = { module = "io.github.mirzemehdi:kmpauth-firebase", version.ref = "kmpauthGoogle" }
 kmpauth-google = { module = "io.github.mirzemehdi:kmpauth-google", version.ref = "kmpauthGoogle" }

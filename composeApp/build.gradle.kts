@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.googleServices)
+    id("com.google.firebase.crashlytics")
 }
 
 kotlin {
@@ -56,6 +57,8 @@ kotlin {
             implementation(libs.firebase.auth)
             implementation(libs.firebase.database)
             implementation(libs.firebase.storage)
+            implementation(libs.firebase.analytics)
+            implementation(libs.firebase.crashlytics)
 
             implementation(libs.kotlinx.datetime)
             implementation(libs.kmpauth.google)
@@ -99,6 +102,13 @@ android {
     }
     buildTypes {
         getByName("release") {
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+        getByName("debug") {
             isMinifyEnabled = false
         }
     }
@@ -111,5 +121,7 @@ android {
 dependencies {
     implementation(libs.androidx.material3.android)
     debugImplementation(compose.uiTooling)
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
 }
 

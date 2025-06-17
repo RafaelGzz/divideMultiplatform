@@ -14,6 +14,7 @@ import com.ragl.divide.data.repositories.FriendsRepository
 import com.ragl.divide.data.repositories.GroupRepository
 import com.ragl.divide.data.repositories.PreferencesRepository
 import com.ragl.divide.data.repositories.UserRepository
+import com.ragl.divide.data.services.AnalyticsService
 import com.ragl.divide.data.services.GroupExpenseService
 import com.ragl.divide.data.services.ScheduleNotificationService
 import com.ragl.divide.ui.screens.groupProperties.PlatformImageUtils
@@ -47,7 +48,8 @@ class UserViewModel(
     private val groupRepository: GroupRepository,
     private val groupExpenseService: GroupExpenseService,
     private val scheduleNotificationService: ScheduleNotificationService,
-    private val strings: Strings
+    private val strings: Strings,
+    private val analyticsService: AnalyticsService
 ) : ScreenModel {
 
     private val _state = MutableStateFlow(AppState())
@@ -140,6 +142,7 @@ class UserViewModel(
             val startTime = Clock.System.now().toEpochMilliseconds()
             try {
                 val user = userRepository.getUser(userRepository.getFirebaseUser()!!.uid)
+                analyticsService.setUserProperties(user.uuid, user.name)
                 val userInfo = UserInfo(user.uuid, user.name, user.photoUrl)
 
                 logMessage("UserViewModel", "getFriends: ${user.friends.size}")
@@ -167,6 +170,7 @@ class UserViewModel(
                     )
                 }
             } catch (e: Exception) {
+                analyticsService.logError(e, "Error al obtener datos del usuario")
                 logMessage("UserViewModel", "getUserData: $e")
             } finally {
                 hideLoading()
@@ -188,12 +192,16 @@ class UserViewModel(
                 if (userRepository.signInWithEmailAndPassword(email, password) != null) {
                     if (userRepository.isEmailVerified()) {
                         getUserData()
+                        analyticsService.logEvent("login", mapOf(
+                            "method" to "email"
+                        ))
                         onSuccess()
                     } else {
                         onFail(strings.getEmailNotVerified())
                     }
                 } else onFail(strings.getFailedToLogin())
             } catch (e: Exception) {
+                analyticsService.logError(e, "Error en login con email")
                 onFail(handleAuthError(e))
                 logMessage("UserViewModel: signInWithEmailAndPassword", e.message.toString())
             } finally {
@@ -209,10 +217,15 @@ class UserViewModel(
             try {
                 showLoading()
                 if (userRepository.signUpWithEmailAndPassword(email, password, name) != null) {
+                    analyticsService.logEvent("sign_up", mapOf(
+                        "method" to "email",
+                        "email" to email
+                    ))
                     userRepository.signOut()
                     handleSuccess(strings.getVerificationEmailSent())
                 } else handleError(strings.getFailedToLogin())
             } catch (e: Exception) {
+                analyticsService.logError(e, "Error en registro con email")
                 handleError(handleAuthError(e))
                 logMessage("UserViewModel: signUpWithEmailAndPassword", e.message.toString())
             } finally {
@@ -232,12 +245,22 @@ class UserViewModel(
                 if (firebaseUser != null) {
                     val checkedUser = userRepository.getUser(firebaseUser.uid)
                     if (checkedUser.uuid.isEmpty()) {
-                        userRepository.createUserInDatabase()
+                        val newUser = userRepository.createUserInDatabase()
+                        analyticsService.logEvent("sign_up", mapOf(
+                            "method" to "google",
+                            "email" to newUser.email
+                        ))
+                    } else {
+                        analyticsService.logEvent("login", mapOf(
+                            "method" to "google",
+                            "email" to checkedUser.email
+                        ))
                     }
                     getUserData()
                     onSuccess()
                 } else {
                     handleError(strings.getFailedToLogin())
+                    analyticsService.logError(result.exceptionOrNull()!!, "Error en login con google")
                     logMessage(
                         "UserViewModel: signInWithGoogle",
                         "${result.exceptionOrNull()?.message}"
@@ -245,9 +268,8 @@ class UserViewModel(
                 }
 
             } catch (e: Exception) {
-                //handleError(Exception(strings.getFailedToLogin()))
+                analyticsService.logError(e, "Error en login con google")
                 logMessage("UserViewModel", "${e.message}")
-                //Log.e("UserViewModel", "signUpWithEmailAndPassword: ", e)
             } finally {
                 hideLoading()
             }

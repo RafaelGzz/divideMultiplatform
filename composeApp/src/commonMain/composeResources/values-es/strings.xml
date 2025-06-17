@@ -270,4 +270,18 @@
     <!-- Reminders -->
     <string name="reminders">Recordatorios</string>
     <string name="save">Guardar</string>
+    
+    <!-- Categories -->
+    <string name="category_general">General</string>
+    <string name="category_electronics">Electrónicos</string>
+    <string name="category_food">Comida</string>
+    <string name="category_transport">Transporte</string>
+    <string name="category_housing">Vivienda</string>
+    <string name="category_entertainment">Entretenimiento</string>
+    <string name="category_health">Salud</string>
+    <string name="category_education">Educación</string>
+    <string name="category_clothing">Ropa</string>
+    <string name="category_travel">Viajes</string>
+    <string name="category_utilities">Servicios</string>
+    <string name="category_gifts">Regalos</string>
 </resources>
