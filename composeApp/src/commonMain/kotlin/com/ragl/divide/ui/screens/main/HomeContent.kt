@@ -69,7 +69,6 @@ import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.getCategoryIcon
 import com.ragl.divide.ui.components.NetworkImage
 import com.ragl.divide.ui.components.NetworkImageType
-import com.ragl.divide.ui.utils.Header
 import com.ragl.divide.ui.utils.WindowWidthSizeClass
 import com.ragl.divide.ui.utils.formatCurrency
 import com.ragl.divide.ui.utils.formatDate
@@ -99,9 +98,7 @@ internal fun HomeContent(
     // Estados para controlar las animaciones escalonadas
     var showHeader by remember { mutableStateOf(true) }
     var showGroupsRow by remember { mutableStateOf(true) }
-    var showEmptyState by remember { mutableStateOf(true) }
-    var showUnpaidSection by remember { mutableStateOf(true) }
-    var showPaidButton by remember { mutableStateOf(true) }
+    var showExpensesColumn by remember { mutableStateOf(true) }
 
     // Animaciones con Modifier para mejor rendimiento
     val headerAlpha by animateFloatAsState(
@@ -126,37 +123,15 @@ internal fun HomeContent(
         label = "groupsRowOffsetY"
     )
 
-    val emptyStateAlpha by animateFloatAsState(
-        targetValue = if (showEmptyState) 1f else 0f,
+    val expensesColumnAlpha by animateFloatAsState(
+        targetValue = if (showExpensesColumn) 1f else 0f,
         animationSpec = tween(300),
-        label = "emptyStateAlpha"
+        label = "expensesColumnAlpha"
     )
-    val emptyStateOffsetY by animateIntAsState(
-        targetValue = if (showEmptyState) 0 else -50,
+    val expensesColumnOffsetY by animateIntAsState(
+        targetValue = if (showExpensesColumn) 0 else -50,
         animationSpec = tween(300),
-        label = "emptyStateOffsetY"
-    )
-
-    val unpaidSectionAlpha by animateFloatAsState(
-        targetValue = if (showUnpaidSection) 1f else 0f,
-        animationSpec = tween(350),
-        label = "unpaidSectionAlpha"
-    )
-    val unpaidSectionOffsetY by animateIntAsState(
-        targetValue = if (showUnpaidSection) 0 else -100,
-        animationSpec = tween(350),
-        label = "unpaidSectionOffsetY"
-    )
-
-    val paidButtonAlpha by animateFloatAsState(
-        targetValue = if (showPaidButton) 1f else 0f,
-        animationSpec = tween(300),
-        label = "paidButtonAlpha"
-    )
-    val paidButtonOffsetY by animateIntAsState(
-        targetValue = if (showPaidButton) 0 else -50,
-        animationSpec = tween(300),
-        label = "paidButtonOffsetY"
+        label = "expensesColumnOffsetY"
     )
 
     // Efecto para iniciar las animaciones escalonadas
@@ -165,17 +140,7 @@ internal fun HomeContent(
         delay(50)
         showGroupsRow = true
         delay(80)
-        if (expenses.isEmpty()) {
-            showEmptyState = true
-        } else {
-            if (unpaid.isNotEmpty()) {
-                showUnpaidSection = true
-                delay(80)
-            }
-            if (paid.isNotEmpty()) {
-                showPaidButton = true
-            }
-        }
+        showExpensesColumn = true
     }
 
     Column {
@@ -187,41 +152,46 @@ internal fun HomeContent(
         )
         when (windowSizeClass) {
             WindowWidthSizeClass.Compact, WindowWidthSizeClass.Medium -> {
-                // Compact: GroupsRow arriba, LazyColumn de gastos abajo
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     item {
                         Text(
                             text = stringResource(Res.string.your_groups),
                             style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                                .alpha(groupsRowAlpha)
+                                .offset(y = groupsRowOffsetY.dp)
                         )
                     }
                     item {
-                        if (groups.isEmpty()) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(80.dp)
-                                    .alpha(emptyStateAlpha)
-                                    .offset(y = emptyStateOffsetY.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = stringResource(Res.string.you_have_no_groups),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    textAlign = TextAlign.Center,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        Box(
+                            Modifier
+                                .alpha(groupsRowAlpha)
+                                .offset(y = groupsRowOffsetY.dp),
+                        ) {
+                            if (groups.isEmpty()) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(80.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = stringResource(Res.string.you_have_no_groups),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        textAlign = TextAlign.Center,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                    )
+                                }
+                            } else {
+                                GroupsRow(
+                                    groups = groups,
+                                    onGroupClick = onGroupClick,
+                                    modifier = Modifier
+                                        .padding(vertical = 8.dp)
                                 )
                             }
-                        } else {
-                            GroupsRow(
-                                groups = groups,
-                                onGroupClick = onGroupClick,
-                                modifier = Modifier
-                                    .alpha(groupsRowAlpha)
-                                    .offset(y = groupsRowOffsetY.dp)
-                                    .padding(vertical = 8.dp)
-                            )
                         }
                     }
                     item {
@@ -230,6 +200,8 @@ internal fun HomeContent(
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                                 .padding(top = 12.dp, bottom = 4.dp)
+                                .alpha(expensesColumnAlpha)
+                                .offset(y = expensesColumnOffsetY.dp)
                         )
                     }
                     if (expenses.isEmpty()) {
@@ -238,8 +210,8 @@ internal fun HomeContent(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 24.dp)
-                                    .alpha(emptyStateAlpha)
-                                    .offset(y = emptyStateOffsetY.dp),
+                                    .alpha(expensesColumnAlpha)
+                                    .offset(y = expensesColumnOffsetY.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
@@ -282,6 +254,8 @@ internal fun HomeContent(
                                         .clickable {
                                             onExpenseClick(expense.id)
                                         }
+                                        .alpha(expensesColumnAlpha)
+                                        .offset(y = expensesColumnOffsetY.dp),
                                 )
                             }
                         } else {
@@ -290,8 +264,8 @@ internal fun HomeContent(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 24.dp)
-                                        .alpha(emptyStateAlpha)
-                                        .offset(y = emptyStateOffsetY.dp),
+                                        .alpha(expensesColumnAlpha)
+                                        .offset(y = expensesColumnOffsetY.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
@@ -309,8 +283,8 @@ internal fun HomeContent(
                                     horizontalArrangement = Arrangement.Center,
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .alpha(paidButtonAlpha)
-                                        .offset(y = paidButtonOffsetY.dp)
+                                        .alpha(expensesColumnAlpha)
+                                        .offset(y = expensesColumnOffsetY.dp)
                                 ) {
                                     TextButton(
                                         onClick = { showPaidExpenses = !showPaidExpenses },
@@ -396,6 +370,8 @@ internal fun HomeContent(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
+                            .alpha(groupsRowAlpha)
+                            .offset(y = groupsRowOffsetY.dp)
                     ) {
                         item {
                             Text(
@@ -411,9 +387,7 @@ internal fun HomeContent(
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(80.dp)
-                                        .alpha(emptyStateAlpha)
-                                        .offset(y = emptyStateOffsetY.dp),
+                                        .height(80.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
@@ -463,9 +437,7 @@ internal fun HomeContent(
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .height(80.dp)
-                                            .alpha(emptyStateAlpha)
-                                            .offset(y = emptyStateOffsetY.dp),
+                                            .height(80.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
@@ -485,8 +457,6 @@ internal fun HomeContent(
                                         horizontalArrangement = Arrangement.Center,
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .alpha(paidButtonAlpha)
-                                            .offset(y = paidButtonOffsetY.dp)
                                     ) {
                                         TextButton(
                                             onClick = { showPaidExpenses = !showPaidExpenses },
@@ -588,9 +558,7 @@ internal fun HomeContent(
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(80.dp)
-                                        .alpha(emptyStateAlpha)
-                                        .offset(y = emptyStateOffsetY.dp),
+                                        .height(80.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
@@ -684,7 +652,7 @@ private fun ExpenseCard(
                     Text(
                         text = formatCurrency(remainingBalance, "es-MX"),
                         style = MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.tertiary,
+                            color = MaterialTheme.colorScheme.primary,
                         )
                     )
                     Spacer(modifier = Modifier.height(4.dp))
@@ -699,7 +667,7 @@ private fun ExpenseCard(
                     Text(
                         text = formatCurrency(expense.amount, "es-MX"),
                         style = MaterialTheme.typography.bodyMedium.copy(
-                            color = if (paid) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.tertiary,
+                            color = if (paid) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
                         )
                     )
             }

@@ -57,7 +57,7 @@ import com.mmk.kmpauth.firebase.google.GoogleButtonUiContainerFirebase
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.main.MainScreen
 import com.ragl.divide.ui.theme.DivideTheme
-import com.ragl.divide.ui.utils.DivideTextField
+import com.ragl.divide.ui.components.DivideTextField
 import com.ragl.divide.ui.utils.Strings
 import com.ragl.divide.ui.utils.WindowWidthSizeClass
 import com.ragl.divide.ui.utils.getWindowWidthSizeClass

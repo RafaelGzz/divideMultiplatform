@@ -11,7 +11,7 @@ data class GroupEvent(
     val category: Category = Category.GENERAL,
     val createdAt: Long = Clock.System.now().toEpochMilliseconds(),
     val expenses: Map<String, GroupExpense> = emptyMap(),
-    val payments: Map<String, Payment> = emptyMap(),
+    val payments: Map<String, GroupPayment> = emptyMap(),
     val settled: Boolean = false,
     val currentDebts: Map<String, Map<String, Double>> = emptyMap(),
 )

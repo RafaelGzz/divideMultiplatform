@@ -4,13 +4,13 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 
 class NotificationPermissionActivity : ComponentActivity() {
     
@@ -25,7 +25,7 @@ class NotificationPermissionActivity : ComponentActivity() {
         
         fun clearPermissionRejectedFlag(context: Context) {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            prefs.edit().remove(KEY_PERMISSION_REJECTED).apply()
+            prefs.edit { remove(KEY_PERMISSION_REJECTED) }
         }
     }
     
@@ -79,7 +79,7 @@ class NotificationPermissionActivity : ComponentActivity() {
     
     private fun savePermissionRejectedFlag() {
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putBoolean(KEY_PERMISSION_REJECTED, true).apply()
+        prefs.edit { putBoolean(KEY_PERMISSION_REJECTED, true) }
     }
     
     private fun openNotificationSettings() {

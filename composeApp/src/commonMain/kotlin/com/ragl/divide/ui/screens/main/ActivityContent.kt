@@ -23,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import com.ragl.divide.data.models.Expense
-import com.ragl.divide.ui.utils.Header
 import com.ragl.divide.ui.utils.WindowWidthSizeClass
 import com.ragl.divide.ui.utils.formatDate
 import com.ragl.divide.ui.utils.getWindowWidthSizeClass

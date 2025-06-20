@@ -72,8 +72,8 @@ import com.ragl.divide.ui.components.ExpandedDropdownCard
 import com.ragl.divide.ui.components.NetworkImage
 import com.ragl.divide.ui.components.NetworkImageType
 import com.ragl.divide.ui.screens.UserViewModel
-import com.ragl.divide.ui.utils.DivideTextField
-import com.ragl.divide.ui.utils.FriendItem
+import com.ragl.divide.ui.components.DivideTextField
+import com.ragl.divide.ui.components.FriendItem
 import com.ragl.divide.ui.utils.Strings
 import com.ragl.divide.ui.utils.formatCurrency
 import com.ragl.divide.ui.utils.toTwoDecimals
@@ -91,6 +91,7 @@ import dividemultiplatform.composeapp.generated.resources.currency_es_mx
 import dividemultiplatform.composeapp.generated.resources.dollar_sign
 import dividemultiplatform.composeapp.generated.resources.indicate_percentages
 import dividemultiplatform.composeapp.generated.resources.indicate_quantities
+import dividemultiplatform.composeapp.generated.resources.next
 import dividemultiplatform.composeapp.generated.resources.one_person
 import dividemultiplatform.composeapp.generated.resources.paid_by
 import dividemultiplatform.composeapp.generated.resources.percent_sign
@@ -396,7 +397,6 @@ class GroupExpensePropertiesScreen(
 
         LazyColumn {
             item {
-
                 Text(
                     text = "Paso ${currentStep + 1} de 3",
                     style = MaterialTheme.typography.labelMedium,
@@ -450,11 +450,12 @@ class GroupExpensePropertiesScreen(
 
                                 Button(
                                     onClick = onNextStep,
+                                    shape = ShapeDefaults.Medium,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(bottom = 16.dp)
                                 ) {
-                                    Text("Siguiente")
+                                    Text(stringResource(Res.string.next))
                                     Icon(
                                         Icons.AutoMirrored.Filled.ArrowForward,
                                         contentDescription = null,
@@ -532,11 +533,12 @@ class GroupExpensePropertiesScreen(
 
                                 Button(
                                     onClick = onNextStep,
+                                    shape = ShapeDefaults.Medium,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(bottom = 16.dp)
                                 ) {
-                                    Text("Siguiente")
+                                    Text(stringResource(Res.string.next))
                                     Icon(
                                         Icons.AutoMirrored.Filled.ArrowForward,
                                         contentDescription = null,

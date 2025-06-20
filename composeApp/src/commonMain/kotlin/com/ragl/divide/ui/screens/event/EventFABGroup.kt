@@ -1,4 +1,4 @@
-package com.ragl.divide.ui.components
+package com.ragl.divide.ui.screens.event
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState

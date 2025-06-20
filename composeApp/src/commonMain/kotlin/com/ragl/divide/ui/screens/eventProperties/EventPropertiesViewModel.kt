@@ -12,6 +12,7 @@ import com.ragl.divide.ui.utils.Strings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class EventPropertiesViewModel(
@@ -23,7 +24,9 @@ class EventPropertiesViewModel(
     val event: StateFlow<GroupEvent> = _event.asStateFlow()
 
     var titleError by mutableStateOf<String?>(null)
-    val descriptionError by mutableStateOf<String?>(null)
+    var descriptionError by mutableStateOf<String?>(null)
+
+    val descriptionCharacterLimit = 100
 
     var canDeleteGroup by mutableStateOf(false)
     val isUpdate = MutableStateFlow(false)
@@ -63,14 +66,27 @@ class EventPropertiesViewModel(
         }
     }
 
+    fun validateDescription(): Boolean {
+        if (_event.value.description.trim().length > descriptionCharacterLimit) {
+            descriptionError = strings.getDescriptionTooLong()
+            return false
+        } else {
+            descriptionError = ""
+            return true
+        }
+    }
+
     fun saveEvent(
         groupId: String,
         onSuccess: (GroupEvent) -> Unit,
         onError: (String) -> Unit
     ) {
-        if (validateTitle()) {
+        if (validateTitle().and(validateDescription())) {
             try {
                 screenModelScope.launch {
+                    _event.update {
+                        it.copy(description = it.description.trim())
+                    }
                     val savedEvent = groupRepository.saveEvent(groupId, _event.value)
                     onSuccess(savedEvent)
                 }

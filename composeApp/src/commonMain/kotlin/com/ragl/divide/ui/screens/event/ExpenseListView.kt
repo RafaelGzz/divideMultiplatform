@@ -1,6 +1,5 @@
-package com.ragl.divide.ui.components
+package com.ragl.divide.ui.screens.event
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -27,15 +26,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
 import com.ragl.divide.data.models.GroupExpense
-import com.ragl.divide.data.models.Payment
+import com.ragl.divide.data.models.GroupPayment
 import com.ragl.divide.data.models.UserInfo
 import com.ragl.divide.data.models.getCategoryIcon
+import com.ragl.divide.ui.components.FriendItem
 import com.ragl.divide.ui.utils.formatCurrency
 import com.ragl.divide.ui.utils.formatDate
 import compose.icons.FontAwesomeIcons
 import compose.icons.fontawesomeicons.Solid
 import compose.icons.fontawesomeicons.solid.DollarSign
 import dividemultiplatform.composeapp.generated.resources.Res
+import dividemultiplatform.composeapp.generated.resources.by
 import dividemultiplatform.composeapp.generated.resources.paid_by
 import dividemultiplatform.composeapp.generated.resources.x_paid_y
 import org.jetbrains.compose.resources.stringResource
@@ -53,7 +54,7 @@ fun LazyListScope.expenseListView(
                 formatDate(it.createdAt, "MMMM yyyy")
             }
 
-            is Payment -> {
+            is GroupPayment -> {
                 formatDate(it.createdAt, "MMMM yyyy")
             }
 
@@ -96,15 +97,67 @@ private fun MonthSection(
             expensesAndPayments.sortedByDescending {
                 when (it) {
                     is GroupExpense -> it.createdAt
-                    is Payment -> it.createdAt
+                    is GroupPayment -> it.createdAt
                     else -> null
                 }
             }.fastForEachIndexed { i, item ->
+                val formattedDate = formatDate(
+                    if (item is GroupExpense) item.createdAt else (item as GroupPayment).createdAt,
+                    "MMM dd"
+                )
 
-                GroupExpenseItem(
-                    item = item,
-                    getPaidByNames = getPaidByNames,
-                    members = members,
+                val payer = when (item) {
+                    is GroupExpense -> members.find { it.uuid == item.payers.keys.firstOrNull() }
+                    is GroupPayment -> members.find { it.uuid == item.from }
+                    else -> null
+                }
+
+                FriendItem(
+                    photoUrl = payer?.photoUrl ?: "",
+                    headline = when (item) {
+                        is GroupExpense -> item.title
+                        is GroupPayment -> stringResource(
+                            Res.string.x_paid_y,
+                            members.find { it.uuid == item.from }?.name ?: "",
+                            members.find { it.uuid == item.to }?.name ?: ""
+                        )
+
+                        else -> ""
+                    },
+                    trailingContent = {
+                        Text(
+                            text = formatCurrency(
+                                when (item) {
+                                    is GroupExpense -> item.amount
+                                    is GroupPayment -> item.amount
+                                    else -> 0.0
+                                }, "es-MX"
+                            ),
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.Normal
+                            ),
+                            softWrap = true,
+                            overflow = TextOverflow.Ellipsis,
+                            maxLines = 1
+                        )
+                    },
+                    supporting = formattedDate + when (item) {
+                        is GroupExpense -> " · " + stringResource(Res.string.by) + " " + getPaidByNames(
+                            item.payers.keys.toList()
+                        )
+                        is GroupPayment -> ""
+                        else -> ""
+                    },
+                    onClick = when (item) {
+                        is GroupExpense -> {
+                            { onExpenseClick(item.id) }
+                        }
+                        is GroupPayment -> {
+                            { onPaymentClick(item.id) }
+                        }
+                        else -> null
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(
@@ -128,13 +181,12 @@ private fun MonthSection(
                                 }
 
                         )
-                        .background(MaterialTheme.colorScheme.surfaceContainer)
                         .clickable {
                             when (item) {
                                 is GroupExpense -> onExpenseClick(item.id)
-                                is Payment -> onPaymentClick(item.id)
+                                is GroupPayment -> onPaymentClick(item.id)
                             }
-                        },
+                        }
                 )
             }
         }
@@ -149,11 +201,9 @@ private fun GroupExpenseItem(
     modifier: Modifier = Modifier,
 ) {
     val formattedDate = formatDate(
-        if (item is GroupExpense) item.createdAt else (item as Payment).createdAt,
+        if (item is GroupExpense) item.createdAt else (item as GroupPayment).createdAt,
         "MMM\ndd"
     )
-
-
 
     Row(
         modifier = modifier.padding(vertical = 16.dp),
@@ -202,7 +252,7 @@ private fun GroupExpenseItem(
                     )
                 }
 
-                is Payment -> {
+                is GroupPayment -> {
                     Text(
                         stringResource(
                             Res.string.x_paid_y,
@@ -230,15 +280,18 @@ private fun GroupExpenseItem(
                 text = formatCurrency(
                     when (item) {
                         is GroupExpense -> item.amount
-                        is Payment -> item.amount
+                        is GroupPayment -> item.amount
                         else -> 0.0
                     }, "es-MX"
-                ), style = MaterialTheme.typography.bodyMedium.copy(
+                ),
+                style = MaterialTheme.typography.bodyMedium.copy(
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Normal
-                ), softWrap = true, overflow = TextOverflow.Ellipsis, maxLines = 1
+                ),
+                softWrap = true,
+                overflow = TextOverflow.Ellipsis,
+                maxLines = 1
             )
-
         }
     }
 }

@@ -19,6 +19,7 @@
     <string name="discard">Descartar</string>
     <string name="unknown">Desconocido</string>
     <string name="or">o</string>
+    <string name="next">Siguiente</string>
 
     <!-- Authentication -->
     <string name="connect_with_social_media">Entra con Redes Sociales</string>
@@ -107,17 +108,18 @@
     <string name="notes">Notas</string>
     <string name="amount_must_be_greater_than_0">Cantidad debe ser mayor que 0</string>
     <string name="paid_by">Pagado por</string>
+    <string name="by">por</string>
     <string name="split_method">Método de división</string>
     <string name="equally">Partes iguales</string>
     <string name="percentages">Porcentajes</string>
     <string name="custom">Personalizado</string>
-    <string name="select_who_pays">Selecciona quienes deben pagar:</string>
-    <string name="indicate_percentages">Indica el porcentaje de cada miembro:</string>
-    <string name="indicate_quantities">Indica cuanto debe pagar cada miembro:</string>
+    <string name="select_who_pays">Selecciona quienes deben pagar</string>
+    <string name="indicate_percentages">Indica el porcentaje de cada miembro</string>
+    <string name="indicate_quantities">Indica cuanto debe pagar cada miembro</string>
     <string name="x_per_person">%1$s/persona</string>
     <string name="x_people">(%1$s personas)</string>
     <string name="one_person">(1 persona)</string>
-    <string name="remaining_x">Restante: %1$s</string>
+    <string name="remaining_x">Restante %1$s</string>
     <string name="x_of_y">%1$s de %2$s</string>
     <string name="x_exceeded">%1$s excedido</string>
     <string name="two_people_must_be_selected">Al menos dos personas debe ser seleccionadas</string>
@@ -125,17 +127,19 @@
     <string name="quantities_sum_must_be_amount">Suma de cantidades debe ser igual a %1$s</string>
     <string name="two_people_must_pay">Al menos dos personas deben pagar</string>
     <string name="delete_expense_confirm">¿Estás seguro de eliminar este gasto?</string>
+    <string name="total">Total</string>
 
     <!-- Expense Details -->
-    <string name="added_on">Añadido el %1$s</string>
+    <string name="expense">Gasto</string>
+    <string name="added_on">Añadido en %1$s</string>
     <string name="s_payments">%1$s pagos</string>
     <string name="movements">Movimientos</string>
     <string name="no_movements_yet">Sin movimientos</string>
     <string name="make_a_payment">Hacer un pago</string>
     <string name="paid">Pagado</string>
-    <string name="remaining_balance">Saldo restante: %1$s</string>
+    <string name="remaining_balance">Saldo restante %1$s</string>
     <string name="s_paid">%1$s pagado</string>
-    <string name="payment">%1$s (%2$s pago%3$s)</string>
+    <string name="payment">Pago</string>
     <string name="amount_must_be_less_than_remaining_balance">Cantidad debe ser menor que el saldo restante</string>
     <string name="select_payment_or_custom">Selecciona una opción de pago o ingresa una cantidad</string>
     <string name="congratulations">Felicidades</string>
@@ -145,12 +149,13 @@
     <string name="who_will_you_pay">¿A quién vas a pagar?</string>
     <string name="paid_x">pagó %1$s</string>
     <string name="owes_x">debe %1$s</string>
-    <string name="paid_by_text">Pagado por:</string>
-    <string name="debtors">Deudores:</string>
+    <string name="paid_by_text">Pagado por</string>
+    <string name="debtors">Deudores</string>
     <string name="pending">Pendiente</string>
     <string name="pending_expenses">Gastos pendientes</string>
     <string name="paid_expenses">Gastos pagados</string>
     <string name="x_paid_y">%1$s le pagó a %2$s</string>
+    <string name="split">Reparto</string>
 
     <!-- Groups -->
     <string name="add_group">Añadir Grupo</string>
@@ -159,7 +164,6 @@
     <string name="name">Nombre</string>
     <string name="group_expenses">Gastos grupales</string>
     <string name="group_no_expenses">No hay gastos</string>
-    <string name="total">Total</string>
     <string name="select_group_members">Selecciona miembros del grupo</string>
     <string name="group_members">Miembros del grupo</string>
     <string name="delete_group">Eliminar Grupo</string>
@@ -205,9 +209,11 @@
     <string name="reopen">Reabrir</string>
     <string name="active_events">%1$s eventos activos</string>
     <string name="delete_event_message">¿Quieres eliminar este evento?\nESTA ACCIÓN NO SE PUEDE DESHACER</string>
+    <string name="total_spent">Total gastado</string>
+    <string name="event">Evento</string>
 
     <!-- Debts Card -->
-    <string name="event_summary">Resumen de eventos</string>
+    <string name="event_summary">Resumen por evento</string>
     <string name="debts_summary">Resumen de deudas</string>
     <string name="youre_owed">Te deben %1$s</string>
     <string name="you_owe">Debes %1$s</string>
@@ -248,12 +254,12 @@
     <!-- Notifications -->
     <string name="reminder_permission_title">Permiso de recordatorios</string>
     <string name="reminder_permission_message">Para habilitar recordatorios en sus gastos, debe habilitar el permiso en su dispositivo. Seleccione Divide en la lista de aplicaciones y habilítelo.</string>
-    <string name="notification_title">Gasto: %1$s</string>
+    <string name="notification_title">Gasto %1$s</string>
     <string name="notification_body">Recuerda pagar!</string>
-    <string name="notification_warning_past_date">¡Aviso! La fecha estaba en el pasado, ajustando a 1 minuto en el futuro: %1$s</string>
-    <string name="notification_scheduling">Programando notificación %1$s para la fecha: %2$s (%3$s)</string>
-    <string name="notification_current_time">Hora actual: %1$s (%2$s)</string>
-    <string name="notification_difference_ms">Diferencia en milisegundos: %1$s</string>
+    <string name="notification_warning_past_date">¡Aviso! La fecha estaba en el pasado, ajustando a 1 minuto en el futuro %1$s</string>
+    <string name="notification_scheduling">Programando notificación %1$s para la fecha %2$s (%3$s)</string>
+    <string name="notification_current_time">Hora actual %1$s (%2$s)</string>
+    <string name="notification_difference_ms">Diferencia en milisegundos %1$s</string>
     <string name="notification_scheduled">Notificación %1$s programada para el %2$s</string>
     <string name="notification_failed">No se pudo programar la notificación %1$s (permiso denegado)</string>
     <string name="notification_canceled">Notificación %1$s cancelada</string>

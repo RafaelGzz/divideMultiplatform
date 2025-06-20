@@ -36,10 +36,6 @@ class ExpensePropertiesViewModel(
         private set
     var category by mutableStateOf(Category.GENERAL)
         private set
-//    var numberOfPayments by mutableStateOf("1")
-//        private set
-//    var paymentsError by mutableStateOf("")
-//        private set
     var notes by mutableStateOf("")
         private set
     var isRemindersEnabled by mutableStateOf(false)
@@ -62,7 +58,6 @@ class ExpensePropertiesViewModel(
         private set
 
     fun handleReminderPermissionCheck(checked: Boolean) {
-        updateIsRemindersEnabled(false)
         when (checked) {
             true -> {
                 val hasExactAlarmPermission = scheduleNotificationService.canScheduleExactAlarms()
@@ -72,8 +67,8 @@ class ExpensePropertiesViewModel(
                     updateIsRemindersEnabled(true)
                 } else {
                     if (!hasNotificationPermission &&
-                        scheduleNotificationService.wasNotificationPermissionRejectedPermanently()) {
-                        // Mostrar diálogo específico para permiso rechazado
+                        scheduleNotificationService.wasNotificationPermissionRejectedPermanently()
+                    ) {
                         notificationPermissionRejectedDialogEnabled = true
                     } else {
                         // Solicitar permisos faltantes automáticamente
@@ -81,11 +76,12 @@ class ExpensePropertiesViewModel(
                             scheduleNotificationService.requestNotificationPermission()
                         }
                         if (!hasExactAlarmPermission) {
-                            showNotificationPermissionRejectedDialog()
+                            reminderPermissionMessageDialogEnabled = true
                         }
                     }
                 }
             }
+
             false -> {
                 updateIsRemindersEnabled(false)
             }
@@ -190,7 +186,6 @@ class ExpensePropertiesViewModel(
                             amount = amount.toDouble(),
                             category = category,
                             reminders = isRemindersEnabled,
-                            //numberOfPayments = numberOfPayments.toInt(),
                             payments = payments,
                             notes = notes.trim(),
                             frequency = frequency,
@@ -214,7 +209,6 @@ class ExpensePropertiesViewModel(
                     onSuccess(savedExpense)
                 } catch (e: Exception) {
                     logMessage("ExpenseViewModel", e.stackTraceToString())
-                    //Log.e("ExpenseViewModel", e.message, e)
                     onError(e.message ?: strings.getUnknownError())
                 }
             }
@@ -227,7 +221,6 @@ class ExpensePropertiesViewModel(
             title = expense.title
             amount = expense.amount.toString()
             category = expense.category
-            //numberOfPayments = expense.numberOfPayments.toString()
             payments = expense.payments
             notes = expense.notes
             frequency = expense.frequency
@@ -235,7 +228,7 @@ class ExpensePropertiesViewModel(
             amountPaid = expense.amountPaid
             addedDate = expense.createdAt
             paid = expense.paid
-            if(scheduleNotificationService.hasNotificationPermission() && scheduleNotificationService.canScheduleExactAlarms())
+            if (scheduleNotificationService.hasNotificationPermission() && scheduleNotificationService.canScheduleExactAlarms())
                 isRemindersEnabled = expense.reminders
         }
     }

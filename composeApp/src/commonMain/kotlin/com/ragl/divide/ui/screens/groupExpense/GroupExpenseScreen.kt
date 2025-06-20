@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -17,6 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -28,6 +32,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -38,9 +43,10 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ragl.divide.data.models.GroupExpense
 import com.ragl.divide.data.models.SplitMethod
+import com.ragl.divide.ui.components.FriendItem
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.groupExpenseProperties.GroupExpensePropertiesScreen
-import com.ragl.divide.ui.utils.FriendItem
+import com.ragl.divide.ui.utils.Strings
 import com.ragl.divide.ui.utils.formatCurrency
 import com.ragl.divide.ui.utils.formatDate
 import dividemultiplatform.composeapp.generated.resources.Res
@@ -57,11 +63,13 @@ import dividemultiplatform.composeapp.generated.resources.owes_x
 import dividemultiplatform.composeapp.generated.resources.paid_by_text
 import dividemultiplatform.composeapp.generated.resources.paid_x
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 
 class GroupExpenseScreen(
     private val groupId: String,
     private val expenseId: String,
-    private val eventId: String? = null
+    private val eventId: String? = null,
+    private val isEventSettled: Boolean = false
 ) : Screen {
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -69,6 +77,7 @@ class GroupExpenseScreen(
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = koinScreenModel<GroupExpenseViewModel>()
+        val strings: Strings = koinInject()
         val userViewModel = navigator.koinNavigatorScreenModel<UserViewModel>()
 
         LaunchedEffect(Unit) {
@@ -91,7 +100,8 @@ class GroupExpenseScreen(
                     colors = TopAppBarDefaults.largeTopAppBarColors(
                         scrolledContainerColor = Color.Transparent,
                         containerColor = Color.Transparent,
-                        navigationIconContentColor = MaterialTheme.colorScheme.primary
+                        navigationIconContentColor = MaterialTheme.colorScheme.primary,
+                        actionIconContentColor = MaterialTheme.colorScheme.primary
                     ),
                     navigationIcon = {
                         IconButton(
@@ -104,9 +114,9 @@ class GroupExpenseScreen(
                         }
                     },
                     actions = {
-                        if (true) {
-                            IconButton(
-                                onClick = {
+                        IconButton(
+                            onClick = {
+                                if (!isEventSettled)
                                     navigator.push(
                                         GroupExpensePropertiesScreen(
                                             groupId,
@@ -114,16 +124,22 @@ class GroupExpenseScreen(
                                             eventId
                                         )
                                     )
-                                }
-                            ) {
-                                Icon(
-                                    Icons.Default.Edit,
-                                    contentDescription = stringResource(Res.string.edit)
-                                )
+                                else
+                                    userViewModel.handleError(strings.getCannotModifyWhileEventSettled())
                             }
+                        ) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = stringResource(Res.string.edit)
+                            )
                         }
                         IconButton(
-                            onClick = { isDeleteDialogEnabled = true }
+                            onClick = {
+                                if (!isEventSettled)
+                                    isDeleteDialogEnabled = true
+                                else
+                                    userViewModel.handleError(strings.getCannotModifyWhileEventSettled())
+                            }
                         ) {
                             Icon(
                                 Icons.Default.Delete,
@@ -181,158 +197,124 @@ class GroupExpenseScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = stringResource(Res.string.paid_by_text),
-                        color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
-                    sortedPaidBy.forEach { (member, debt) ->
-                        val realDebt = when (groupExpenseState.splitMethod) {
-                            SplitMethod.EQUALLY, SplitMethod.CUSTOM -> debt
-                            SplitMethod.PERCENTAGES -> debt / 100 * groupExpenseState.amount
-                        }
-                        FriendItem(
-                            headline = member.name,
-                            photoUrl = member.photoUrl,
-                            trailingContent = {
-                                Text(
-                                    text = stringResource(
-                                        Res.string.paid_x,
-                                        formatCurrency(
-                                            realDebt,
-                                            stringResource(Res.string.currency_es_mx)
-                                        )
-                                    ),
-                                    textAlign = TextAlign.Center,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                )
-                            },
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
+                }
+                items(sortedPaidBy.toList()) { (member, debt) ->
+                    val realDebt = when (groupExpenseState.splitMethod) {
+                        SplitMethod.EQUALLY, SplitMethod.CUSTOM -> debt
+                        SplitMethod.PERCENTAGES -> debt / 100 * groupExpenseState.amount
                     }
+                    FriendItem(
+                        headline = member.name,
+                        photoUrl = member.photoUrl,
+                        trailingContent = {
+                            Text(
+                                text = stringResource(
+                                    Res.string.paid_x,
+                                    formatCurrency(
+                                        realDebt,
+                                        stringResource(Res.string.currency_es_mx)
+                                    )
+                                ),
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        },
+                        modifier = Modifier.padding(bottom = 8.dp).clip(ShapeDefaults.Medium)
+                    )
+                }
+                item {
                     Text(
                         text = stringResource(Res.string.debtors),
-                        color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
-
-                    when (groupExpenseState.splitMethod) {
-                        SplitMethod.EQUALLY -> {
-                            sortedDebtors.forEach { (member, debt) ->
-                                FriendItem(
-                                    headline = member.name,
-                                    photoUrl = member.photoUrl,
-                                    hasLeadingContent = false,
-                                    trailingContent = {
-                                        Text(
-                                            text = stringResource(
-                                                Res.string.owes_x,
-                                                formatCurrency(
-                                                    debt,
-                                                    stringResource(Res.string.currency_es_mx)
-                                                )
-                                            ),
-                                            textAlign = TextAlign.Center,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                        )
-                                    },
-                                    modifier = Modifier.padding(bottom = 8.dp)
-                                )
-                            }
-                        }
-
-                        SplitMethod.PERCENTAGES -> {
-                            sortedDebtors.forEach { (member, percentage) ->
-                                val debt = groupExpenseState.amount * (percentage / 100)
-                                FriendItem(
-                                    headline = member.name,
-                                    photoUrl = member.photoUrl,
-                                    hasLeadingContent = false,
-                                    trailingContent = {
-                                        Text(
-                                            text = stringResource(
-                                                Res.string.owes_x,
-                                                formatCurrency(
-                                                    debt,
-                                                    stringResource(Res.string.currency_es_mx)
-                                                )
-                                            ),
-                                            textAlign = TextAlign.Center,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                        )
-                                    },
-                                    modifier = Modifier.padding(bottom = 8.dp)
-                                )
-                            }
-                        }
-
-                        SplitMethod.CUSTOM -> {
-                            sortedDebtors.forEach { (member, debt) ->
-                                FriendItem(
-                                    headline = member.name,
-                                    photoUrl = member.photoUrl,
-                                    hasLeadingContent = false,
-                                    trailingContent = {
-                                        Text(
-                                            text = stringResource(
-                                                Res.string.owes_x,
-                                                formatCurrency(
-                                                    debt,
-                                                    stringResource(Res.string.currency_es_mx)
-                                                )
-                                            ),
-                                            textAlign = TextAlign.Center,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                        )
-                                    },
-                                    modifier = Modifier.padding(bottom = 8.dp)
-                                )
-                            }
-                        }
+                }
+                itemsIndexed(sortedDebtors.toList()) { i, (member, debt) ->
+                    val realDebt = when (groupExpenseState.splitMethod) {
+                        SplitMethod.EQUALLY, SplitMethod.CUSTOM -> debt
+                        SplitMethod.PERCENTAGES -> debt / 100 * groupExpenseState.amount
                     }
+                    FriendItem(
+                        headline = member.name,
+                        photoUrl = member.photoUrl,
+                        trailingContent = {
+                            Text(
+                                text = stringResource(
+                                    Res.string.owes_x,
+                                    formatCurrency(
+                                        realDebt,
+                                        stringResource(Res.string.currency_es_mx)
+                                    )
+                                ),
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        },
+                        modifier = Modifier
+                            .clip(
+                                if (sortedDebtors.size == 1) ShapeDefaults.Medium
+                                else if (i == 0) RoundedCornerShape(
+                                    topStart = 16.dp,
+                                    topEnd = 16.dp,
+                                    bottomStart = 2.dp,
+                                    bottomEnd = 2.dp
+                                ) else if (i == sortedDebtors.size - 1) RoundedCornerShape(
+                                    topStart = 2.dp,
+                                    topEnd = 2.dp,
+                                    bottomStart = 16.dp,
+                                    bottomEnd = 16.dp
+                                ) else RoundedCornerShape(2.dp)
+                            )
+                            .padding(bottom = 2.dp)
+                    )
+                }
+                item {
                     Spacer(modifier = Modifier.height(80.dp))
                 }
             }
         }
     }
+}
 
-    @Composable
-    private fun ExpenseDetails(expense: GroupExpense) {
-        Column {
+@Composable
+private fun ExpenseDetails(expense: GroupExpense) {
+    Column {
+        Text(
+            text = formatCurrency(expense.amount, stringResource(Res.string.currency_es_mx)),
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.headlineLarge.copy(color = MaterialTheme.colorScheme.primary),
+            modifier = Modifier.fillMaxWidth()
+        )
+        Text(
+            text = stringResource(
+                Res.string.added_on,
+                formatDate(expense.createdAt)
+            ),
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+        )
+        if (expense.notes != "") {
             Text(
-                text = formatCurrency(expense.amount, stringResource(Res.string.currency_es_mx)),
+                text = stringResource(Res.string.notes) + ":",
+                color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.headlineLarge.copy(color = MaterialTheme.colorScheme.primary),
-                modifier = Modifier.fillMaxWidth()
-            )
-            Text(
-                text = stringResource(
-                    Res.string.added_on,
-                    formatDate(expense.createdAt)
-                ),
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp)
+                    .padding(top = 16.dp)
             )
-            if (expense.notes != "") {
-                Text(
-                    text = stringResource(Res.string.notes) + ":",
-                    color = MaterialTheme.colorScheme.primary,
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp)
-                )
-                Text(
-                    text = expense.notes,
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+            Text(
+                text = expense.notes,
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }

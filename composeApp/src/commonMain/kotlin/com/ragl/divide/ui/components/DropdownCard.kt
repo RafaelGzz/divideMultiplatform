@@ -166,9 +166,9 @@ fun <T> ExpandedDropdownCard(
                                     },
                                 colors = CardDefaults.cardColors(
                                     containerColor = if (isSelected) {
-                                        MaterialTheme.colorScheme.primaryContainer
+                                        MaterialTheme.colorScheme.surfaceContainerHighest
                                     } else {
-                                        MaterialTheme.colorScheme.surfaceContainerHigh
+                                        MaterialTheme.colorScheme.surfaceContainerLow
                                     }
                                 ),
                                 shape = RoundedCornerShape(12.dp)

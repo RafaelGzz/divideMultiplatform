@@ -52,7 +52,7 @@ import com.ragl.divide.ui.components.ImagePicker
 import com.ragl.divide.ui.components.NetworkImage
 import com.ragl.divide.ui.components.NetworkImageType
 import com.ragl.divide.ui.screens.UserViewModel
-import com.ragl.divide.ui.utils.DivideTextField
+import com.ragl.divide.ui.components.DivideTextField
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.back
 import dividemultiplatform.composeapp.generated.resources.cancel

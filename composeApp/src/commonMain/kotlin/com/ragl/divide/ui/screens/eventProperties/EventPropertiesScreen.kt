@@ -54,10 +54,10 @@ import com.ragl.divide.data.models.Category
 import com.ragl.divide.data.models.getCategoryIcon
 import com.ragl.divide.ui.components.AdaptiveFAB
 import com.ragl.divide.ui.components.CollapsedDropdownCard
+import com.ragl.divide.ui.components.DivideTextField
 import com.ragl.divide.ui.components.ExpandedDropdownCard
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.group.GroupScreen
-import com.ragl.divide.ui.utils.DivideTextField
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.add_event
 import dividemultiplatform.composeapp.generated.resources.back
@@ -111,13 +111,18 @@ class EventPropertiesScreen(
                         ),
                         title = {
                             Text(
-                                text = if (isEditMode) stringResource(Res.string.edit_event) else stringResource(Res.string.new_event),
+                                text = if (isEditMode) stringResource(Res.string.edit_event) else stringResource(
+                                    Res.string.new_event
+                                ),
                                 style = MaterialTheme.typography.titleLarge
                             )
                         },
                         navigationIcon = {
                             IconButton(onClick = { navigator.pop() }) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.back))
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(Res.string.back)
+                                )
                             }
                         }
                     )
@@ -125,18 +130,29 @@ class EventPropertiesScreen(
                 floatingActionButton = {
                     AdaptiveFAB(
                         onClick = {
-                            viewModel.saveEvent(
-                                groupId = groupId,
-                                onSuccess = {
-                                    userViewModel.saveEvent(groupId, it)
-                                    navigator.pop()
-                                },
-                                onError = { userViewModel.handleError(it) }
-                            )
+                            if (viewModel.validateTitle().and(viewModel.validateDescription())) {
+                                userViewModel.showLoading()
+                                viewModel.saveEvent(
+                                    groupId = groupId,
+                                    onSuccess = {
+                                        userViewModel.saveEvent(groupId, it)
+                                        navigator.pop()
+                                        userViewModel.hideLoading()
+                                    },
+                                    onError = {
+                                        userViewModel.handleError(it)
+                                        userViewModel.hideLoading()
+                                    }
+                                )
+                            }
                         },
                         icon = Icons.Default.Check,
-                        contentDescription = if (!isEditMode) stringResource(Res.string.add_event) else stringResource(Res.string.save),
-                        text = if (!isEditMode) stringResource(Res.string.add_event) else stringResource(Res.string.save),
+                        contentDescription = if (!isEditMode) stringResource(Res.string.add_event) else stringResource(
+                            Res.string.save
+                        ),
+                        text = if (!isEditMode) stringResource(Res.string.add_event) else stringResource(
+                            Res.string.save
+                        ),
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.imePadding()
@@ -190,7 +206,7 @@ class EventPropertiesScreen(
                         .padding(paddingValues)
                         .padding(horizontal = 16.dp)
                 ) {
-                    item{
+                    item {
                         DivideTextField(
                             value = eventState.title,
                             error = viewModel.titleError,
@@ -208,6 +224,9 @@ class EventPropertiesScreen(
                             onValueChange = viewModel::updateDescription,
                             label = stringResource(Res.string.description),
                             imeAction = ImeAction.Default,
+                            characterLimit = viewModel.descriptionCharacterLimit,
+                            error = viewModel.descriptionError,
+                            validate = viewModel::validateDescription,
                             singleLine = false,
                             modifier = Modifier
                                 .heightIn(max = 200.dp)

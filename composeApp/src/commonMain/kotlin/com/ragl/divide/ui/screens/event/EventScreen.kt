@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,19 +18,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Badge
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -61,24 +58,21 @@ import cafe.adriel.voyager.navigator.internal.BackHandler
 import com.ragl.divide.data.models.GroupEvent
 import com.ragl.divide.ui.components.CollapsedDebtsCard
 import com.ragl.divide.ui.components.DebtInfo
-import com.ragl.divide.ui.components.EventFABGroup
 import com.ragl.divide.ui.components.ExpandedDebtsCard
-import com.ragl.divide.ui.components.expenseListView
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.eventProperties.EventPropertiesScreen
 import com.ragl.divide.ui.screens.groupExpense.GroupExpenseScreen
 import com.ragl.divide.ui.screens.groupExpenseProperties.GroupExpensePropertiesScreen
 import com.ragl.divide.ui.screens.groupPayment.GroupPaymentScreen
 import com.ragl.divide.ui.screens.groupPaymentProperties.GroupPaymentPropertiesScreen
-import com.ragl.divide.ui.utils.formatDate
+import com.ragl.divide.ui.utils.formatCurrency
 import dividemultiplatform.composeapp.generated.resources.Res
-import dividemultiplatform.composeapp.generated.resources.active
 import dividemultiplatform.composeapp.generated.resources.activity
 import dividemultiplatform.composeapp.generated.resources.back
 import dividemultiplatform.composeapp.generated.resources.cancel
-import dividemultiplatform.composeapp.generated.resources.created_on
 import dividemultiplatform.composeapp.generated.resources.discard
 import dividemultiplatform.composeapp.generated.resources.edit
+import dividemultiplatform.composeapp.generated.resources.event
 import dividemultiplatform.composeapp.generated.resources.no_activity
 import dividemultiplatform.composeapp.generated.resources.reopen
 import dividemultiplatform.composeapp.generated.resources.reopen_banner_message
@@ -90,7 +84,7 @@ import dividemultiplatform.composeapp.generated.resources.settle_banner_message
 import dividemultiplatform.composeapp.generated.resources.settle_banner_title
 import dividemultiplatform.composeapp.generated.resources.settle_event
 import dividemultiplatform.composeapp.generated.resources.settle_event_confirm
-import dividemultiplatform.composeapp.generated.resources.settled
+import dividemultiplatform.composeapp.generated.resources.total_spent
 import org.jetbrains.compose.resources.stringResource
 
 class EventScreen(
@@ -172,7 +166,6 @@ class EventScreen(
                 Scaffold(
                     topBar = {
                         EventDetailsAppBar(
-                            event = eventState,
                             onBackClick = { navigator.pop() },
                             onEditClick = {
                                 navigator.push(
@@ -215,7 +208,7 @@ class EventScreen(
                     ) {
                         item {
                             Column {
-                                //EventInfoHeader(event = eventState)
+                                EventInfoHeader(event = eventState)
                                 if (canSettleEvent && showSettleBanner) {
                                     SettleBanner(
                                         onSettleClick = { showSettleDialog = true },
@@ -231,7 +224,7 @@ class EventScreen(
                             }
                         }
                         item {
-                            if (!(canReopenEvent && showReopenBanner))
+                            if (!(canReopenEvent && showReopenBanner) && !(canSettleEvent && showSettleBanner))
                                 AnimatedVisibility(
                                     !isDebtsExpanded
                                 ) {
@@ -244,7 +237,6 @@ class EventScreen(
                                             if (allDebts.isNotEmpty())
                                                 isDebtsExpanded = true
                                         },
-                                        modifier = Modifier.padding(bottom = 16.dp)
                                     )
                                 }
                         }
@@ -252,7 +244,7 @@ class EventScreen(
                             Text(
                                 text = stringResource(Res.string.activity),
                                 style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier.padding(bottom = 4.dp)
+                                modifier = Modifier.padding(bottom = 4.dp, top = 12.dp)
                             )
                         }
                         if (!hasExpensesOrPayments) {
@@ -277,20 +269,18 @@ class EventScreen(
                                 getPaidByNames = viewModel::getPaidByNames,
                                 members = viewModel.members,
                                 onExpenseClick = {
-                                    if (!eventState.settled)
-                                        navigator.push(
-                                            GroupExpenseScreen(
-                                                groupId, it, eventId
-                                            )
+                                    navigator.push(
+                                        GroupExpenseScreen(
+                                            groupId, it, eventId, eventState.settled
                                         )
+                                    )
                                 },
                                 onPaymentClick = { paymentId ->
-                                    if (!eventState.settled)
-                                        navigator.push(
-                                            GroupPaymentScreen(
-                                                groupId, paymentId, eventId
-                                            )
+                                    navigator.push(
+                                        GroupPaymentScreen(
+                                            groupId, paymentId, eventId, eventState.settled
                                         )
+                                    )
                                 }
                             )
                         }
@@ -397,18 +387,18 @@ class EventScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EventDetailsAppBar(
-    event: GroupEvent,
     onBackClick: () -> Unit,
     onEditClick: () -> Unit
 ) {
     CenterAlignedTopAppBar(
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.Transparent,
-            navigationIconContentColor = MaterialTheme.colorScheme.primary
+            navigationIconContentColor = MaterialTheme.colorScheme.primary,
+            actionIconContentColor = MaterialTheme.colorScheme.primary
         ),
         title = {
             Text(
-                text = event.title,
+                text = stringResource(Res.string.event),
                 style = MaterialTheme.typography.titleLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -432,62 +422,98 @@ private fun EventDetailsAppBar(
 
 @Composable
 private fun EventInfoHeader(event: GroupEvent) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
+    val totalSpent = remember(event.expenses) {
+        event.expenses.values.sumOf { it.amount }
+    }
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.fillMaxWidth().height(100.dp).padding(bottom = 12.dp)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(vertical = 4.dp)
-        ) {
-            Badge(
-                containerColor = if (event.settled)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.secondary
-            ) {
-                Text(
-                    text = if (event.settled) stringResource(Res.string.settled) else stringResource(
-                        Res.string.active
-                    ),
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    color = if (event.settled)
-                        MaterialTheme.colorScheme.onPrimary
-                    else
-                        MaterialTheme.colorScheme.onSecondary
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .weight(1f)
+                .background(
+                    MaterialTheme.colorScheme.surfaceContainer,
+                    RoundedCornerShape(
+                        topStart = 12.dp,
+                        bottomStart = 12.dp,
+                        topEnd = 2.dp,
+                        bottomEnd = 2.dp
+                    )
                 )
-            }
-            Spacer(modifier = Modifier.weight(1f))
-            Icon(
-                Icons.Default.DateRange,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
+                .padding(12.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+//            Row(
+//                verticalAlignment = Alignment.CenterVertically,
+//                horizontalArrangement = Arrangement.spacedBy(8.dp)
+//            ) {
+//                Icon(
+//                    getCategoryIcon(event.category),
+//                    tint = MaterialTheme.colorScheme.primary,
+//                    contentDescription = null,
+//                    modifier = Modifier.size(20.dp)
+//                )
+//                Text(
+//                    text = event.category.getCategoryName(),
+//                    style = MaterialTheme.typography.bodyMedium
+//                )
+//            }
             Text(
-                text = stringResource(
-                    Res.string.created_on,
-                    formatDate(event.createdAt, "dd MMM yyyy")
-                ),
-                style = MaterialTheme.typography.bodyMedium
+                event.title,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.titleMedium
+            )
+//            Row(
+//                verticalAlignment = Alignment.CenterVertically,
+//                horizontalArrangement = Arrangement.spacedBy(8.dp)
+//            ) {
+//                Icon(
+//                    FontAwesomeIcons.Solid.Calendar,
+//                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+//                    contentDescription = null,
+//                    modifier = Modifier.size(20.dp)
+//                )
+//                Text(
+//                    text = formatDate(event.createdAt, "dd MMM yyyy"),
+//                    style = MaterialTheme.typography.bodySmall,
+//                    color = MaterialTheme.colorScheme.onSurfaceVariant
+//                )
+//            }
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .weight(1f)
+                .background(
+                    MaterialTheme.colorScheme.primary,
+                    RoundedCornerShape(
+                        topStart = 2.dp,
+                        bottomStart = 2.dp,
+                        topEnd = 12.dp,
+                        bottomEnd = 12.dp
+                    )
+                )
+                .padding(12.dp),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                stringResource(Res.string.total_spent),
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = MaterialTheme.colorScheme.onPrimary.copy(
+                        alpha = 0.7f
+                    )
+                )
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                formatCurrency(totalSpent, "es-MX"),
+                style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onPrimary)
             )
         }
-
-        if (event.description.isNotEmpty()) {
-            Text(
-                text = event.description,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(vertical = 4.dp)
-            )
-        }
-
-        HorizontalDivider(
-            Modifier.padding(vertical = 8.dp),
-            1.dp,
-            MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f)
-        )
     }
 }
 
@@ -499,7 +525,6 @@ private fun SettleBanner(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.tertiaryContainer)
             .clickable { onSettleClick() }
@@ -544,7 +569,6 @@ private fun ReopenBanner(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.secondaryContainer)
             .clickable { onReopenClick() }

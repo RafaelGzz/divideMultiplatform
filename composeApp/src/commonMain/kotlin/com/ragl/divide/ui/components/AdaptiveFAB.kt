@@ -5,6 +5,7 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -32,7 +33,8 @@ fun AdaptiveFAB(
                 onClick = onClick,
                 modifier = modifier,
                 containerColor = containerColor,
-                contentColor = contentColor
+                contentColor = contentColor,
+                shape = ShapeDefaults.Medium
             ) {
                 Icon(
                     imageVector = icon,
@@ -57,7 +59,8 @@ fun AdaptiveFAB(
                 },
                 modifier = modifier,
                 containerColor = containerColor,
-                contentColor = contentColor
+                contentColor = contentColor,
+                shape = ShapeDefaults.Medium
             )
         }
     }

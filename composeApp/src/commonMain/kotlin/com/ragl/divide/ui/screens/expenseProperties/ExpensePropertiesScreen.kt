@@ -36,6 +36,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -59,14 +60,16 @@ import com.ragl.divide.data.models.Category
 import com.ragl.divide.data.models.getCategoryIcon
 import com.ragl.divide.ui.components.AdaptiveFAB
 import com.ragl.divide.ui.components.CollapsedDropdownCard
+import com.ragl.divide.ui.components.DivideTextField
 import com.ragl.divide.ui.components.ExpandedDropdownCard
 import com.ragl.divide.ui.screens.UserViewModel
-import com.ragl.divide.ui.utils.DivideTextField
+
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.add_expense
 import dividemultiplatform.composeapp.generated.resources.amount
 import dividemultiplatform.composeapp.generated.resources.category
 import dividemultiplatform.composeapp.generated.resources.edit
+import dividemultiplatform.composeapp.generated.resources.next
 import dividemultiplatform.composeapp.generated.resources.notes
 import dividemultiplatform.composeapp.generated.resources.title
 import dividemultiplatform.composeapp.generated.resources.update_expense
@@ -349,11 +352,12 @@ class ExpensePropertiesScreen(
 
                             Button(
                                 onClick = onNextStep,
+                                shape = ShapeDefaults.Medium,
                                 modifier = Modifier
-                                    .fillMaxWidth()
+                                .fillMaxWidth()
                                     .padding(bottom = 16.dp)
                             ) {
-                                Text("Siguiente")
+                                Text(stringResource(Res.string.next))
                                 Icon(
                                     Icons.AutoMirrored.Filled.ArrowForward,
                                     contentDescription = null,
@@ -398,11 +402,12 @@ class ExpensePropertiesScreen(
 
                             Button(
                                 onClick = onNextStep,
+                                shape = ShapeDefaults.Medium,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 16.dp)
                             ) {
-                                Text("Siguiente")
+                                Text(stringResource(Res.string.next))
                                 Icon(
                                     Icons.AutoMirrored.Filled.ArrowForward,
                                     contentDescription = null,

@@ -205,7 +205,7 @@ class ExpenseReminderScreen(
                     ) {
                         Text(
                             text = stringResource(Res.string.get_reminders),
-                            style = MaterialTheme.typography.bodyLarge,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Switch(

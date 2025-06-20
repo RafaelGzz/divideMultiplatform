@@ -621,3 +621,17 @@ fun HomeFABGroup(
         }
     }
 }
+
+@Composable
+fun Header(
+    title: String,
+    modifier: Modifier = Modifier
+) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.headlineMedium,
+        modifier = modifier
+            .padding(horizontal = 16.dp, vertical = 16.dp)
+
+    )
+}

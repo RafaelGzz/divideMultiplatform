@@ -4,7 +4,7 @@ import com.ragl.divide.data.models.ExpenseType
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.GroupEvent
 import com.ragl.divide.data.models.GroupExpense
-import com.ragl.divide.data.models.Payment
+import com.ragl.divide.data.models.GroupPayment
 import com.ragl.divide.data.models.User
 import com.ragl.divide.data.services.GroupExpenseService
 import com.ragl.divide.ui.utils.logMessage
@@ -30,8 +30,8 @@ interface GroupRepository {
     suspend fun deleteGroup(groupId: String, image: String)
     suspend fun saveGroupExpense(groupId: String, expense: GroupExpense): GroupExpense
     suspend fun deleteGroupExpense(groupId: String, expense: GroupExpense)
-    suspend fun saveGroupPayment(groupId: String, payment: Payment): Payment
-    suspend fun deleteGroupPayment(groupId: String, payment: Payment)
+    suspend fun saveGroupPayment(groupId: String, payment: GroupPayment): GroupPayment
+    suspend fun deleteGroupPayment(groupId: String, payment: GroupPayment)
     suspend fun saveEvent(groupId: String, event: GroupEvent): GroupEvent
     suspend fun deleteEvent(groupId: String, eventId: String)
     suspend fun getEvent(groupId: String, eventId: String): GroupEvent
@@ -241,7 +241,7 @@ class GroupRepositoryImpl(
         updateCurrentDebts(groupId, expense.eventId)
     }
 
-    override suspend fun saveGroupPayment(groupId: String, payment: Payment): Payment {
+    override suspend fun saveGroupPayment(groupId: String, payment: GroupPayment): GroupPayment {
         val startTime = Clock.System.now().toEpochMilliseconds()
         val newPayment = payment.copy(id = payment.id.ifEmpty {
             "id${Clock.System.now().toEpochMilliseconds()}"
@@ -263,7 +263,7 @@ class GroupRepositoryImpl(
         return newPayment
     }
 
-    override suspend fun deleteGroupPayment(groupId: String, payment: Payment) {
+    override suspend fun deleteGroupPayment(groupId: String, payment: GroupPayment) {
         val startTime = Clock.System.now().toEpochMilliseconds()
         val groupRef = database.reference("groups/$groupId")
         if (payment.eventId.isNotEmpty())
@@ -435,7 +435,7 @@ class GroupRepositoryImpl(
 
             val paymentsDeferred = async {
                 groupRef.child("events/$eventId/payments").valueEvents.firstOrNull()?.children?.map {
-                    it.value<Payment>()
+                    it.value<GroupPayment>()
                 } ?: emptyList()
             }
 

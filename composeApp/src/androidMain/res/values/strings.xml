@@ -57,12 +57,16 @@
     <!-- Expense Details -->
     <string name="error_deleting_payment">Error deleting payment</string>
 
+    <!-- Payment -->
+    <string name="description_too_long">Description is too long</string>
+
     <!-- Groups -->
     <string name="cannot_leave_group">You cannot leave the group while having debts or credits</string>
     <string name="cannot_delete_group">You cannot delete the group while debts or credits exist</string>
 
     <!-- Events -->
     <string name="cannot_delete_event">You cannot delete the event while debts or credits exist</string>
+    <string name="cannot_modify_while_event_settled">You cannot modify this item while the event has been settled</string>
 
     <!-- Image Selection -->
     <string name="could_not_process_image">Could not process the image</string>

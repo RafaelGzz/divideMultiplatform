@@ -7,6 +7,7 @@ import com.ragl.divide.data.models.Expense
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.GroupEvent
 import com.ragl.divide.data.models.GroupExpense
+import com.ragl.divide.data.models.GroupPayment
 import com.ragl.divide.data.models.Payment
 import com.ragl.divide.data.models.User
 import com.ragl.divide.data.models.UserInfo
@@ -467,12 +468,12 @@ class UserViewModel(
             _state.value.groups[groupId]?.expenses?.get(expenseId) ?: GroupExpense()
     }
 
-    fun getGroupPaymentById(groupId: String, paymentId: String?, eventId: String? = null): Payment {
+    fun getGroupPaymentById(groupId: String, paymentId: String?, eventId: String? = null): GroupPayment {
         return if (eventId != null) {
             _state.value.groups[groupId]?.events?.get(eventId)?.payments?.get(paymentId)
-                ?: Payment()
+                ?: GroupPayment()
         } else
-            _state.value.groups[groupId]?.payments?.get(paymentId) ?: Payment()
+            _state.value.groups[groupId]?.payments?.get(paymentId) ?: GroupPayment()
     }
 
     fun getUUID(): String {
@@ -486,7 +487,7 @@ class UserViewModel(
         return groupExpenseService.consolidateDebtsFromEventsMap(eventsMap)
     }
 
-    fun saveGroupPayment(groupId: String, savedPayment: Payment) {
+    fun saveGroupPayment(groupId: String, savedPayment: GroupPayment) {
         _state.update {
             it.copy(
                 groups = it.groups.mapValues { group ->
@@ -513,7 +514,7 @@ class UserViewModel(
         }
     }
 
-    fun deleteGroupPayment(groupId: String, payment: Payment) {
+    fun deleteGroupPayment(groupId: String, payment: GroupPayment) {
         _state.update {
             it.copy(
                 groups = it.groups.mapValues { group ->

@@ -35,6 +35,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -57,8 +58,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ragl.divide.data.models.User
 import com.ragl.divide.data.models.UserInfo
-import com.ragl.divide.ui.utils.Header
-import com.ragl.divide.ui.utils.ProfileImage
+import com.ragl.divide.ui.components.ProfileImage
 import compose.icons.FontAwesomeIcons
 import compose.icons.fontawesomeicons.Solid
 import compose.icons.fontawesomeicons.solid.Moon
@@ -70,7 +70,6 @@ import dividemultiplatform.composeapp.generated.resources.bar_item_3_text
 import dividemultiplatform.composeapp.generated.resources.cancel
 import dividemultiplatform.composeapp.generated.resources.dark_mode
 import dividemultiplatform.composeapp.generated.resources.light_mode
-
 import dividemultiplatform.composeapp.generated.resources.sign_out
 import dividemultiplatform.composeapp.generated.resources.sign_out_confirmation
 import dividemultiplatform.composeapp.generated.resources.system_default
@@ -369,7 +368,7 @@ private fun DarkModeSetting(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
             contentColor = MaterialTheme.colorScheme.onSurface
         ),
-        shape = RoundedCornerShape(8.dp)
+        shape = ShapeDefaults.Medium
     ) {
         Row(
             Modifier

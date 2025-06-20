@@ -75,7 +75,7 @@ import com.ragl.divide.ui.components.DeleteDialog
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.expenseProperties.ExpensePropertiesScreen
 import com.ragl.divide.ui.screens.expenseReminder.ExpenseReminderScreen
-import com.ragl.divide.ui.utils.DivideTextField
+import com.ragl.divide.ui.components.DivideTextField
 import com.ragl.divide.ui.utils.Strings
 import com.ragl.divide.ui.utils.formatCurrency
 import com.ragl.divide.ui.utils.formatDate
@@ -213,6 +213,7 @@ class ExpenseScreen(private val expenseId: String) : Screen {
                             },
                             colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                                 navigationIconContentColor = MaterialTheme.colorScheme.primary,
+                                actionIconContentColor = MaterialTheme.colorScheme.primary
                             ),
                             navigationIcon = {
                                 IconButton(onClick = { navigator.pop() }) {

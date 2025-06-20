@@ -2,7 +2,7 @@ package com.ragl.divide.data.services
 
 import com.ragl.divide.data.models.GroupEvent
 import com.ragl.divide.data.models.GroupExpense
-import com.ragl.divide.data.models.Payment
+import com.ragl.divide.data.models.GroupPayment
 import com.ragl.divide.ui.utils.toTwoDecimals
 
 class GroupExpenseService {
@@ -13,7 +13,7 @@ class GroupExpenseService {
     
     fun calculateDebts(
         expenses: Collection<GroupExpense>,
-        payments: Collection<Payment>,
+        payments: Collection<GroupPayment>,
         simplify: Boolean = false,
         expensesToSettle: MutableList<String>? = null,
         paymentsToSettle: MutableList<String>? = null
@@ -62,7 +62,7 @@ class GroupExpenseService {
     }
     
     private fun processPayments(
-        payments: Collection<Payment>,
+        payments: Collection<GroupPayment>,
         balances: MutableMap<String, MutableMap<String, Double>>,
         simplify: Boolean
     ) {
@@ -76,7 +76,7 @@ class GroupExpenseService {
     }
     
     private fun processPaymentWithSimplification(
-        payment: Payment,
+        payment: GroupPayment,
         balances: MutableMap<String, MutableMap<String, Double>>
     ) {
         val existingDebtToFrom = balances[payment.to]?.get(payment.from) ?: 0.0

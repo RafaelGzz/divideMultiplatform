@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -47,15 +48,16 @@ import com.ragl.divide.data.models.UserInfo
 import com.ragl.divide.ui.components.AdaptiveFAB
 import com.ragl.divide.ui.components.CollapsedDropdownCard
 import com.ragl.divide.ui.components.DebtInfo
+import com.ragl.divide.ui.components.DivideTextField
 import com.ragl.divide.ui.components.ExpandedDropdownCard
 import com.ragl.divide.ui.components.NetworkImage
 import com.ragl.divide.ui.components.NetworkImageType
 import com.ragl.divide.ui.screens.UserViewModel
-import com.ragl.divide.ui.utils.DivideTextField
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.add
 import dividemultiplatform.composeapp.generated.resources.amount
 import dividemultiplatform.composeapp.generated.resources.back
+import dividemultiplatform.composeapp.generated.resources.description
 import dividemultiplatform.composeapp.generated.resources.from
 import dividemultiplatform.composeapp.generated.resources.make_a_payment
 import dividemultiplatform.composeapp.generated.resources.to
@@ -69,7 +71,8 @@ class GroupPaymentPropertiesScreen(
     private val eventId: String? = null,
     private val currentDebtInfo: DebtInfo? = null,
 ) : Screen {
-    @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class,
+    @OptIn(
+        ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class,
         InternalVoyagerApi::class
     )
     @Composable
@@ -79,11 +82,9 @@ class GroupPaymentPropertiesScreen(
         val userViewModel = navigator.koinNavigatorScreenModel<UserViewModel>()
 
         LaunchedEffect(groupId, paymentId, eventId) {
-            val group = userViewModel.getGroupById(groupId)
             val members = userViewModel.getGroupMembers(groupId)
             val payment = userViewModel.getGroupPaymentById(groupId, paymentId, eventId)
-            val event = userViewModel.getEventById(groupId, eventId)
-            vm.setGroupAndPayment(group, members, payment, event, currentDebtInfo)
+            vm.setGroupAndPayment(groupId, members, payment, eventId, currentDebtInfo)
         }
 
         var fromDropdownExpanded by remember { mutableStateOf(false) }
@@ -109,7 +110,7 @@ class GroupPaymentPropertiesScreen(
                     CenterAlignedTopAppBar(
                         title = {
                             Text(
-                                text = stringResource(if (vm.isUpdate.value) Res.string.update_payment else Res.string.make_a_payment),
+                                text = stringResource(if (vm.isUpdate) Res.string.update_payment else Res.string.make_a_payment),
                                 style = MaterialTheme.typography.titleLarge
                             )
                         },
@@ -134,25 +135,27 @@ class GroupPaymentPropertiesScreen(
                     ) {
                         AdaptiveFAB(
                             onClick = {
-                                userViewModel.showLoading()
-                                vm.savePayment(
-                                    onSuccess = { savedPayment ->
-                                        userViewModel.saveGroupPayment(groupId, savedPayment)
-                                        userViewModel.hideLoading()
-                                        navigator.pop()
-                                    },
-                                    onError = {
-                                        userViewModel.hideLoading()
-                                        userViewModel.handleError(it)
-                                    }
-                                )
+                                if (vm.validateAmount().and(vm.validateDescription())) {
+                                    userViewModel.showLoading()
+                                    vm.savePayment(
+                                        onSuccess = { savedPayment ->
+                                            userViewModel.saveGroupPayment(groupId, savedPayment)
+                                            userViewModel.hideLoading()
+                                            navigator.pop()
+                                        },
+                                        onError = {
+                                            userViewModel.hideLoading()
+                                            userViewModel.handleError(it)
+                                        }
+                                    )
+                                }
                             },
                             icon = Icons.Default.Check,
                             contentDescription = stringResource(
-                                if (vm.isUpdate.value) Res.string.update else Res.string.add,
+                                if (vm.isUpdate) Res.string.update else Res.string.add,
                             ),
                             text = stringResource(
-                                if (vm.isUpdate.value) Res.string.update else Res.string.add,
+                                if (vm.isUpdate) Res.string.update else Res.string.add,
                             ),
                             modifier = Modifier.imePadding()
                         )
@@ -165,6 +168,19 @@ class GroupPaymentPropertiesScreen(
                         .fillMaxSize()
                         .imePadding()
                 ) {
+                    DivideTextField(
+                        value = vm.description,
+                        label = stringResource(Res.string.description),
+                        characterLimit = vm.descriptionCharacterLimit,
+                        error = vm.descriptionError,
+                        singleLine = false,
+                        validate = vm::validateDescription,
+                        onValueChange = vm::updateDescription,
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp)
+                            .padding(bottom = 12.dp)
+                            .heightIn(max = 200.dp)
+                    )
                     DivideTextField(
                         value = vm.amount,
                         keyboardType = KeyboardType.Number,

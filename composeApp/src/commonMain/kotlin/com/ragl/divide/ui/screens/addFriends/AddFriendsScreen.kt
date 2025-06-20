@@ -45,8 +45,8 @@ import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ragl.divide.ui.screens.UserViewModel
-import com.ragl.divide.ui.utils.DivideTextField
-import com.ragl.divide.ui.utils.FriendItem
+import com.ragl.divide.ui.components.DivideTextField
+import com.ragl.divide.ui.components.FriendItem
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.add_friends
 import dividemultiplatform.composeapp.generated.resources.cancel
