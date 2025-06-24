@@ -12,14 +12,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Badge
 import androidx.compose.material.BadgedBox
@@ -139,115 +137,105 @@ fun ProfileContent(
         showSettingsSection = true
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        item {
-            Header(
-                title = stringResource(Res.string.bar_item_3_text),
-                modifier = Modifier
-                    .alpha(headerAlpha)
-                    .offset(y = headerOffsetY.dp)
-            )
-        }
-
-        item {
-            Box(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .alpha(profileInfoAlpha)
-                    .offset(y = profileInfoOffsetY.dp)
+    Column {
+        Header(
+            title = stringResource(Res.string.bar_item_3_text),
+            modifier = Modifier
+                .alpha(headerAlpha)
+                .offset(y = headerOffsetY.dp)
+        )
+        Box(
+            modifier = Modifier
+                .padding(16.dp)
+                .alpha(profileInfoAlpha)
+                .offset(y = profileInfoOffsetY.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ProfileImage(user.photoUrl)
+                Column(
+                    modifier = Modifier.weight(1f)
                 ) {
-                    ProfileImage(user.photoUrl)
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            user.name,
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                        Text(
-                            user.email,
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.Normal,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                            ),
-                        )
-                    }
-                    IconButton(
-                        onClick = { navigator.push(UserScreen()) }
-                    ) {
-                        Icon(
-                            Icons.Default.Settings,
-                            contentDescription = "Settings",
-                        )
-                    }
+                    Text(
+                        user.name,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        user.email,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Normal,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        ),
+                    )
+                }
+                IconButton(
+                    onClick = { navigator.push(UserScreen()) }
+                ) {
+                    Icon(
+                        Icons.Default.Settings,
+                        contentDescription = "Settings",
+                    )
                 }
             }
         }
-
-        item {
-            Column(
-                modifier = Modifier
-                    .alpha(settingsSectionAlpha)
-                    .offset(y = settingsSectionOffsetY.dp)
+        Column(
+            modifier = Modifier
+                .alpha(settingsSectionAlpha)
+                .offset(y = settingsSectionOffsetY.dp)
+        ) {
+            Spacer(modifier = Modifier.height(8.dp))
+            DarkModeSetting(
+                isDarkMode = isDarkMode,
+                onChangeDarkMode = onChangeDarkMode,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
             ) {
-                Spacer(modifier = Modifier.height(8.dp))
-                DarkModeSetting(
-                    isDarkMode = isDarkMode,
-                    onChangeDarkMode = onChangeDarkMode,
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    var showSignOutDialog by remember { mutableStateOf(false) }
+                var showSignOutDialog by remember { mutableStateOf(false) }
 
-                    TextButton(onClick = { showSignOutDialog = true }) {
-                        Text(
-                            stringResource(Res.string.sign_out),
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                color = MaterialTheme.colorScheme.error
-                            )
+                TextButton(onClick = { showSignOutDialog = true }) {
+                    Text(
+                        stringResource(Res.string.sign_out),
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.error
                         )
-                    }
+                    )
+                }
 
-                    // Diálogo de confirmación para cerrar sesión
-                    if (showSignOutDialog) {
-                        AlertDialog(
-                            onDismissRequest = { showSignOutDialog = false },
-                            confirmButton = {
-                                TextButton(onClick = {
-                                    showSignOutDialog = false
-                                    onSignOut()
-                                }) {
-                                    Text(stringResource(Res.string.sign_out))
-                                }
-                            },
-                            dismissButton = {
-                                TextButton(onClick = { showSignOutDialog = false }) {
-                                    Text(stringResource(Res.string.cancel))
-                                }
-                            },
-                            title = {
-                                Text(
-                                    stringResource(Res.string.sign_out),
-                                    style = MaterialTheme.typography.titleLarge
-                                )
-                            },
-                            text = {
-                                Text(
-                                    stringResource(Res.string.sign_out_confirmation),
-                                    style = MaterialTheme.typography.bodySmall
-                                )
+                // Diálogo de confirmación para cerrar sesión
+                if (showSignOutDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showSignOutDialog = false },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                showSignOutDialog = false
+                                onSignOut()
+                            }) {
+                                Text(stringResource(Res.string.sign_out))
                             }
-                        )
-                    }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showSignOutDialog = false }) {
+                                Text(stringResource(Res.string.cancel))
+                            }
+                        },
+                        title = {
+                            Text(
+                                stringResource(Res.string.sign_out),
+                                style = MaterialTheme.typography.titleLarge
+                            )
+                        },
+                        text = {
+                            Text(
+                                stringResource(Res.string.sign_out_confirmation),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    )
                 }
             }
         }

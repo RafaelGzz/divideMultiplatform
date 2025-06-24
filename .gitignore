@@ -18,3 +18,4 @@ captures
 **/xcshareddata/WorkspaceSettings.xcsettings
 google-services.json
 GoogleService-Info.plist
+keystore.properties

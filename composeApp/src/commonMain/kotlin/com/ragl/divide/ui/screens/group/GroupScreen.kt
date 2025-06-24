@@ -22,10 +22,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
+import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -187,19 +187,19 @@ class GroupScreen(
                         )
                     }
                 ) { paddingValues ->
-                    LazyVerticalGrid(
+                    LazyVerticalStaggeredGrid(
                         modifier = Modifier.fillMaxWidth()
                             .padding(paddingValues)
                             .padding(horizontal = 16.dp),
-                        columns = GridCells.Adaptive(150.dp),
+                        columns = StaggeredGridCells.Adaptive(150.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalItemSpacing = 12.dp
                     ) {
 //                        GroupInfoHeader(
 //                            group = groupState,
 //                            members = viewModel.members
 //                        )
-                        item(span = { GridItemSpan(maxLineSpan) }) {
+                        item(span = StaggeredGridItemSpan.FullLine ) {
                             AnimatedVisibility(
                                 visible = !isDebtsExpanded
                             ) {
@@ -218,14 +218,14 @@ class GroupScreen(
                             }
                         }
 
-                        item(span = { GridItemSpan(maxLineSpan) }) {
+                        item(span = StaggeredGridItemSpan.FullLine ) {
                             Text(
                                 text = stringResource(Res.string.events),
                                 style = MaterialTheme.typography.titleMedium
                             )
                         }
                         if (activeEvents.isEmpty() && settledEvents.isEmpty()) {
-                            item(span = { GridItemSpan(maxLineSpan) }) {
+                            item(span = StaggeredGridItemSpan.FullLine ) {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -258,10 +258,11 @@ class GroupScreen(
                                             )
                                         )
                                     },
+                                    modifier = Modifier.fillMaxSize()
                                 )
                             }
                             if (settledEvents.isNotEmpty()) {
-                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                item(span = StaggeredGridItemSpan.FullLine ) {
                                     Row(
                                         horizontalArrangement = Arrangement.Center,
                                         modifier = Modifier
@@ -325,10 +326,11 @@ class GroupScreen(
                                                 )
                                             )
                                         },
+                                        modifier = Modifier.fillMaxSize()
                                     )
                                 }
                             }
-                            item(span = { GridItemSpan(maxLineSpan) }) {
+                            item(span = StaggeredGridItemSpan.FullLine ) {
                                 Spacer(modifier = Modifier.height(80.dp))
                             }
                         }
@@ -483,6 +485,8 @@ private fun EventItem(
         Text(
             text = event.title,
             style = MaterialTheme.typography.titleMedium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
             fontWeight = FontWeight.SemiBold,
             color = if (settled) settledContentColor else contentColor
         )

@@ -492,7 +492,7 @@ private fun MainContent(
                 }
                 AnimatedVisibility(
                     visible = selectedTabIndex == 2,
-                    enter = fadeIn(animationSpec = tween(500)),
+                    enter = fadeIn(animationSpec = tween(300)),
                     exit = ExitTransition.None
                 ) {
                     ProfileContent(

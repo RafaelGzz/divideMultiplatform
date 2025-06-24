@@ -145,7 +145,6 @@ fun FriendsBody(
         if (friendRequestsReceived.isNotEmpty() || friendRequestsSent.isNotEmpty()) {
             if (friendRequestsReceived.isNotEmpty()) {
                 item {
-                    Spacer(modifier = Modifier.height(16.dp))
                     SectionHeader(title = stringResource(Res.string.friend_requests_received))
                 }
                 itemsIndexed(friendRequestsReceived) { i, request ->
@@ -198,10 +197,12 @@ fun FriendsBody(
                             )
                     )
                 }
+                item{
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
             }
             if (friendRequestsSent.isNotEmpty()) {
                 item {
-                    Spacer(modifier = Modifier.height(16.dp))
                     SectionHeader(title = stringResource(Res.string.friend_requests_sent))
                 }
                 itemsIndexed(friendRequestsSent) { i, request ->
@@ -242,15 +243,13 @@ fun FriendsBody(
                             )
                     )
                 }
+                item{
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
             }
         }
         item {
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = stringResource(Res.string.your_friends),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 4.dp)
-            )
+            SectionHeader(title = stringResource(Res.string.your_friends))
         }
         if (friends.isEmpty()) {
             item {
@@ -378,6 +377,6 @@ fun SectionHeader(title: String) {
     Text(
         text = title,
         style = MaterialTheme.typography.titleMedium,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 4.dp)
     )
 }

@@ -306,6 +306,7 @@ class UserViewModel(
                 userRepository.signOut()
                 if (userRepository.getFirebaseUser() == null) {
                     onSignOut()
+                    _state.update { AppState() }
                 }
             } catch (e: Exception) {
                 logMessage("UserViewModel", e.message.toString())

@@ -16,16 +16,21 @@ windowSizeClass = "1.7.3"
 gservices = "4.4.2"
 firebase = "2.1.0"
 datetime = "0.6.0"
-kmpauthGoogle = "2.4.0-alpha01"
+kmpauthGoogle = "2.4.0-alpha02"
 composeIcons = "1.1.1"
 
 voyager = "1.1.0-beta03"
 
 datastorePreferences = "1.1.7"
 landscapistCoil3 = "2.4.8"
-material3Android = "1.4.0-alpha15"
+material3Android = "1.4.0-alpha16"
+
+assertk = "0.28.1"
+coreKtx = "1.6.1"
+composeTest = "1.8.3"
 
 chart = "1.1.0"
+
 [libraries]
 androidx-datastore = { module = "androidx.datastore:datastore", version.ref = "datastorePreferences" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
@@ -63,6 +68,12 @@ voyager-koin = { module = "cafe.adriel.voyager:voyager-koin", version.ref = "voy
 landscapist-coil3 = { module = "com.github.skydoves:landscapist-coil3", version.ref = "landscapistCoil3" }
 
 chart = { module = "io.github.thechance101:chart", version.ref = "chart" }
+
+kotlin-test = {module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin"}
+assertk = { module = "com.willowtreeapps.assertk:assertk", version.ref = "assertk" }
+compose-ui-test-junit4-android = { module = "androidx.compose.ui:ui-test-junit4-android", version.ref = "composeTest" }
+compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "composeTest" }
+core-ktx = { group = "androidx.test", name = "core-ktx", version.ref = "coreKtx" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
