@@ -8,7 +8,6 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.ExpenseType
 import com.ragl.divide.data.models.Group
-import com.ragl.divide.data.models.GroupEvent
 import com.ragl.divide.data.models.GroupExpense
 import com.ragl.divide.data.models.SplitMethod
 import com.ragl.divide.data.models.UserInfo
@@ -57,7 +56,7 @@ class GroupExpensePropertiesViewModel(
     var members by mutableStateOf<List<UserInfo>>(listOf())
         private set
         
-    private var event by mutableStateOf<GroupEvent?>(null)
+    private var eventId by mutableStateOf<String?>(null)
     var expenseType by mutableStateOf(ExpenseType.NORMAL)
         private set
 
@@ -102,16 +101,12 @@ class GroupExpensePropertiesViewModel(
         userId: String,
         members: List<UserInfo>,
         expense: GroupExpense? = null,
-        event: GroupEvent? = null
+        eventId: String? = null
     ) {
-        this.event = event
+        this.eventId = eventId
 
         // Si se proporciona un evento, configurar el tipo de gasto
-        expenseType = if (event != null) {
-            ExpenseType.EVENT_BASED
-        } else {
-            ExpenseType.NORMAL
-        }
+        expenseType = (if (eventId != null) ExpenseType.EVENT_BASED else ExpenseType.NORMAL)
         screenModelScope.launch {
             updateMembers(members)
             if (expense != null && expense.id.isNotEmpty()) {
@@ -211,7 +206,7 @@ class GroupExpensePropertiesViewModel(
                     title = title,
                     amount = amount.toDouble(),
                     expenseType = expenseType,
-                    eventId = if (event != null && expenseType == ExpenseType.EVENT_BASED) event!!.id else "",
+                    eventId = eventId ?: "",
                     payers = when (splitMethod) {
                         SplitMethod.EQUALLY -> mapOf(payer.uuid to if (payer.uuid in selectedMembers) amountPerPerson else amount.toDouble())
                         SplitMethod.PERCENTAGES -> mapOf(payer.uuid to percentages[payer.uuid]!!.toDouble())

@@ -68,12 +68,12 @@ import com.ragl.divide.data.models.SplitMethod
 import com.ragl.divide.data.models.UserInfo
 import com.ragl.divide.ui.components.AdaptiveFAB
 import com.ragl.divide.ui.components.CollapsedDropdownCard
+import com.ragl.divide.ui.components.DivideTextField
 import com.ragl.divide.ui.components.ExpandedDropdownCard
+import com.ragl.divide.ui.components.FriendItem
 import com.ragl.divide.ui.components.NetworkImage
 import com.ragl.divide.ui.components.NetworkImageType
 import com.ragl.divide.ui.screens.UserViewModel
-import com.ragl.divide.ui.components.DivideTextField
-import com.ragl.divide.ui.components.FriendItem
 import com.ragl.divide.ui.utils.Strings
 import com.ragl.divide.ui.utils.formatCurrency
 import com.ragl.divide.ui.utils.toTwoDecimals
@@ -161,9 +161,8 @@ class GroupExpensePropertiesScreen(
             val uuid = userViewModel.getUUID()
             val members = userViewModel.getGroupMembers(groupId)
             val expense = userViewModel.getGroupExpenseById(groupId, expenseId, eventId)
-            val event = userViewModel.getEventById(groupId, eventId)
 
-            vm.setGroupAndExpense(group, uuid, members, expense, event)
+            vm.setGroupAndExpense(group, uuid, members, expense, eventId)
         }
 
         val sortedMembers = remember(vm.members) {

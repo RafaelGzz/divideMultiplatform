@@ -725,7 +725,7 @@ private fun GroupCard(
                             Color.Transparent,
                             Color.Black.copy(alpha = 0.5f)
                         ),
-                        startY = 250f,
+                        startY = 200.0f,
                     )
                 )
         )
