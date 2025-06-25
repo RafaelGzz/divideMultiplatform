@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,6 +35,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -91,7 +94,11 @@ class EventScreen(
     private val groupId: String,
     private val eventId: String
 ) : Screen {
-    @OptIn(ExperimentalSharedTransitionApi::class, InternalVoyagerApi::class)
+    @OptIn(
+        ExperimentalSharedTransitionApi::class,
+        InternalVoyagerApi::class,
+        ExperimentalMaterial3Api::class
+    )
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
@@ -102,9 +109,13 @@ class EventScreen(
             val event = userViewModel.getEventById(groupId, eventId)
             val members = userViewModel.getGroupMembers(groupId)
             viewModel.setEvent(event, members)
+            viewModel.setGroupId(groupId)
         }
 
         val eventState by viewModel.event.collectAsState()
+        val isRefreshing by viewModel.isRefreshing.collectAsState()
+        val pullToRefreshState = rememberPullToRefreshState()
+
         val hasExpensesOrPayments = remember(eventState) {
             eventState.expenses.isNotEmpty() || eventState.payments.isNotEmpty()
         }
@@ -200,89 +211,106 @@ class EventScreen(
                         }
                     }
                 ) { paddingValues ->
-                    LazyColumn(
-                        modifier = Modifier
-                            .padding(paddingValues)
-                            .padding(horizontal = 16.dp)
-                            .fillMaxSize()
+                    PullToRefreshBox(
+                        isRefreshing = isRefreshing,
+                        onRefresh = {
+                            viewModel.refreshEvent(
+                                onUpdateEventInState = userViewModel::updateEventInState,
+                                onHandleError = userViewModel::handleError,
+                                onSuccess = {
+                                    // Actualizar los datos locales después del refresh
+                                    val refreshedEvent = viewModel.event.value
+                                    val members = userViewModel.getGroupMembers(groupId)
+                                    viewModel.setEvent(refreshedEvent, members)
+                                }
+                            )
+                        },
+                        state = pullToRefreshState,
+                        modifier = Modifier.padding(paddingValues)
                     ) {
-                        item {
-                            Column {
-                                EventInfoHeader(event = eventState)
-                                if (canSettleEvent && showSettleBanner) {
-                                    SettleBanner(
-                                        onSettleClick = { showSettleDialog = true },
-                                        onDismiss = { showSettleBanner = false }
-                                    )
-                                }
-                                if (canReopenEvent && showReopenBanner) {
-                                    ReopenBanner(
-                                        onReopenClick = { showReopenDialog = true },
-                                        onDismiss = { showReopenBanner = false }
-                                    )
-                                }
-                            }
-                        }
-                        item {
-                            if (!(canReopenEvent && showReopenBanner) && !(canSettleEvent && showSettleBanner))
-                                AnimatedVisibility(
-                                    !isDebtsExpanded
-                                ) {
-                                    CollapsedDebtsCard(
-                                        debts = allDebts,
-                                        currentUserId = uuid,
-                                        sharedTransitionScope = this@SharedTransitionLayout,
-                                        animatedVisibilityScope = this@AnimatedVisibility,
-                                        onClick = {
-                                            if (allDebts.isNotEmpty())
-                                                isDebtsExpanded = true
-                                        },
-                                    )
-                                }
-                        }
-                        item {
-                            Text(
-                                text = stringResource(Res.string.activity),
-                                style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier.padding(bottom = 4.dp, top = 12.dp)
-                            )
-                        }
-                        if (!hasExpensesOrPayments) {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp)
+                        ) {
                             item {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(80.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = stringResource(Res.string.no_activity),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        textAlign = TextAlign.Center,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                    )
+                                Column {
+                                    EventInfoHeader(event = eventState)
+                                    if (canSettleEvent && showSettleBanner) {
+                                        SettleBanner(
+                                            onSettleClick = { showSettleDialog = true },
+                                            onDismiss = { showSettleBanner = false }
+                                        )
+                                    }
+                                    if (canReopenEvent && showReopenBanner) {
+                                        ReopenBanner(
+                                            onReopenClick = { showReopenDialog = true },
+                                            onDismiss = { showReopenBanner = false }
+                                        )
+                                    }
                                 }
                             }
-                        } else {
-                            expenseListView(
-                                expensesAndPayments = viewModel.expensesAndPayments,
-                                getPaidByNames = viewModel::getPaidByNames,
-                                members = viewModel.members,
-                                onExpenseClick = {
-                                    navigator.push(
-                                        GroupExpenseScreen(
-                                            groupId, it, eventId, eventState.settled
+                            item {
+                                if (!(canReopenEvent && showReopenBanner) && !(canSettleEvent && showSettleBanner))
+                                    AnimatedVisibility(
+                                        !isDebtsExpanded
+                                    ) {
+                                        CollapsedDebtsCard(
+                                            debts = allDebts,
+                                            currentUserId = uuid,
+                                            sharedTransitionScope = this@SharedTransitionLayout,
+                                            animatedVisibilityScope = this@AnimatedVisibility,
+                                            onClick = {
+                                                if (allDebts.isNotEmpty())
+                                                    isDebtsExpanded = true
+                                            },
                                         )
-                                    )
-                                },
-                                onPaymentClick = { paymentId ->
-                                    navigator.push(
-                                        GroupPaymentScreen(
-                                            groupId, paymentId, eventId, eventState.settled
+                                    }
+                            }
+                            item {
+                                Text(
+                                    text = stringResource(Res.string.activity),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.padding(bottom = 4.dp, top = 12.dp)
+                                )
+                            }
+                            if (!hasExpensesOrPayments) {
+                                item {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(80.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = stringResource(Res.string.no_activity),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            textAlign = TextAlign.Center,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                         )
-                                    )
+                                    }
                                 }
-                            )
+                            } else {
+                                expenseListView(
+                                    expensesAndPayments = viewModel.expensesAndPayments,
+                                    getPaidByNames = viewModel::getPaidByNames,
+                                    members = viewModel.members,
+                                    onExpenseClick = {
+                                        navigator.push(
+                                            GroupExpenseScreen(
+                                                groupId, it, eventId, eventState.settled
+                                            )
+                                        )
+                                    },
+                                    onPaymentClick = { paymentId ->
+                                        navigator.push(
+                                            GroupPaymentScreen(
+                                                groupId, paymentId, eventId, eventState.settled
+                                            )
+                                        )
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -377,6 +405,21 @@ class EventScreen(
                             }
                         }
                     )
+                }
+
+                // Indicador de progreso circular cuando está refrescando
+                if (isRefreshing) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(48.dp),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
         }

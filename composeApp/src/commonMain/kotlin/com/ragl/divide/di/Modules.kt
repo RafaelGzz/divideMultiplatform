@@ -1,5 +1,7 @@
 package com.ragl.divide.di
 
+import com.ragl.divide.AppLifecycleHandler
+import com.ragl.divide.DefaultAppLifecycleHandler
 import com.ragl.divide.data.repositories.FriendsRepository
 import com.ragl.divide.data.repositories.FriendsRepositoryImpl
 import com.ragl.divide.data.repositories.GroupRepository

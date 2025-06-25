@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -45,6 +46,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -101,7 +104,7 @@ import org.jetbrains.compose.resources.stringResource
 class GroupScreen(
     private val groupId: String
 ) : Screen {
-    @OptIn(ExperimentalSharedTransitionApi::class, InternalVoyagerApi::class)
+    @OptIn(ExperimentalSharedTransitionApi::class, InternalVoyagerApi::class, ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
@@ -116,6 +119,8 @@ class GroupScreen(
 
         val uuid = userViewModel.getUUID()
         val groupState by viewModel.group.collectAsState()
+        val isRefreshing by viewModel.isRefreshing.collectAsState()
+        val pullToRefreshState = rememberPullToRefreshState()
 
         val eventDebtsMap = remember(groupState.events) {
             groupState.events.mapValues { (_, event) -> event.currentDebts }
@@ -187,132 +192,80 @@ class GroupScreen(
                         )
                     }
                 ) { paddingValues ->
-                    LazyVerticalStaggeredGrid(
-                        modifier = Modifier.fillMaxWidth()
-                            .padding(paddingValues)
-                            .padding(horizontal = 16.dp),
-                        columns = StaggeredGridCells.Adaptive(150.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalItemSpacing = 12.dp
+                    PullToRefreshBox(
+                        isRefreshing = isRefreshing,
+                        onRefresh = {
+                            viewModel.refreshGroup(
+                                onUpdateGroupInState = userViewModel::updateGroupInState,
+                                onHandleError = userViewModel::handleError,
+                                onSuccess = {
+                                    // Actualizar los datos locales después del refresh
+                                    val refreshedGroup = viewModel.group.value
+                                    val members = userViewModel.getGroupMembers(groupId)
+                                    viewModel.setGroup(refreshedGroup, members)
+                                }
+                            )
+                        },
+                        state = pullToRefreshState,
+                        modifier = Modifier.padding(paddingValues)
                     ) {
+                        LazyVerticalStaggeredGrid(
+                            modifier = Modifier.fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            columns = StaggeredGridCells.Adaptive(150.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalItemSpacing = 12.dp
+                        ) {
 //                        GroupInfoHeader(
 //                            group = groupState,
 //                            members = viewModel.members
 //                        )
-                        item(span = StaggeredGridItemSpan.FullLine ) {
-                            AnimatedVisibility(
-                                visible = !isDebtsExpanded
-                            ) {
-                                CollapsedDebtsCard(
-                                    debts = allDebts,
-                                    isGroup = true,
-                                    currentUserId = uuid,
-                                    sharedTransitionScope = this@SharedTransitionLayout,
-                                    animatedVisibilityScope = this@AnimatedVisibility,
-                                    onClick = {
-                                        if (allDebts.isNotEmpty())
-                                            isDebtsExpanded = true
-                                    },
-                                    modifier = Modifier.padding(top = 12.dp)
-                                )
-                            }
-                        }
-
-                        item(span = StaggeredGridItemSpan.FullLine ) {
-                            Text(
-                                text = stringResource(Res.string.events),
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                        }
-                        if (activeEvents.isEmpty() && settledEvents.isEmpty()) {
                             item(span = StaggeredGridItemSpan.FullLine ) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(100.dp),
-                                    contentAlignment = Alignment.Center
+                                AnimatedVisibility(
+                                    visible = !isDebtsExpanded
                                 ) {
-                                    Text(
-                                        text = stringResource(Res.string.no_events),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    CollapsedDebtsCard(
+                                        debts = allDebts,
+                                        isGroup = true,
+                                        currentUserId = uuid,
+                                        sharedTransitionScope = this@SharedTransitionLayout,
+                                        animatedVisibilityScope = this@AnimatedVisibility,
+                                        onClick = {
+                                            if (allDebts.isNotEmpty())
+                                                isDebtsExpanded = true
+                                        },
+                                        modifier = Modifier.padding(top = 12.dp)
                                     )
                                 }
                             }
-                        } else {
-                            items(activeEvents) { event ->
-                                val debt = event.currentDebts[uuid]?.values?.sum() ?: 0.0
-                                val credit = event.currentDebts.values.sumOf { userDebts ->
-                                    userDebts[uuid] ?: 0.0
-                                }
-                                EventItem(
-                                    event = event,
-                                    debt = debt,
-                                    credit = credit,
-                                    settled = event.settled,
-                                    onClick = {
-                                        navigator.push(
-                                            EventScreen(
-                                                groupId,
-                                                event.id
-                                            )
-                                        )
-                                    },
-                                    modifier = Modifier.fillMaxSize()
+
+                            item(span = StaggeredGridItemSpan.FullLine ) {
+                                Text(
+                                    text = stringResource(Res.string.events),
+                                    style = MaterialTheme.typography.titleMedium
                                 )
                             }
-                            if (settledEvents.isNotEmpty()) {
+                            if (activeEvents.isEmpty() && settledEvents.isEmpty()) {
                                 item(span = StaggeredGridItemSpan.FullLine ) {
-                                    Row(
-                                        horizontalArrangement = Arrangement.Center,
+                                    Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
+                                            .height(100.dp),
+                                        contentAlignment = Alignment.Center
                                     ) {
-                                        TextButton(
-                                            onClick = {
-                                                showSettledEvents = !showSettledEvents
-                                            },
-                                            colors = ButtonDefaults.textButtonColors(
-                                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                            ),
-                                            modifier = Modifier.wrapContentWidth()
-                                        ) {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.Center,
-                                            ) {
-                                                Icon(
-                                                    imageVector = if (showSettledEvents) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(20.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Text(
-                                                    text = stringResource(Res.string.settled_events, settledEvents.size),
-                                                    style = MaterialTheme.typography.labelSmall
-                                                )
-                                            }
-                                        }
+                                        Text(
+                                            text = stringResource(Res.string.no_events),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
                                     }
                                 }
-                            }
-
-                            items(settledEvents) { event ->
-                                val debt = event.currentDebts[uuid]?.values?.sum() ?: 0.0
-                                val credit = event.currentDebts.values.sumOf { userDebts ->
-                                    userDebts[uuid] ?: 0.0
-                                }
-                                AnimatedVisibility(
-                                    visible = showSettledEvents,
-                                    enter = slideInVertically(
-                                        animationSpec = tween(350),
-                                        initialOffsetY = { -it + (it / 8) * 5 }
-                                    ) + fadeIn(tween(350)),
-                                    exit = slideOutVertically(
-                                        animationSpec = tween(250),
-                                        targetOffsetY = { -it - (it / 8) }
-                                    ) + fadeOut(tween(100))
-                                ) {
+                            } else {
+                                items(activeEvents) { event ->
+                                    val debt = event.currentDebts[uuid]?.values?.sum() ?: 0.0
+                                    val credit = event.currentDebts.values.sumOf { userDebts ->
+                                        userDebts[uuid] ?: 0.0
+                                    }
                                     EventItem(
                                         event = event,
                                         debt = debt,
@@ -329,47 +282,131 @@ class GroupScreen(
                                         modifier = Modifier.fillMaxSize()
                                     )
                                 }
-                            }
-                            item(span = StaggeredGridItemSpan.FullLine ) {
-                                Spacer(modifier = Modifier.height(80.dp))
+                                if (settledEvents.isNotEmpty()) {
+                                    item(span = StaggeredGridItemSpan.FullLine ) {
+                                        Row(
+                                            horizontalArrangement = Arrangement.Center,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                        ) {
+                                            TextButton(
+                                                onClick = {
+                                                    showSettledEvents = !showSettledEvents
+                                                },
+                                                colors = ButtonDefaults.textButtonColors(
+                                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                                ),
+                                                modifier = Modifier.wrapContentWidth()
+                                            ) {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.Center,
+                                                ) {
+                                                    Icon(
+                                                        imageVector = if (showSettledEvents) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Text(
+                                                        text = stringResource(Res.string.settled_events, settledEvents.size),
+                                                        style = MaterialTheme.typography.labelSmall
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                items(settledEvents) { event ->
+                                    val debt = event.currentDebts[uuid]?.values?.sum() ?: 0.0
+                                    val credit = event.currentDebts.values.sumOf { userDebts ->
+                                        userDebts[uuid] ?: 0.0
+                                    }
+                                    AnimatedVisibility(
+                                        visible = showSettledEvents,
+                                        enter = slideInVertically(
+                                            animationSpec = tween(350),
+                                            initialOffsetY = { -it + (it / 8) * 5 }
+                                        ) + fadeIn(tween(350)),
+                                        exit = slideOutVertically(
+                                            animationSpec = tween(250),
+                                            targetOffsetY = { -it - (it / 8) }
+                                        ) + fadeOut(tween(100))
+                                    ) {
+                                        EventItem(
+                                            event = event,
+                                            debt = debt,
+                                            credit = credit,
+                                            settled = event.settled,
+                                            onClick = {
+                                                navigator.push(
+                                                    EventScreen(
+                                                        groupId,
+                                                        event.id
+                                                    )
+                                                )
+                                            },
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    }
+                                }
+                                item(span = StaggeredGridItemSpan.FullLine ) {
+                                    Spacer(modifier = Modifier.height(80.dp))
+                                }
                             }
                         }
                     }
                 }
             }
 
-            if (allDebts.isNotEmpty()) {
-                AnimatedVisibility(
-                    visible = isDebtsExpanded,
-                    enter = fadeIn(tween(300)),
-                    exit = fadeOut(tween(300))
-                ) {
-                    ExpandedDebtsCard(
-                        debts = allDebts,
-                        isGroup = true,
-                        users = usersWithDebts.mapNotNull { userId ->
-                            viewModel.members.find { it.uuid == userId }
-                        },
-                        currentUserId = uuid,
-                        sharedTransitionScope = this@SharedTransitionLayout,
-                        animatedVisibilityScope = this@AnimatedVisibility,
-                        onDismiss = { isDebtsExpanded = false },
-                        onPayDebtClicked = {
-                            navigator.push(EventScreen(groupId, it.eventId))
-                            navigator.push(
-                                GroupPaymentPropertiesScreen(
-                                    groupId = groupId,
-                                    eventId = it.eventId,
-                                    currentDebtInfo = it
+                            if (allDebts.isNotEmpty()) {
+                    AnimatedVisibility(
+                        visible = isDebtsExpanded,
+                        enter = fadeIn(tween(300)),
+                        exit = fadeOut(tween(300))
+                    ) {
+                        ExpandedDebtsCard(
+                            debts = allDebts,
+                            isGroup = true,
+                            users = usersWithDebts.mapNotNull { userId ->
+                                viewModel.members.find { it.uuid == userId }
+                            },
+                            currentUserId = uuid,
+                            sharedTransitionScope = this@SharedTransitionLayout,
+                            animatedVisibilityScope = this@AnimatedVisibility,
+                            onDismiss = { isDebtsExpanded = false },
+                            onPayDebtClicked = {
+                                navigator.push(EventScreen(groupId, it.eventId))
+                                navigator.push(
+                                    GroupPaymentPropertiesScreen(
+                                        groupId = groupId,
+                                        eventId = it.eventId,
+                                        currentDebtInfo = it
+                                    )
                                 )
-                            )
-                        },
-                        onGoToEventClicked = {
-                            navigator.push(EventScreen(groupId, it))
-                        }
-                    )
+                            },
+                            onGoToEventClicked = {
+                                navigator.push(EventScreen(groupId, it))
+                            }
+                        )
+                    }
                 }
-            }
+
+                // Indicador de progreso circular cuando está refrescando
+                if (isRefreshing) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(48.dp),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
         }
     }
 }

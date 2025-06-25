@@ -3,6 +3,7 @@ package com.ragl.divide.ui.screens
 import androidx.compose.runtime.mutableStateOf
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import com.ragl.divide.AppLifecycleHandler
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.GroupEvent
@@ -36,7 +37,6 @@ data class AppState(
     val groups: Map<String, Group> = emptyMap(),
     val groupMembers: Map<String, List<UserInfo>> = emptyMap(),
     val friends: Map<String, UserInfo> = emptyMap(),
-    val selectedGroupMembers: List<UserInfo> = emptyList(),
     val user: User = User(),
     val friendRequestsReceived: Map<String, UserInfo> = emptyMap(),
     val friendRequestsSent: Map<String, UserInfo> = emptyMap()
@@ -50,7 +50,8 @@ class UserViewModel(
     private val groupExpenseService: GroupExpenseService,
     private val scheduleNotificationService: ScheduleNotificationService,
     private val strings: Strings,
-    private val analyticsService: AnalyticsService
+    private val analyticsService: AnalyticsService,
+    private val appLifecycleHandler: AppLifecycleHandler
 ) : ScreenModel {
 
     private val _state = MutableStateFlow(AppState())
@@ -73,12 +74,24 @@ class UserViewModel(
         private set
 
     init {
+        // Escuchar cambios en el modo oscuro
         screenModelScope.launch {
             preferencesRepository.darkModeFlow.collect {
                 isDarkMode.value = it
             }
         }
 
+        // Escuchar cambios en el ciclo de vida de la aplicación
+        screenModelScope.launch {
+            appLifecycleHandler.isAppInForeground.collect { isInForeground ->
+                if (isInForeground && !startAtLogin.value && !isInitializing.value) {
+                    logMessage("UserViewModel", "App regresó al foreground, actualizando datos")
+                    getUserData()
+                }
+            }
+        }
+
+        // Inicialización de la aplicación
         screenModelScope.launch(Dispatchers.IO) {
             val startTime = Clock.System.now().toEpochMilliseconds()
             try {
@@ -888,5 +901,31 @@ class UserViewModel(
                 }
             )
         }
+    }
+
+    fun updateGroupInState(groupId: String, updatedGroup: Group) {
+        _state.update { currentState ->
+            currentState.copy(
+                groups = currentState.groups + (groupId to updatedGroup)
+            )
+        }
+        logMessage("UserViewModel", "Updated group $groupId in state")
+    }
+
+    fun updateEventInState(groupId: String, eventId: String, updatedEvent: GroupEvent) {
+        _state.update { currentState ->
+            val currentGroup = currentState.groups[groupId]
+            if (currentGroup != null) {
+                val updatedGroup = currentGroup.copy(
+                    events = currentGroup.events + (eventId to updatedEvent)
+                )
+                currentState.copy(
+                    groups = currentState.groups + (groupId to updatedGroup)
+                )
+            } else {
+                currentState
+            }
+        }
+        logMessage("UserViewModel", "Updated event $eventId in group $groupId in state")
     }
 }

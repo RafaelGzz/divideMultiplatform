@@ -2,6 +2,8 @@ package com.ragl.divide.di
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import com.ragl.divide.AppLifecycleHandler
+import com.ragl.divide.IOSAppLifecycleHandler
 import com.ragl.divide.data.services.ScheduleNotificationService
 import com.ragl.divide.ui.utils.Strings
 import createDataStore
@@ -20,4 +22,8 @@ actual val platformModule = module {
     single{
         Strings()
     }.bind<Strings>()
+
+    single<AppLifecycleHandler> {
+        IOSAppLifecycleHandler()
+    }
 }

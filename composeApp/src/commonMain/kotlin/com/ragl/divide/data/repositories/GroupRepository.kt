@@ -81,13 +81,13 @@ class GroupRepositoryImpl(
         val startTime = Clock.System.now().toEpochMilliseconds()
         val group = database.reference("groups/$id").valueEvents.firstOrNull()?.value<Group>()
             ?: Group()
-        val groupWithImage = group.copy(image = if (group.image.isNotEmpty()) getPhoto(id) else "")
+        //val groupWithImage = group.copy(image = if (group.image.isNotEmpty()) getPhoto(id) else "")
         val executionTime = Clock.System.now().toEpochMilliseconds() - startTime
         logMessage(
             "GroupRepositoryImpl",
-            "getGroup: $groupWithImage - executed in ${executionTime}ms"
+            "getGroup: ${group.id} - executed in ${executionTime}ms"
         )
-        return groupWithImage
+        return group
     }
 
     override suspend fun saveGroup(group: Group, photo: File?): Group {
