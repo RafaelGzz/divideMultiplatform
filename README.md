@@ -42,18 +42,13 @@ Con una interfaz limpia y fácil de usar, podrás añadir gastos en segundos, ve
 🍽️ Cenas con amigos  
 
 ## Capturas de Pantalla
-
-### Autenticación con correo o Google
-
-### Inicio
-
-### Gasto Individual
-
-### Gasto Grupal
-
-### Resumen Grupal
-
-### Ajustes de Usuario
+<img src="https://github.com/user-attachments/assets/7addfe23-cbf8-4670-a852-65615ec891a0" width="300">
+<img src="https://github.com/user-attachments/assets/d3240261-4e0e-4c53-bb63-0ca0db283799" width="300">
+<img src="https://github.com/user-attachments/assets/9707f738-bde8-441b-b295-df421142f561" width="300">
+<img src="https://github.com/user-attachments/assets/feb2e89e-9ce0-4507-8a00-c84dfcd56b40" width="300">
+<img src="https://github.com/user-attachments/assets/3568a2f6-79e1-428e-9623-ee3dc880b353" width="300">
+<img src="https://github.com/user-attachments/assets/d74c1fb0-a6bf-4792-856c-c62ab022f033" width="300">
+<img src="https://github.com/user-attachments/assets/9bd68431-a162-4ce0-ac53-5c4d2d260057" width="300">
 
 ## Tecnología
 
