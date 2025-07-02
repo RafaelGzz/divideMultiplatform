@@ -214,4 +214,28 @@ actual class Strings {
         return bundle.localizedStringForKey("cannot_modify_while_event_settled", "Cannot modify this item while the event is settled", null)
     }
 
+    actual fun getNameRequired(): String {
+        return bundle.localizedStringForKey("name_required", "Name is required", null)
+    }
+
+    actual fun getNameTooLong(): String {
+        return bundle.localizedStringForKey("name_too_long", "Name cannot be longer than 20 characters", null)
+    }
+
+    actual fun getNameCannotContainSpaces(): String {
+        return bundle.localizedStringForKey("name_cannot_contain_spaces", "Name cannot contain spaces", null)
+    }
+
+    actual fun getNameAlreadyExists(): String {
+        return bundle.localizedStringForKey("name_already_exists", "This name already exists in the group", null)
+    }
+
+    actual fun getCannotRemoveLastMember(): String {
+        return bundle.localizedStringForKey("cannot_remove_last_member", "Cannot remove the last member of the group", null)
+    }
+
+    actual fun getCannotRemoveGuestWithDebts(): String {
+        return bundle.localizedStringForKey("cannot_remove_guest_with_debts", "Cannot remove guest with active debts", null)
+    }
+
 }

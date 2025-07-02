@@ -209,4 +209,28 @@ actual class Strings(private val context: Context) {
     actual fun getCannotModifyWhileEventSettled(): String {
         return context.getString(R.string.cannot_modify_while_event_settled)
     }
+
+    actual fun getNameRequired(): String {
+        return context.getString(R.string.name_required)
+    }
+
+    actual fun getNameTooLong(): String {
+        return context.getString(R.string.name_too_long)
+    }
+
+    actual fun getNameCannotContainSpaces(): String {
+        return context.getString(R.string.name_cannot_contain_spaces)
+    }
+
+    actual fun getNameAlreadyExists(): String {
+        return context.getString(R.string.name_already_exists)
+    }
+
+    actual fun getCannotRemoveLastMember(): String {
+        return context.getString(R.string.cannot_remove_last_member)
+    }
+
+    actual fun getCannotRemoveGuestWithDebts(): String {
+        return context.getString(R.string.cannot_remove_guest_with_debts)
+    }
 }

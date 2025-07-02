@@ -77,7 +77,7 @@ import com.ragl.divide.ui.screens.expenseProperties.ExpensePropertiesScreen
 import com.ragl.divide.ui.screens.friends.FriendsBody
 import com.ragl.divide.ui.screens.friends.FriendsScreen
 import com.ragl.divide.ui.screens.group.GroupScreen
-import com.ragl.divide.ui.screens.groupProperties.GroupPropertiesScreen
+import com.ragl.divide.ui.screens.groupProperties.CreateGroupScreen
 import com.ragl.divide.ui.screens.signIn.SignInScreen
 import com.ragl.divide.ui.utils.WindowWidthSizeClass
 import com.ragl.divide.ui.utils.getWindowWidthSizeClass
@@ -219,7 +219,7 @@ private fun CompactLayout(
                         navigator.push(ExpensePropertiesScreen())
                     },
                     onAddGroupClick = {
-                        navigator.push(GroupPropertiesScreen())
+                        navigator.push(CreateGroupScreen())
                     }
                 )
 
@@ -331,7 +331,7 @@ private fun ExpandedLayout(
                         navigator.push(ExpensePropertiesScreen())
                     },
                     onAddGroupClick = {
-                        navigator.push(GroupPropertiesScreen())
+                        navigator.push(CreateGroupScreen())
                     }
                 )
 

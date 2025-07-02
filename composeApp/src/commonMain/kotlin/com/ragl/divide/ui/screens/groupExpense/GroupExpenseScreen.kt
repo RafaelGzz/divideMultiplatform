@@ -81,7 +81,7 @@ class GroupExpenseScreen(
         val userViewModel = navigator.koinNavigatorScreenModel<UserViewModel>()
 
         LaunchedEffect(Unit) {
-            val members = userViewModel.getGroupMembers(groupId)
+            val members = userViewModel.getGroupMembersWithGuests(groupId)
             val groupExpense = userViewModel.getGroupExpenseById(groupId, expenseId, eventId)
             viewModel.setGroupExpense(groupExpense, members)
         }

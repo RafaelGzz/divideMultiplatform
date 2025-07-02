@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 
 /**
  * ViewModel para la pantalla de propiedades del grupo, enfocado en la edición de información
@@ -31,23 +32,23 @@ class GroupPropertiesViewModel(
     private var _group = MutableStateFlow(Group())
     var group = _group.asStateFlow()
 
-    // Imagen temporal para mostrar antes de subir a Firebase
     private var _temporaryImagePath = MutableStateFlow<String?>(null)
     val temporaryImagePath = _temporaryImagePath.asStateFlow()
 
     var members by mutableStateOf<List<UserInfo>>(listOf())
         private set
 
+    var guests by mutableStateOf<Map<String, String>>(emptyMap())
+        private set
+
     var nameError by mutableStateOf("")
         private set
+
+    var guestNameError by mutableStateOf("")
 
     var simplifyDebts by mutableStateOf(true)
         private set
 
-    private var _isLoading = MutableStateFlow(false)
-    var isLoading = _isLoading.asStateFlow()
-
-    // Almacena la ruta del archivo de imagen seleccionado
     private var selectedImagePath: String? = null
 
     private var currentUserId: String = ""
@@ -85,20 +86,6 @@ class GroupPropertiesViewModel(
         return consolidatedDebts.isEmpty()
     }
 
-    /**
-     * Obtiene un mapa con el ID del evento y sus currentDebts
-     */
-    fun getEventDebtsMap(): Map<String, Map<String, Map<String, Double>>> {
-        return groupExpenseService.getEventDebtsMap(_group.value.events)
-    }
-
-    /**
-     * Obtiene las deudas consolidadas de todos los eventos
-     */
-    fun getConsolidatedDebts(): Map<String, Map<String, Double>> {
-        return groupExpenseService.consolidateDebtsFromEventsMap(_group.value.events)
-    }
-
     fun updateName(name: String) {
         _group.update {
             it.copy(name = name)
@@ -118,18 +105,99 @@ class GroupPropertiesViewModel(
         this.members -= member
     }
 
+    fun addGuest(guestName: String): Boolean {
+        if (validateGuestName(guestName)) {
+            val guestId = "guest_${Clock.System.now().toEpochMilliseconds()}"
+            guests = guests + (guestId to guestName)
+            return true
+        }
+        return false
+    }
+
+    fun updateGuestName(guestId: String, newName: String): Boolean {
+        if (validateGuestName(newName, excludeGuestId = guestId)) {
+            guests = guests.toMutableMap().apply {
+                this[guestId] = newName
+            }
+            guestNameError = ""
+            return true
+        }
+        return false
+    }
+
+    fun removeGuest(guestId: String) {
+        guests = guests - guestId
+    }
+
+    fun canRemoveGuest(guestId: String): Boolean {
+        val totalOtherMembers = members.size + guests.size - 1
+        if (totalOtherMembers == 1) {
+            return false
+        }
+        
+        val group = _group.value
+        
+        val hasDebtsInEvents = group.events.values.any { event ->
+            val hasDebtsInEventExpenses = event.expenses.values.any { expense ->
+                expense.payers.containsKey(guestId) || expense.debtors.containsKey(guestId)
+            }
+            
+            val hasDebtsInEventPayments = event.payments.values.any { payment ->
+                payment.from == guestId || payment.to == guestId
+            }
+            
+            val hasCurrentDebts = event.currentDebts.containsKey(guestId) ||
+                                 event.currentDebts.values.any { it.containsKey(guestId) }
+            
+            hasDebtsInEventExpenses || hasDebtsInEventPayments || hasCurrentDebts
+        }
+        
+        return !hasDebtsInEvents
+    }
+
+    fun getRemoveGuestErrorMessage(): String {
+        val totalOtherMembers = members.size + guests.size - 1
+        return if (totalOtherMembers == 1) {
+            strings.getCannotRemoveLastMember()
+        } else {
+            strings.getCannotRemoveGuestWithDebts()
+        }
+    }
+
+    private fun validateGuestName(name: String, excludeGuestId: String? = null): Boolean {
+        guestNameError = when {
+            name.isBlank() -> strings.getNameRequired()
+            name.length > 20 -> strings.getNameTooLong()
+            name.contains(" ") -> strings.getNameCannotContainSpaces()
+            isNameAlreadyUsed(name, excludeGuestId) -> strings.getNameAlreadyExists()
+            else -> {
+                ""
+            }
+        }
+        return guestNameError.isEmpty()
+    }
+
+    private fun isNameAlreadyUsed(name: String, excludeGuestId: String?): Boolean {
+        // Verificar contra nombres de miembros
+        val memberNames = members.map { it.name }
+        if (memberNames.contains(name)) return true
+        
+        // Verificar contra otros invitados
+        val otherGuestNames = guests.filterKeys { it != excludeGuestId }.values
+        return otherGuestNames.contains(name)
+    }
+
     fun setGroup(group: Group, users: List<UserInfo>, userId: String) {
         screenModelScope.launch {
             currentUserId = userId
-            _isLoading.update { true }
             _group.update {
                 group
             }
             simplifyDebts = group.simplifyDebts
             members = users
+            guests = group.guests
             canLeaveGroup = canLeaveGroup()
             canDeleteGroup = canDeleteGroup()
-            _isLoading.update { false }
         }
     }
 
@@ -169,14 +237,12 @@ class GroupPropertiesViewModel(
                 it.copy(
                     name = it.name.trim(),
                     users = members.associate { member -> member.uuid to member.uuid },
+                    guests = guests,
                     simplifyDebts = simplifyDebts
                 )
             }
             screenModelScope.launch {
                 try {
-                    _isLoading.update { true }
-
-                    // Crear File de Firebase si hay una imagen seleccionada
                     val imageFile = selectedImagePath?.let { path ->
                         PlatformImageUtils.createFirebaseFile(path)
                     }
@@ -188,10 +254,8 @@ class GroupPropertiesViewModel(
                     _temporaryImagePath.update { null }
                     selectedImagePath = null
 
-                    _isLoading.update { false }
                     onSuccess(savedGroup)
                 } catch (e: Exception) {
-                    _isLoading.update { false }
                     logMessage("GroupDetailsViewModel", e.toString())
                     onError(e.message ?: strings.getUnknownError())
                 }
@@ -206,12 +270,10 @@ class GroupPropertiesViewModel(
                     onError(strings.getCannotDeleteGroup())
                     return@launch
                 }
-                _isLoading.update { true }
                 groupRepository.deleteGroup(
                     _group.value.id,
                     if (_group.value.image.isNotEmpty()) _group.value.id else ""
                 )
-                _isLoading.update { false }
                 onSuccess()
             } catch (e: Exception) {
                 logMessage("GroupDetailsViewModel", e.toString())

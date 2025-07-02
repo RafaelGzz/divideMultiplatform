@@ -36,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,10 +55,11 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.internal.BackHandler
 import com.mmk.kmpauth.firebase.google.GoogleButtonUiContainerFirebase
+import com.ragl.divide.ui.components.DivideTextField
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.main.MainScreen
+import com.ragl.divide.ui.screens.onboarding.OnboardingScreen
 import com.ragl.divide.ui.theme.DivideTheme
-import com.ragl.divide.ui.components.DivideTextField
 import com.ragl.divide.ui.utils.Strings
 import com.ragl.divide.ui.utils.WindowWidthSizeClass
 import com.ragl.divide.ui.utils.getWindowWidthSizeClass
@@ -76,6 +78,7 @@ import dividemultiplatform.composeapp.generated.resources.or
 import dividemultiplatform.composeapp.generated.resources.password_text
 import dividemultiplatform.composeapp.generated.resources.sign_up
 import dividemultiplatform.composeapp.generated.resources.username
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -132,6 +135,7 @@ class SignInScreen : Screen {
         val signUpViewModel: SignUpViewModel = koinScreenModel<SignUpViewModel>()
         val strings: Strings = koinInject()
         val windowSizeClass = getWindowWidthSizeClass()
+        val coroutineScope = rememberCoroutineScope()
 
         val onLoginClick = { currentScreen = "login" }
         val onSignUpClick = { currentScreen = "signup" }
@@ -139,7 +143,14 @@ class SignInScreen : Screen {
 
         val onGoogleSignIn: (Result<FirebaseUser?>) -> Unit = { result ->
             userViewModel.signInWithGoogle(result = result) {
-                navigator.replaceAll(MainScreen())
+                coroutineScope.launch {
+                    if (userViewModel.isFirstTime()) {
+                        navigator.replaceAll(OnboardingScreen())
+                    } else {
+                        userViewModel.getUserData()
+                        navigator.replaceAll(MainScreen())
+                    }
+                }
             }
         }
 
@@ -151,7 +162,15 @@ class SignInScreen : Screen {
             userViewModel.signInWithEmailAndPassword(
                 email = email,
                 password = password,
-                onSuccess = { navigator.replaceAll(MainScreen()) },
+                onSuccess = {
+                    coroutineScope.launch {
+                        if (userViewModel.isFirstTime()) {
+                            navigator.replaceAll(OnboardingScreen())
+                        } else {
+                            navigator.replaceAll(MainScreen())
+                        }
+                    }
+                },
                 onFail = { error ->
                     if (error == strings.getEmailNotVerified()) {
                         navigator.push(EmailVerificationScreen())

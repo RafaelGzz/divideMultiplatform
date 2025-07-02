@@ -82,7 +82,7 @@ class GroupPaymentPropertiesScreen(
         val userViewModel = navigator.koinNavigatorScreenModel<UserViewModel>()
 
         LaunchedEffect(groupId, paymentId, eventId) {
-            val members = userViewModel.getGroupMembers(groupId)
+            val members = userViewModel.getGroupMembersWithGuests(groupId)
             val payment = userViewModel.getGroupPaymentById(groupId, paymentId, eventId)
             vm.setGroupAndPayment(groupId, members, payment, eventId, currentDebtInfo)
         }

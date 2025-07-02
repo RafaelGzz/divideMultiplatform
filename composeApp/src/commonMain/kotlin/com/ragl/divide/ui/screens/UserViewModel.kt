@@ -28,6 +28,7 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -147,6 +148,22 @@ class UserViewModel(
     fun changeDarkMode(isDarkMode: Boolean?) {
         screenModelScope.launch {
             preferencesRepository.saveDarkMode(isDarkMode)
+        }
+    }
+
+    suspend fun isFirstTime(): Boolean {
+        return try {
+            preferencesRepository.isFirstTimeFlow.first()
+        } catch (e: Exception) {
+            logMessage("UserViewModel", "Error checking first time: ${e.message}")
+            false
+        }
+    }
+
+    fun completeOnboarding() {
+        screenModelScope.launch {
+            preferencesRepository.setFirstTime(false)
+            logMessage("UserViewModel", "Onboarding completed")
         }
     }
 
@@ -270,7 +287,6 @@ class UserViewModel(
                             "email" to checkedUser.email
                         ))
                     }
-                    getUserData()
                     onSuccess()
                 } else {
                     handleError(strings.getFailedToLogin())
@@ -752,6 +768,22 @@ class UserViewModel(
 
     fun getGroupMembers(groupId: String): List<UserInfo> {
         return _state.value.groupMembers[groupId] ?: emptyList()
+    }
+
+    fun getGroupMembersWithGuests(groupId: String): List<UserInfo> {
+        val group = _state.value.groups[groupId] ?: return emptyList()
+        val members = _state.value.groupMembers[groupId] ?: emptyList()
+        
+        // Crear UserInfo para los invitados
+        val guests = group.guests.map { (guestId, guestName) ->
+            UserInfo(
+                uuid = guestId,
+                name = guestName,
+                photoUrl = "" // Los invitados no tienen foto
+            )
+        }
+        
+        return members + guests
     }
 
     fun setGroupMembers(group: Group) {

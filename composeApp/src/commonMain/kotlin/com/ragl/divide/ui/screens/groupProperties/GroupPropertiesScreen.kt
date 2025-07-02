@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,14 +27,16 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -69,16 +70,21 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ragl.divide.data.models.UserInfo
 import com.ragl.divide.ui.components.AdaptiveFAB
 import com.ragl.divide.ui.components.DivideTextField
+import com.ragl.divide.ui.components.EditGuestNameDialog
 import com.ragl.divide.ui.components.FriendItem
 import com.ragl.divide.ui.components.ImagePicker
 import com.ragl.divide.ui.components.NetworkImage
 import com.ragl.divide.ui.components.NetworkImageType
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.main.MainScreen
+import compose.icons.FontAwesomeIcons
+import compose.icons.fontawesomeicons.Solid
+import compose.icons.fontawesomeicons.solid.EllipsisV
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.add
 import dividemultiplatform.composeapp.generated.resources.add_friends_to_group
-import dividemultiplatform.composeapp.generated.resources.add_group
+import dividemultiplatform.composeapp.generated.resources.add_guest
+import dividemultiplatform.composeapp.generated.resources.add_photo
 import dividemultiplatform.composeapp.generated.resources.cancel
 import dividemultiplatform.composeapp.generated.resources.cannot_delete_group
 import dividemultiplatform.composeapp.generated.resources.cannot_leave_group
@@ -86,23 +92,26 @@ import dividemultiplatform.composeapp.generated.resources.configuration
 import dividemultiplatform.composeapp.generated.resources.delete
 import dividemultiplatform.composeapp.generated.resources.delete_group
 import dividemultiplatform.composeapp.generated.resources.delete_group_message
-import dividemultiplatform.composeapp.generated.resources.edit
+import dividemultiplatform.composeapp.generated.resources.edit_name
 import dividemultiplatform.composeapp.generated.resources.group_members
+import dividemultiplatform.composeapp.generated.resources.guests
 import dividemultiplatform.composeapp.generated.resources.leave
 import dividemultiplatform.composeapp.generated.resources.leave_group
 import dividemultiplatform.composeapp.generated.resources.leave_group_message
 import dividemultiplatform.composeapp.generated.resources.name
 import dividemultiplatform.composeapp.generated.resources.no_users_found
+import dividemultiplatform.composeapp.generated.resources.remove_guest
+import dividemultiplatform.composeapp.generated.resources.remove_guest_confirm
 import dividemultiplatform.composeapp.generated.resources.search
 import dividemultiplatform.composeapp.generated.resources.select_friends
-import dividemultiplatform.composeapp.generated.resources.select_group_members
 import dividemultiplatform.composeapp.generated.resources.simplify_debts
+import dividemultiplatform.composeapp.generated.resources.update
 import dividemultiplatform.composeapp.generated.resources.update_group
-import dividemultiplatform.composeapp.generated.resources.you_have_no_friends
 import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.resources.vectorResource
 
 class GroupPropertiesScreen(
-    private val groupId: String? = null
+    private val groupId: String
 ) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -112,12 +121,10 @@ class GroupPropertiesScreen(
         val userViewModel = navigator.koinNavigatorScreenModel<UserViewModel>()
 
         LaunchedEffect(groupId) {
-            if (groupId != null) {
-                val group = userViewModel.getGroupById(groupId)
-                val members = userViewModel.getGroupMembers(groupId)
-                val uuid = userViewModel.getUUID()
-                viewModel.setGroup(group, members, uuid)
-            }
+            val group = userViewModel.getGroupById(groupId)
+            val members = userViewModel.getGroupMembers(groupId)
+            val uuid = userViewModel.getUUID()
+            viewModel.setGroup(group, members, uuid)
         }
 
         val groupState by viewModel.group.collectAsState()
@@ -132,10 +139,17 @@ class GroupPropertiesScreen(
         var showFriendSelection by remember { mutableStateOf(false) }
         var searchText by remember { mutableStateOf("") }
 
-        val isUpdate by remember { mutableStateOf(groupId != null) }
+        // Variables para gestión de invitados
+        var showEditGuestDialog by remember { mutableStateOf(false) }
+        var editingGuestId by remember { mutableStateOf<String?>(null) }
+        var editingGuestName by remember { mutableStateOf("") }
+        var showAddGuestDialog by remember { mutableStateOf(false) }
+        var newGuestName by remember { mutableStateOf("") }
+        var showRemoveGuestDialog by remember { mutableStateOf(false) }
+        var guestToRemove by remember { mutableStateOf<Pair<String, String>?>(null) }
 
         val onDeleteGroup = {
-            userViewModel.removeGroup(groupId!!)
+            userViewModel.removeGroup(groupId)
             userViewModel.hideLoading()
             navigator.replaceAll(MainScreen())
         }
@@ -224,6 +238,85 @@ class GroupPropertiesScreen(
                 )
         }
 
+        // Diálogo para añadir invitado
+        if (showAddGuestDialog) {
+            EditGuestNameDialog(
+                currentName = newGuestName,
+                onDismiss = {
+                    showAddGuestDialog = false
+                    newGuestName = ""
+                    viewModel.guestNameError = ""
+                },
+                onConfirm = { name ->
+                    if (viewModel.addGuest(name)) {
+                        showAddGuestDialog = false
+                        newGuestName = ""
+                    }
+                },
+                errorMessage = viewModel.guestNameError
+            )
+        }
+
+        // Diálogo para editar nombre de invitado
+        if (showEditGuestDialog && editingGuestId != null) {
+            EditGuestNameDialog(
+                currentName = editingGuestName,
+                onDismiss = {
+                    showEditGuestDialog = false
+                    editingGuestId = null
+                    editingGuestName = ""
+                    viewModel.guestNameError = ""
+                },
+                onConfirm = { name ->
+                    if (viewModel.updateGuestName(editingGuestId!!, name)) {
+                        showEditGuestDialog = false
+                        editingGuestId = null
+                        editingGuestName = ""
+                    }
+                },
+                errorMessage = viewModel.guestNameError
+            )
+        }
+
+        // Diálogo de confirmación para eliminar invitado
+        if (showRemoveGuestDialog && guestToRemove != null) {
+            AlertDialog(
+                onDismissRequest = {
+                    showRemoveGuestDialog = false
+                    guestToRemove = null
+                },
+                title = {
+                    Text(stringResource(Res.string.remove_guest))
+                },
+                text = {
+                    Text(stringResource(Res.string.remove_guest_confirm))
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            guestToRemove?.let { (guestId, _) ->
+                                viewModel.removeGuest(guestId)
+                            }
+                            showRemoveGuestDialog = false
+                            guestToRemove = null
+                        }
+                    ) {
+                        Text(stringResource(Res.string.delete))
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showRemoveGuestDialog = false
+                            guestToRemove = null
+                        }
+                    ) {
+                        Text(stringResource(Res.string.cancel))
+                    }
+                }
+            )
+        }
+
         Box {
             AnimatedVisibility(
                 visible = !showFriendSelection,
@@ -234,7 +327,7 @@ class GroupPropertiesScreen(
                     topBar = {
                         CenterAlignedTopAppBar(
                             title = {
-                                Text(stringResource(if (!isUpdate) Res.string.add_group else Res.string.update_group))
+                                Text(stringResource(Res.string.update_group))
                             },
                             colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                                 navigationIconContentColor = MaterialTheme.colorScheme.primary,
@@ -245,7 +338,7 @@ class GroupPropertiesScreen(
                                     onClick = { navigator.pop() }
                                 ) {
                                     Icon(
-                                        Icons.Filled.Close,
+                                        Icons.AutoMirrored.Filled.ArrowBack,
                                         contentDescription = "Back"
                                     )
                                 }
@@ -253,347 +346,413 @@ class GroupPropertiesScreen(
                         )
                     },
                     floatingActionButton = {
-                        AnimatedVisibility(
-                            visible = (!isUpdate && selectedFriends.isNotEmpty()) || isUpdate,
-                            enter = fadeIn(animationSpec = tween(300)),
-                            exit = fadeOut(animationSpec = tween(300))
-                        ) {
-                            AdaptiveFAB(
-                                onClick = {
-                                    if (viewModel.validateName()) {
-                                        userViewModel.showLoading()
-                                        viewModel.saveGroup(
-                                            onSuccess = { group ->
-                                                userViewModel.setGroupMembers(group)
-                                                userViewModel.saveGroup(group)
-                                                userViewModel.hideLoading()
-                                                navigator.pop()
-                                            },
-                                            onError = {
-                                                userViewModel.hideLoading()
-                                                userViewModel.handleError(it)
-                                            }
-                                        )
-                                    }
-                                },
-                                icon = Icons.Default.Check,
-                                contentDescription = if (!isUpdate) stringResource(Res.string.add_group) else stringResource(
-                                    Res.string.edit
-                                ),
-                                text = if (!isUpdate) stringResource(Res.string.add_group) else stringResource(
-                                    Res.string.edit
-                                ),
-                                modifier = Modifier.imePadding()
-                            )
-                        }
+                        AdaptiveFAB(
+                            onClick = {
+                                if (viewModel.validateName()) {
+                                    userViewModel.showLoading()
+                                    viewModel.saveGroup(
+                                        onSuccess = { group ->
+                                            userViewModel.setGroupMembers(group)
+                                            userViewModel.saveGroup(group)
+                                            userViewModel.hideLoading()
+                                            navigator.pop()
+                                        },
+                                        onError = {
+                                            userViewModel.hideLoading()
+                                            userViewModel.handleError(it)
+                                        }
+                                    )
+                                }
+                            },
+                            icon = Icons.Default.Check,
+                            contentDescription = stringResource(Res.string.update),
+                            text = stringResource(Res.string.update),
+                            modifier = Modifier.imePadding()
+                        )
                     }
                 ) { paddingValues ->
                     LazyColumn(
                         modifier = Modifier
                             .padding(paddingValues)
                             .padding(horizontal = 16.dp)
-                            .imePadding()
+                            .imePadding(),
                     ) {
+                        // Imagen del grupo
                         item {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier
-                                    .wrapContentHeight()
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(80.dp)
+                                        .size(120.dp)
+                                        .clip(RoundedCornerShape(60.dp))
                                         .clickable { showImagePicker = true }
-                                        .clip(ShapeDefaults.Medium)
-                                        .background(MaterialTheme.colorScheme.surfaceContainer),
+                                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                                    contentAlignment = Alignment.Center
                                 ) {
                                     if (temporaryImagePath != null) {
-                                        // Mostrar la imagen temporal seleccionada
                                         NetworkImage(
                                             imageUrl = temporaryImagePath,
                                             modifier = Modifier.fillMaxSize(),
                                             type = NetworkImageType.GROUP
                                         )
                                     } else if (groupState.image.isNotEmpty()) {
-                                        // Mostrar la imagen actual del grupo
                                         NetworkImage(
                                             imageUrl = groupState.image,
                                             modifier = Modifier.fillMaxSize(),
                                             type = NetworkImageType.GROUP
                                         )
                                     } else {
-                                        // No hay imagen
                                         Icon(
-                                            Icons.Filled.Add,
-                                            contentDescription = "Add image button",
-                                            tint = MaterialTheme.colorScheme.onSurface,
-                                            modifier = Modifier
-                                                .size(32.dp)
-                                                .align(Alignment.Center)
+                                            vectorResource(Res.drawable.add_photo),
+                                            contentDescription = stringResource(Res.string.add_photo),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(36.dp)
                                         )
                                     }
                                 }
-                                DivideTextField(
-                                    label = stringResource(Res.string.name),
-                                    value = groupState.name,
-                                    error = viewModel.nameError,
-                                    onValueChange = { viewModel.updateName(it) })
                             }
-                            Text(
-                                text = stringResource(if (!isUpdate) Res.string.select_group_members else Res.string.group_members),
-                                style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier
-                                    .padding(vertical = 8.dp)
-                                    .wrapContentHeight()
+                        }
+
+                        // Campo de nombre
+                        item {
+                            DivideTextField(
+                                label = stringResource(Res.string.name),
+                                value = groupState.name,
+                                error = viewModel.nameError,
+                                onValueChange = { viewModel.updateName(it) },
+                                modifier = Modifier.fillMaxWidth()
                             )
                         }
-                        if (!isUpdate) {
-                            if (friends.isEmpty()) {
-                                item {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 24.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = stringResource(Res.string.you_have_no_friends),
-                                            style = MaterialTheme.typography.labelMedium,
-                                            textAlign = TextAlign.Center,
-                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+
+                        // Miembros del grupo
+                        item {
+                            Text(
+                                text = stringResource(Res.string.group_members),
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+                        }
+
+                        // Lista de miembros actuales
+                        itemsIndexed(viewModel.members) { index, member ->
+                            FriendItem(
+                                headline = member.name,
+                                photoUrl = member.photoUrl,
+                                modifier = Modifier
+                                    .padding(bottom = 2.dp)
+                                    .clip(
+                                        if (viewModel.members.size == 1 || index == 0)
+                                            RoundedCornerShape(
+                                                topStart = 12.dp,
+                                                topEnd = 12.dp,
+                                                bottomStart = 2.dp,
+                                                bottomEnd = 2.dp
+                                            )
+                                        else RoundedCornerShape(2.dp)
+                                    )
+                            )
+                        }
+
+                        // Botón para añadir más amigos
+                        item {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { showFriendSelection = true }
+                                    .background(
+                                        MaterialTheme.colorScheme.primaryContainer,
+                                        RoundedCornerShape(
+                                            topStart = 2.dp,
+                                            topEnd = 2.dp,
+                                            bottomStart = 12.dp,
+                                            bottomEnd = 12.dp
                                         )
-                                    }
-                                }
+                                    )
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Filled.Add,
+                                    contentDescription = stringResource(Res.string.add),
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    stringResource(Res.string.add_friends_to_group),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
                             }
-                            itemsIndexed(friends) { i, friend ->
-                                var isSelected = selectedFriends.contains(friend)
+                        }
+
+                        // Gestión de invitados
+                        item {
+                            Text(
+                                text = stringResource(Res.string.guests),
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(bottom = 8.dp, top = 16.dp)
+                            )
+                        }
+
+                        // Lista de invitados
+                        if (viewModel.guests.isNotEmpty()) {
+                            val guestsList = viewModel.guests.toList()
+                            itemsIndexed(guestsList) { index, (guestId, guestName) ->
+                                var showGuestMenu by remember { mutableStateOf(false) }
+                                val canRemove =
+                                    remember(guestId) { viewModel.canRemoveGuest(guestId) }
+
                                 FriendItem(
-                                    headline = friend.name,
-                                    photoUrl = friend.photoUrl,
-                                    onClick = {
-                                        if (isSelected) {
-                                            userViewModel.showLoading()
-                                            viewModel.removeMember(friend)
-                                            selectedFriends.remove(friend)
-                                            userViewModel.hideLoading()
-                                        } else {
-                                            userViewModel.showLoading()
-                                            viewModel.addMember(friend)
-                                            selectedFriends.add(friend)
-                                            userViewModel.hideLoading()
+                                    headline = guestName,
+                                    photoUrl = "",
+                                    trailingContent = {
+                                        Box {
+                                            IconButton(onClick = {
+                                                showGuestMenu = true
+                                            }) {
+                                                Icon(
+                                                    FontAwesomeIcons.Solid.EllipsisV,
+                                                    contentDescription = "Settings",
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                            }
+
+                                            DropdownMenu(
+                                                expanded = showGuestMenu,
+                                                onDismissRequest = { showGuestMenu = false }
+                                            ) {
+                                                DropdownMenuItem(
+                                                    text = { Text(stringResource(Res.string.edit_name)) },
+                                                    onClick = {
+                                                        editingGuestId = guestId
+                                                        editingGuestName = guestName
+                                                        showEditGuestDialog = true
+                                                        showGuestMenu = false
+                                                    },
+                                                    leadingIcon = {
+                                                        Icon(
+                                                            Icons.Filled.Settings,
+                                                            contentDescription = null
+                                                        )
+                                                    }
+                                                )
+                                                DropdownMenuItem(
+                                                    text = {
+                                                        Text(
+                                                            stringResource(Res.string.remove_guest),
+                                                            color = if (canRemove) MaterialTheme.colorScheme.error
+                                                            else MaterialTheme.colorScheme.onSurface.copy(
+                                                                alpha = 0.38f
+                                                            )
+                                                        )
+                                                    },
+                                                    onClick = {
+                                                        if (canRemove) {
+                                                            guestToRemove = guestId to guestName
+                                                            showRemoveGuestDialog = true
+                                                        } else {
+                                                            val errorMessage =
+                                                                viewModel.getRemoveGuestErrorMessage()
+                                                            userViewModel.handleError(errorMessage)
+                                                        }
+                                                        showGuestMenu = false
+                                                    },
+                                                    leadingIcon = {
+                                                        Icon(
+                                                            Icons.Filled.Delete,
+                                                            contentDescription = null,
+                                                            tint = if (canRemove) MaterialTheme.colorScheme.error
+                                                            else MaterialTheme.colorScheme.onSurface.copy(
+                                                                alpha = 0.38f
+                                                            )
+                                                        )
+                                                    }
+                                                )
+                                            }
                                         }
                                     },
-                                    trailingContent = {
-                                        Checkbox(
-                                            checked = isSelected,
-                                            onCheckedChange = {
-                                                if (isSelected) {
-                                                    userViewModel.showLoading()
-                                                    viewModel.removeMember(friend)
-                                                    selectedFriends.remove(friend)
-                                                    userViewModel.hideLoading()
-                                                } else {
-                                                    userViewModel.showLoading()
-                                                    viewModel.addMember(friend)
-                                                    selectedFriends.add(friend)
-                                                    userViewModel.hideLoading()
-                                                }
-                                            },
-//                                            colors = CheckboxDefaults.colors(
-//                                                checkedColor = MaterialTheme.colorScheme.primary,
-//                                                uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant
-//                                            )
-                                        )
-                                    },
-                                    modifier = Modifier
-                                        .clip(
-                                            if (friends.size == 1)
-                                                RoundedCornerShape(16.dp)
-                                            else
-                                                if (i == 0) RoundedCornerShape(
-                                                    topStart = 16.dp,
-                                                    topEnd = 16.dp,
-                                                    bottomEnd = 2.dp,
-                                                    bottomStart = 2.dp
-                                                ) else {
-                                                    if (i == friends.lastIndex)
-                                                        RoundedCornerShape(
-                                                            topStart = 2.dp,
-                                                            topEnd = 2.dp,
-                                                            bottomEnd = 16.dp,
-                                                            bottomStart = 16.dp
-                                                        )
-                                                    else RoundedCornerShape(2.dp)
-                                                }
-                                        )
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                            }
-                        } else {
-                            itemsIndexed(viewModel.members) { i, member ->
-                                FriendItem(
-                                    headline = member.name,
-                                    photoUrl = member.photoUrl,
                                     modifier = Modifier
                                         .padding(bottom = 2.dp)
                                         .clip(
-                                            if (i == 0) RoundedCornerShape(
-                                                topStart = 16.dp,
-                                                topEnd = 16.dp,
-                                                bottomEnd = 2.dp,
-                                                bottomStart = 2.dp
-                                            ) else {
-                                                RoundedCornerShape(2.dp)
-                                            }
+                                            if (guestsList.size == 1 || index == 0)
+                                                RoundedCornerShape(
+                                                    topStart = 12.dp,
+                                                    topEnd = 12.dp,
+                                                    bottomStart = 2.dp,
+                                                    bottomEnd = 2.dp
+                                                )
+                                            else RoundedCornerShape(2.dp)
                                         )
                                 )
                             }
-                            item {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { showFriendSelection = true }
-                                        .background(
-                                            MaterialTheme.colorScheme.surfaceContainer,
-                                            RoundedCornerShape(
-                                                topEnd = 2.dp,
-                                                topStart = 2.dp,
-                                                bottomEnd = 16.dp,
-                                                bottomStart = 16.dp
-                                            )
-                                        )
-                                        .padding(vertical = 20.dp),
-                                    horizontalArrangement = Arrangement.Center,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        Icons.Filled.Add,
-                                        stringResource(Res.string.add),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                    Spacer(Modifier.width(16.dp))
-                                    Text(
-                                        stringResource(Res.string.add_friends_to_group),
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
+                        }
 
-                                Text(
-                                    text = stringResource(Res.string.configuration),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    modifier = Modifier
-                                        .padding(top = 16.dp)
-                                        .wrapContentHeight()
+                        // Botón para añadir invitado
+                        item {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        newGuestName = ""
+                                        showAddGuestDialog = true
+                                    }
+                                    .background(
+                                        MaterialTheme.colorScheme.primaryContainer,
+                                        if (viewModel.guests.isEmpty()) RoundedCornerShape(12.dp)
+                                        else RoundedCornerShape(
+                                            topStart = 2.dp,
+                                            topEnd = 2.dp,
+                                            bottomStart = 12.dp,
+                                            bottomEnd = 12.dp
+                                        )
+                                    )
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Filled.Add,
+                                    contentDescription = stringResource(Res.string.add),
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 8.dp)
-                                        .background(
-                                            MaterialTheme.colorScheme.surfaceContainer,
-                                            ShapeDefaults.Medium
-                                        )
-                                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                                ) {
-                                    Switch(
-                                        checked = viewModel.simplifyDebts,
-                                        onCheckedChange = {
-                                            viewModel.updateSimplifyDebts(it)
-                                        },
-                                    )
-                                    Text(
-                                        text = stringResource(Res.string.simplify_debts),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        modifier = Modifier.padding(start = 12.dp)
-                                    )
-                                }
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    stringResource(Res.string.add_guest),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
 
-                                OutlinedButton(
-                                    onClick = {
-                                        isDeleteDialog = false
-                                        dialogEnabled = true
-                                    },
-                                    shape = ShapeDefaults.Medium,
-                                    colors = ButtonDefaults.outlinedButtonColors(
-                                        contentColor = MaterialTheme.colorScheme.error,
-                                        disabledContentColor = MaterialTheme.colorScheme.error.copy(
-                                            alpha = 0.38f
-                                        )
-                                    ),
-                                    border = BorderStroke(
-                                        2.dp,
-                                        if (!canLeave) MaterialTheme.colorScheme.error.copy(
-                                            alpha = 0.38f
-                                        )
-                                        else MaterialTheme.colorScheme.error
-                                    ),
-                                    enabled = canLeave,
-                                    modifier = Modifier
-                                        .padding(vertical = 8.dp)
-                                        .fillMaxWidth()
-                                ) {
-                                    Icon(
-                                        Icons.AutoMirrored.Filled.ExitToApp,
-                                        contentDescription = null,
-                                        modifier = Modifier.padding(end = 8.dp)
-                                    )
-                                    Text(
-                                        text = stringResource(Res.string.leave_group),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        modifier = Modifier.padding(vertical = 12.dp)
-                                    )
-                                }
+                        // Sección de configuración
+                        item {
+                            Text(
+                                text = stringResource(Res.string.configuration),
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(bottom = 8.dp, top = 16.dp)
+                            )
+                        }
 
-                                if (!canLeave) {
-                                    Text(
-                                        text = stringResource(Res.string.cannot_leave_group),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.padding(bottom = 4.dp)
+                        // Switch para simplificar deudas
+                        item {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceContainer,
+                                        ShapeDefaults.Medium
                                     )
-                                }
-                                Button(
-                                    onClick = {
-                                        isDeleteDialog = true
-                                        dialogEnabled = true
-                                    },
-                                    shape = ShapeDefaults.Medium,
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                                        contentColor = MaterialTheme.colorScheme.error,
-                                        disabledContainerColor = MaterialTheme.colorScheme.errorContainer.copy(
-                                            alpha = 0.38f
-                                        ),
-                                        disabledContentColor = MaterialTheme.colorScheme.error.copy(
-                                            alpha = 0.38f
-                                        )
-                                    ),
-                                    enabled = canDelete,
-                                    modifier = Modifier
-                                        .padding(vertical = 8.dp)
-                                        .fillMaxWidth()
-                                ) {
-                                    Icon(
-                                        Icons.Filled.Delete,
-                                        contentDescription = null,
-                                        modifier = Modifier.padding(end = 8.dp)
-                                    )
-                                    Text(
-                                        text = stringResource(Res.string.delete_group),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        modifier = Modifier.padding(vertical = 12.dp)
-                                    )
-                                }
+                                    .padding(16.dp)
+                            ) {
+                                Switch(
+                                    checked = viewModel.simplifyDebts,
+                                    onCheckedChange = {
+                                        viewModel.updateSimplifyDebts(it)
+                                    }
+                                )
+                                Text(
+                                    text = stringResource(Res.string.simplify_debts),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.padding(start = 12.dp)
+                                )
+                            }
+                        }
 
-                                if (!canDelete) {
-                                    Text(
-                                        text = stringResource(Res.string.cannot_delete_group),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.padding(bottom = 12.dp)
+                        // Botón para salir del grupo
+                        item {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedButton(
+                                onClick = {
+                                    isDeleteDialog = false
+                                    dialogEnabled = true
+                                },
+                                shape = ShapeDefaults.Medium,
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error,
+                                    disabledContentColor = MaterialTheme.colorScheme.error.copy(
+                                        alpha = 0.38f
                                     )
-                                }
+                                ),
+                                border = BorderStroke(
+                                    2.dp,
+                                    if (!canLeave) MaterialTheme.colorScheme.error.copy(alpha = 0.38f)
+                                    else MaterialTheme.colorScheme.error
+                                ),
+                                enabled = canLeave,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ExitToApp,
+                                    contentDescription = null,
+                                    modifier = Modifier.padding(end = 8.dp)
+                                )
+                                Text(
+                                    text = stringResource(Res.string.leave_group),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.padding(vertical = 12.dp)
+                                )
+                            }
+                        }
+
+                        if (!canLeave) {
+                            item {
+                                Text(
+                                    text = stringResource(Res.string.cannot_leave_group),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.padding(4.dp)
+                                )
+                            }
+                        }
+
+                        // Botón para eliminar grupo
+                        item {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(
+                                onClick = {
+                                    isDeleteDialog = true
+                                    dialogEnabled = true
+                                },
+                                shape = ShapeDefaults.Medium,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                                    contentColor = MaterialTheme.colorScheme.error,
+                                    disabledContainerColor = MaterialTheme.colorScheme.errorContainer.copy(
+                                        alpha = 0.38f
+                                    ),
+                                    disabledContentColor = MaterialTheme.colorScheme.error.copy(
+                                        alpha = 0.38f
+                                    )
+                                ),
+                                enabled = canDelete,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(
+                                    Icons.Filled.Delete,
+                                    contentDescription = null,
+                                    modifier = Modifier.padding(end = 8.dp)
+                                )
+                                Text(
+                                    text = stringResource(Res.string.delete_group),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.padding(vertical = 12.dp)
+                                )
+                            }
+                        }
+
+                        if (!canDelete) {
+                            item {
+                                Text(
+                                    text = stringResource(Res.string.cannot_delete_group),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.padding(4.dp)
+                                )
                             }
                         }
                         item {
@@ -693,7 +852,7 @@ class GroupPropertiesScreen(
                     onValueChange = {
                         onSearchTextChange(it) {
                             filteredFriends =
-                                if (it.isEmpty()) friends else friends.filter { friend ->
+                                if (it.isEmpty()) friends.filterNot { it.uuid in members.map { m -> m.uuid } } else friends.filter { friend ->
                                     friend.name.contains(
                                         it,
                                         ignoreCase = true
@@ -703,7 +862,7 @@ class GroupPropertiesScreen(
                     },
                     onAction = {
                         filteredFriends = searchText.let {
-                            if (it.isEmpty()) friends else friends.filter { friend ->
+                            if (it.isEmpty()) friends.filterNot { it.uuid in members.map { m -> m.uuid } } else friends.filter { friend ->
                                 friend.name.contains(
                                     it,
                                     ignoreCase = true
@@ -781,4 +940,5 @@ class GroupPropertiesScreen(
             }
         }
     }
+
 }

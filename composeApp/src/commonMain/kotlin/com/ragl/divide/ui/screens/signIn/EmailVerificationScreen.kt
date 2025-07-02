@@ -31,6 +31,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.main.MainScreen
+import com.ragl.divide.ui.screens.onboarding.OnboardingScreen
 import com.ragl.divide.ui.utils.Strings
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.cancel
@@ -111,7 +112,11 @@ class EmailVerificationScreen : Screen {
                         scope.launch {
                             if (userViewModel.isEmailVerified()) {
                                 userViewModel.getUserData()
-                                navigator.replaceAll(MainScreen())
+                                if (userViewModel.isFirstTime()) {
+                                    navigator.replaceAll(OnboardingScreen())
+                                } else {
+                                    navigator.replaceAll(MainScreen())
+                                }
                             } else {
                                 userViewModel.handleError(strings.getEmailNotVerified())
                             }

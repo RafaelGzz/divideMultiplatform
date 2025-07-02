@@ -159,7 +159,7 @@ class GroupExpensePropertiesScreen(
         LaunchedEffect(groupId, expenseId, eventId) {
             val group = userViewModel.getGroupById(groupId)
             val uuid = userViewModel.getUUID()
-            val members = userViewModel.getGroupMembers(groupId)
+            val members = userViewModel.getGroupMembersWithGuests(groupId)
             val expense = userViewModel.getGroupExpenseById(groupId, expenseId, eventId)
 
             vm.setGroupAndExpense(group, uuid, members, expense, eventId)

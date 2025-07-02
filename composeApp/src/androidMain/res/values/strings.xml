@@ -80,4 +80,12 @@
     <string name="notification_reminder_4">%1$s needs to be paid. Click to see the details!</string>
     <string name="notification_reminder_5">Payment alert! %1$s is waiting for your attention.</string>
     <string name="notification_reminder_6">Have you paid %1$s yet? It\'s time to catch up!</string>
+
+    <!-- Guest Management -->
+    <string name="name_required">Name is required</string>
+    <string name="name_too_long">Name cannot be longer than 20 characters</string>
+    <string name="name_cannot_contain_spaces">Name cannot contain spaces</string>
+    <string name="name_already_exists">This name already exists in the group</string>
+    <string name="cannot_remove_last_member">Cannot remove the last member of the group</string>
+    <string name="cannot_remove_guest_with_debts">Cannot remove guest with active debts</string>
 </resources>

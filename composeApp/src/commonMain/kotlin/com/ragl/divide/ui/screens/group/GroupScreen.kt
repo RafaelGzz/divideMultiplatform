@@ -113,7 +113,7 @@ class GroupScreen(
 
         LaunchedEffect(Unit) {
             val group = userViewModel.getGroupById(groupId)
-            val members = userViewModel.getGroupMembers(groupId)
+            val members = userViewModel.getGroupMembersWithGuests(groupId)
             viewModel.setGroup(group, members)
         }
 
@@ -201,7 +201,7 @@ class GroupScreen(
                                 onSuccess = {
                                     // Actualizar los datos locales después del refresh
                                     val refreshedGroup = viewModel.group.value
-                                    val members = userViewModel.getGroupMembers(groupId)
+                                    val members = userViewModel.getGroupMembersWithGuests(groupId)
                                     viewModel.setGroup(refreshedGroup, members)
                                 }
                             )
@@ -369,8 +369,8 @@ class GroupScreen(
                         ExpandedDebtsCard(
                             debts = allDebts,
                             isGroup = true,
-                            users = usersWithDebts.mapNotNull { userId ->
-                                viewModel.members.find { it.uuid == userId }
+                            users = viewModel.members.filter { member -> 
+                                usersWithDebts.contains(member.uuid) 
                             },
                             currentUserId = uuid,
                             sharedTransitionScope = this@SharedTransitionLayout,

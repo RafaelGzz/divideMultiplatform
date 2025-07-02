@@ -107,7 +107,7 @@ class EventScreen(
 
         LaunchedEffect(eventId) {
             val event = userViewModel.getEventById(groupId, eventId)
-            val members = userViewModel.getGroupMembers(groupId)
+            val members = userViewModel.getGroupMembersWithGuests(groupId)
             viewModel.setEvent(event, members)
             viewModel.setGroupId(groupId)
         }
@@ -220,7 +220,7 @@ class EventScreen(
                                 onSuccess = {
                                     // Actualizar los datos locales después del refresh
                                     val refreshedEvent = viewModel.event.value
-                                    val members = userViewModel.getGroupMembers(groupId)
+                                    val members = userViewModel.getGroupMembersWithGuests(groupId)
                                     viewModel.setEvent(refreshedEvent, members)
                                 }
                             )
@@ -321,8 +321,8 @@ class EventScreen(
                 ) {
                     ExpandedDebtsCard(
                         debts = allDebts,
-                        users = usersWithDebts.mapNotNull { userId ->
-                            viewModel.members.find { it.uuid == userId }
+                        users = viewModel.members.filter { member -> 
+                            usersWithDebts.contains(member.uuid) 
                         },
                         currentUserId = uuid,
                         sharedTransitionScope = this@SharedTransitionLayout,

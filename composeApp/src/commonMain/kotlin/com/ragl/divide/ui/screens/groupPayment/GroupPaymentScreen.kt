@@ -74,7 +74,7 @@ class GroupPaymentScreen(
 
         LaunchedEffect(groupId, paymentId) {
             val payment = userViewModel.getGroupPaymentById(groupId, paymentId, eventId)
-            val members = userViewModel.getGroupMembers(groupId)
+            val members = userViewModel.getGroupMembersWithGuests(groupId)
             vm.setPayment(payment, groupId, members)
         }
 

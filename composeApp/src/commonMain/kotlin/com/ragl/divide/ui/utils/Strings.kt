@@ -48,4 +48,10 @@ expect class Strings {
     fun getCongratulations(title: String): String
     fun getDescriptionTooLong(): String
     fun getCannotModifyWhileEventSettled(): String
+    fun getNameRequired(): String
+    fun getNameTooLong(): String
+    fun getNameCannotContainSpaces(): String
+    fun getNameAlreadyExists(): String
+    fun getCannotRemoveLastMember(): String
+    fun getCannotRemoveGuestWithDebts(): String
 }

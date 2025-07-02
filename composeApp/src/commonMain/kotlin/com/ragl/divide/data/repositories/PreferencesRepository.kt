@@ -3,6 +3,7 @@ package com.ragl.divide.data.repositories
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.IOException
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -15,22 +16,9 @@ class PreferencesRepository(
     private val dataStore: DataStore<Preferences>
 ) {
     private companion object {
-        val KEY_START_DESTINATION = stringPreferencesKey("start_destination")
         val KEY_DARK_MODE = stringPreferencesKey("dark_mode")
+        val KEY_IS_FIRST_TIME = booleanPreferencesKey("is_first_time")
     }
-
-    val startDestinationFlow: Flow<String> = dataStore.data
-        .catch {
-            if (it is IOException) {
-                logMessage("PreferencesRepository", "Error reading preferences: $it")
-                emit(emptyPreferences())
-            } else {
-                throw it
-            }
-        }
-        .map {
-            it[KEY_START_DESTINATION] ?: "Login"
-        }
 
     val darkModeFlow: Flow<String?> = dataStore.data
         .catch {
@@ -45,17 +33,18 @@ class PreferencesRepository(
             it[KEY_DARK_MODE]
         }
 
-    suspend fun saveStartDestination(startDestination: String): Boolean =
-        try {
-            dataStore.edit {
-                it[KEY_START_DESTINATION] = startDestination
+    val isFirstTimeFlow: Flow<Boolean> = dataStore.data
+        .catch {
+            if (it is IOException) {
+                logMessage("PreferencesRepository", "Error reading preferences: $it")
+                emit(emptyPreferences())
+            } else {
+                throw it
             }
-            true
-        } catch (e: Exception) {
-            logMessage("PreferencesRepository", "Error saving start destination: $e")
-            false
         }
-
+        .map {
+            it[KEY_IS_FIRST_TIME] != false // Verdadero por defecto para nuevas instalaciones
+        }
 
     suspend fun saveDarkMode(darkMode: Boolean?): Boolean =
         try {
@@ -66,6 +55,17 @@ class PreferencesRepository(
             true
         } catch (e: Exception) {
             logMessage("PreferencesRepository", "Error saving start destination: $e")
+            false
+        }
+
+    suspend fun setFirstTime(isFirstTime: Boolean): Boolean =
+        try {
+            dataStore.edit {
+                it[KEY_IS_FIRST_TIME] = isFirstTime
+            }
+            true
+        } catch (e: Exception) {
+            logMessage("PreferencesRepository", "Error saving first time completed: $e")
             false
         }
 }

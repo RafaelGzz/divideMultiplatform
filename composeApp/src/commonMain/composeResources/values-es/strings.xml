@@ -160,6 +160,7 @@
     <!-- Groups -->
     <string name="add_group">Añadir Grupo</string>
     <string name="add_group_button">Agregar</string>
+    <string name="create_group">Crear Grupo</string>
     <string name="update_group">Detalles del Grupo</string>
     <string name="name">Nombre</string>
     <string name="group_expenses">Gastos grupales</string>
@@ -173,6 +174,20 @@
     <string name="leave">Salir</string>
     <string name="configuration">Configuración</string>
     <string name="add_friends_to_group">Añadir amigos al grupo</string>
+    <string name="add_guest">Añadir Invitado</string>
+    <string name="guests">Invitados</string>
+    <string name="settings">Ajustes</string>
+    <string name="edit_guest_name">Cambiar Nombre del Invitado</string>
+    <string name="guest_name">Nombre del Invitado</string>
+    <string name="name_required">El nombre es requerido</string>
+    <string name="name_too_long">El nombre no puede tener más de 20 caracteres</string>
+    <string name="name_cannot_contain_spaces">El nombre no puede contener espacios</string>
+    <string name="name_already_exists">Este nombre ya existe en el grupo</string>
+    <string name="edit_name">Renombrar</string>
+    <string name="remove_guest">Eliminar Invitado</string>
+    <string name="cannot_remove_guest_with_debts">No se puede eliminar un invitado con deudas activas</string>
+    <string name="cannot_remove_last_member">No se puede eliminar el último miembro del grupo</string>
+    <string name="remove_guest_confirm">¿Estás seguro de que quieres eliminar este invitado?</string>
     <string name="cannot_leave_group">No puedes salir del grupo mientras tengas deudas o créditos</string>
     <string name="cannot_delete_group">No puedes eliminar el grupo mientras existan deudas o créditos</string>
     <string name="simplify_debts">Simplificar deudas</string>
@@ -180,6 +195,7 @@
     <string name="to">Para</string>
     <string name="select_sender">Selecciona emisor</string>
     <string name="select_receiver">Select receptor</string>
+    <string name="add_photo">Añadir foto</string>
 
     <!-- Events -->
     <string name="events">Eventos</string>
@@ -211,6 +227,7 @@
     <string name="delete_event_message">¿Quieres eliminar este evento?\nESTA ACCIÓN NO SE PUEDE DESHACER</string>
     <string name="total_spent">Total gastado</string>
     <string name="event">Evento</string>
+    <string name="settled_on">Liquidado el %1$s</string>
 
     <!-- Debts Card -->
     <string name="event_summary">Resumen por evento</string>
@@ -244,7 +261,6 @@
     <string name="username_too_long_error">El nombre de usuario no puede tener más de 20 caracteres</string>
 
     <!-- Settings/Profile -->
-    <string name="settings">Ajustes</string>
     <string name="theme">Tema</string>
     <string name="dark_mode">Modo oscuro</string>
     <string name="light_mode">Modo claro</string>
@@ -290,4 +306,16 @@
     <string name="category_travel">Viajes</string>
     <string name="category_utilities">Servicios</string>
     <string name="category_gifts">Regalos</string>
+
+    <!-- Onboarding -->
+    <string name="welcome_to_divide">¡Bienvenido a Divide!</string>
+    <string name="welcome_to_divide_user">¡Bienvenido a Divide, %1$s!</string>
+    <string name="onboarding_title_1">Rastrea gastos</string>
+    <string name="onboarding_description_1">Lleva un seguimiento de tus gastos personales y divide cuentas con amigos fácilmente</string>
+    <string name="onboarding_title_2">Administra grupos</string>
+    <string name="onboarding_description_2">Crea grupos con tus amigos y organiza gastos compartidos para viajes, cenas y más</string>
+    <string name="onboarding_title_3">Simplifica pagos</string>
+    <string name="onboarding_description_3">Ve quién debe qué y liquida deudas con nuestro sistema inteligente de simplificación de deudas</string>
+    <string name="get_started">Comenzar</string>
+    <string name="skip">Saltar</string>
 </resources>
