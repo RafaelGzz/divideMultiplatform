@@ -16,7 +16,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 interface GroupRepository {
     suspend fun getGroups(groupIds: Map<String, String>): Map<String, Group>
@@ -43,6 +44,7 @@ interface GroupRepository {
     suspend fun deleteRecurringExpense(groupId: String, expenseId: String)
 }
 
+@OptIn(ExperimentalTime::class)
 class GroupRepositoryImpl(
     private val database: FirebaseDatabase,
     private val storage: FirebaseStorage,

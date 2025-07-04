@@ -16,8 +16,10 @@ import com.ragl.divide.data.services.ScheduleNotificationService
 import com.ragl.divide.ui.utils.Strings
 import com.ragl.divide.ui.utils.logMessage
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
+@OptIn(ExperimentalTime::class)
 class ExpensePropertiesViewModel(
     private val userRepository: UserRepository,
     private val scheduleNotificationService: ScheduleNotificationService,

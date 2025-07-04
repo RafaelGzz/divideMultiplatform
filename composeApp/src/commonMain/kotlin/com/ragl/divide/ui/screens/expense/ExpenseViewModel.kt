@@ -12,7 +12,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 class ExpenseViewModel(
     private val userRepository: UserRepository,
@@ -71,6 +72,7 @@ class ExpenseViewModel(
         }
     }
 
+    @OptIn(ExperimentalTime::class)
     fun addPayment(
         amount: Double,
         onSuccess: (Payment) -> Unit,

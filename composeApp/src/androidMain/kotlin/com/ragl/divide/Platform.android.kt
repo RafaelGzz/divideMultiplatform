@@ -5,7 +5,8 @@ import android.app.Application
 import android.os.Bundle
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 class AndroidPlatform : Platform {
     override val name: String = "Android ${android.os.Build.VERSION.SDK_INT}"
@@ -14,6 +15,7 @@ class AndroidPlatform : Platform {
 actual fun getPlatform(): Platform = AndroidPlatform()
 
 // Implementación específica de Android para el manejo del ciclo de vida
+@OptIn(ExperimentalTime::class)
 class AndroidAppLifecycleHandler(private val application: Application) : AppLifecycleHandler {
     private val _isAppInForeground = MutableStateFlow(true)
     private var lastPauseTime: Long = 0

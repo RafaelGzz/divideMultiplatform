@@ -13,7 +13,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 interface UserRepository {
     fun getFirebaseUser(): FirebaseUser?
@@ -38,6 +39,7 @@ interface UserRepository {
     suspend fun updateUserName(newName: String): Boolean
 }
 
+@OptIn(ExperimentalTime::class)
 class UserRepositoryImpl(
     private val auth: FirebaseAuth,
     private val database: FirebaseDatabase,

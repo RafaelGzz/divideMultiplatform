@@ -1,9 +1,6 @@
 package com.ragl.divide.ui.screens.main
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.animateIntAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -14,19 +11,18 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Badge
-import androidx.compose.material.BadgedBox
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -38,7 +34,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,7 +41,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -73,82 +67,24 @@ import dividemultiplatform.composeapp.generated.resources.sign_out_confirmation
 import dividemultiplatform.composeapp.generated.resources.system_default
 import dividemultiplatform.composeapp.generated.resources.theme
 import dividemultiplatform.composeapp.generated.resources.your_friends
-import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
-
 
 @Composable
 fun ProfileContent(
     user: User,
     isDarkMode: String?,
-    friendRequests: List<UserInfo>,
     onSignOut: () -> Unit,
     onChangeDarkMode: (Boolean?) -> Unit,
-    onFriendsButtonClick: () -> Unit,
 ) {
     val navigator = LocalNavigator.currentOrThrow
     val allowNotifications = remember { mutableStateOf(true) }
-
-    // Estados para controlar las animaciones escalonadas
-    var showHeader by remember { mutableStateOf(true) }
-    var showProfileInfo by remember { mutableStateOf(true) }
-    var showSettingsSection by remember { mutableStateOf(true) }
-
-    // Animaciones con Modifier para mejor rendimiento
-    val headerAlpha by animateFloatAsState(
-        targetValue = if (showHeader) 1f else 0f,
-        animationSpec = tween(300),
-        label = "headerAlpha"
-    )
-    val headerOffsetY by animateIntAsState(
-        targetValue = if (showHeader) 0 else -50,
-        animationSpec = tween(300),
-        label = "headerOffsetY"
-    )
-
-    val profileInfoAlpha by animateFloatAsState(
-        targetValue = if (showProfileInfo) 1f else 0f,
-        animationSpec = tween(350),
-        label = "profileInfoAlpha"
-    )
-    val profileInfoOffsetY by animateIntAsState(
-        targetValue = if (showProfileInfo) 0 else -100,
-        animationSpec = tween(350),
-        label = "profileInfoOffsetY"
-    )
-
-    val settingsSectionAlpha by animateFloatAsState(
-        targetValue = if (showSettingsSection) 1f else 0f,
-        animationSpec = tween(350),
-        label = "settingsSectionAlpha"
-    )
-    val settingsSectionOffsetY by animateIntAsState(
-        targetValue = if (showSettingsSection) 0 else -100,
-        animationSpec = tween(350),
-        label = "settingsSectionOffsetY"
-    )
-
-    // Efecto para iniciar las animaciones escalonadas
-    LaunchedEffect(user) {
-        showHeader = true
-        delay(50)
-        showProfileInfo = true
-        delay(30)
-        showSettingsSection = true
-    }
-
     Column {
         Header(
-            title = stringResource(Res.string.bar_item_3_text),
-            modifier = Modifier
-                .alpha(headerAlpha)
-                .offset(y = headerOffsetY.dp)
+            title = stringResource(Res.string.bar_item_3_text)
         )
         Box(
             modifier = Modifier
                 .padding(16.dp)
-                .alpha(profileInfoAlpha)
-                .offset(y = profileInfoOffsetY.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -182,8 +118,6 @@ fun ProfileContent(
         }
         Column(
             modifier = Modifier
-                .alpha(settingsSectionAlpha)
-                .offset(y = settingsSectionOffsetY.dp)
         ) {
             Spacer(modifier = Modifier.height(8.dp))
             DarkModeSetting(

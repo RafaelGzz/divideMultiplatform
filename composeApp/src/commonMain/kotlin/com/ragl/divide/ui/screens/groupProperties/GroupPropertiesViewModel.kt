@@ -16,12 +16,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 /**
  * ViewModel para la pantalla de propiedades del grupo, enfocado en la edición de información
  * del grupo como nombre, descripción, imagen, y gestión de miembros.
  */
+@OptIn(ExperimentalTime::class)
 class GroupPropertiesViewModel(
     private val groupRepository: GroupRepository,
     private val friendsRepository: FriendsRepository,

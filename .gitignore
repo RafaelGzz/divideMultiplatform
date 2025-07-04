@@ -19,3 +19,5 @@ captures
 google-services.json
 GoogleService-Info.plist
 keystore.properties
+github-secrets.txt
+service-account.json

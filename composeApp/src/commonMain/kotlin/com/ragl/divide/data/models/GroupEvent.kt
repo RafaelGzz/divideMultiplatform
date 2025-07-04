@@ -1,10 +1,11 @@
 package com.ragl.divide.data.models
 
-import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 @Serializable
-data class GroupEvent(
+data class GroupEvent @OptIn(ExperimentalTime::class) constructor(
     val id: String = "",
     val title: String = "",
     val description: String = "",

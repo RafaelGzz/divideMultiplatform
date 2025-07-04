@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinNavigatorScreenModel
+import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ragl.divide.ui.screens.UserViewModel
@@ -48,8 +49,9 @@ class EmailVerificationScreen : Screen {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val userViewModel = navigator.koinNavigatorScreenModel<UserViewModel>()
+        val authViewModel: AuthViewModel = koinScreenModel<AuthViewModel>()
         val scope = rememberCoroutineScope()
-        val countdown by userViewModel.countdown.collectAsState()
+        val countdown by authViewModel.countdown.collectAsState()
         val strings: Strings = koinInject()
 
         Box(
@@ -87,7 +89,7 @@ class EmailVerificationScreen : Screen {
                 )
 
                 Button(
-                    onClick = userViewModel::resendVerificationEmail,
+                    onClick = authViewModel::resendVerificationEmail,
                     enabled = countdown == 0,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -110,7 +112,7 @@ class EmailVerificationScreen : Screen {
                 Button(
                     onClick = {
                         scope.launch {
-                            if (userViewModel.isEmailVerified()) {
+                            if (authViewModel.isEmailVerified()) {
                                 userViewModel.getUserData()
                                 if (userViewModel.isFirstTime()) {
                                     navigator.replaceAll(OnboardingScreen())
@@ -118,7 +120,7 @@ class EmailVerificationScreen : Screen {
                                     navigator.replaceAll(MainScreen())
                                 }
                             } else {
-                                userViewModel.handleError(strings.getEmailNotVerified())
+                                authViewModel.handleError(strings.getEmailNotVerified())
                             }
                         }
                     },
@@ -139,7 +141,7 @@ class EmailVerificationScreen : Screen {
                 TextButton(
                     onClick = {
                         scope.launch {
-                            userViewModel.signOut {
+                            authViewModel.signOut {
                                 navigator.pop()
                             }
                         }

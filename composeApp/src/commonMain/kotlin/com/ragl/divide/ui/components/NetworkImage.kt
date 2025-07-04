@@ -1,7 +1,6 @@
 package com.ragl.divide.ui.components
 
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -14,11 +13,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -59,15 +54,6 @@ fun NetworkImage(
                     contentScale = contentScale
                 ),
                 success = { _, painter ->
-                    var showImage by remember { mutableStateOf(false) }
-                    val state by animateFloatAsState(
-                        if (showImage) 1f else 0f,
-                        tween(200),
-                        label = "imageState"
-                    )
-                    LaunchedEffect(Unit) {
-                        showImage = true
-                    }
                     Box(
                         modifier = Modifier.fillMaxSize()
                     ) {
@@ -76,7 +62,6 @@ fun NetworkImage(
                             contentDescription = null,
                             contentScale = contentScale,
                             modifier = Modifier.fillMaxSize()
-                            //.alpha(state)
                         )
                     }
                 },
@@ -84,29 +69,11 @@ fun NetworkImage(
                     ShimmerLoading(modifier = Modifier.fillMaxSize())
                 },
                 failure = {
-                    var showImage by remember { mutableStateOf(false) }
-                    val state by animateFloatAsState(
-                        if (showImage) 1f else 0f,
-                        tween(200),
-                        label = "imageState"
-                    )
-                    LaunchedEffect(Unit) {
-                        showImage = true
-                    }
                     FallbackImage(type = type, modifier = Modifier.fillMaxSize())
                 },
                 modifier = Modifier.fillMaxSize()
             )
         } else {
-            var showImage by remember { mutableStateOf(false) }
-            val state by animateFloatAsState(
-                if (showImage) 1f else 0f,
-                tween(200),
-                label = "imageState"
-            )
-            LaunchedEffect(Unit) {
-                showImage = true
-            }
             FallbackImage(type = type, modifier = Modifier.fillMaxSize())
         }
     }

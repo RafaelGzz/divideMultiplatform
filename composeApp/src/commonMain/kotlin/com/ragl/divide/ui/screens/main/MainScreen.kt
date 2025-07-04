@@ -2,30 +2,24 @@ package com.ragl.divide.ui.screens.main
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.Badge
 import androidx.compose.material.BadgedBox
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingActionButtonMenu
+import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -33,8 +27,10 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.ToggleFloatingActionButton
+import androidx.compose.material3.ToggleFloatingActionButtonDefaults
+import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshState
@@ -42,6 +38,7 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -50,13 +47,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.annotation.InternalVoyagerApi
 import cafe.adriel.voyager.core.screen.Screen
@@ -70,12 +67,12 @@ import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.UserInfo
 import com.ragl.divide.ui.components.AdaptiveFAB
 import com.ragl.divide.ui.screens.AppState
+import com.ragl.divide.data.services.AppStateService
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.addFriends.AddFriendsScreen
 import com.ragl.divide.ui.screens.expense.ExpenseScreen
 import com.ragl.divide.ui.screens.expenseProperties.ExpensePropertiesScreen
 import com.ragl.divide.ui.screens.friends.FriendsBody
-import com.ragl.divide.ui.screens.friends.FriendsScreen
 import com.ragl.divide.ui.screens.group.GroupScreen
 import com.ragl.divide.ui.screens.groupProperties.CreateGroupScreen
 import com.ragl.divide.ui.screens.signIn.SignInScreen
@@ -98,6 +95,7 @@ import dividemultiplatform.composeapp.generated.resources.new_expense
 import dividemultiplatform.composeapp.generated.resources.new_group
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 
 class MainScreen : Screen {
 
@@ -106,7 +104,9 @@ class MainScreen : Screen {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val userViewModel = navigator.koinNavigatorScreenModel<UserViewModel>()
+        val appStateService: AppStateService = koinInject()
         val state by userViewModel.state.collectAsState()
+        val isLoading by appStateService.isLoading.collectAsState()
         val expenses = remember(state.user.expenses) {
             state.user.expenses.values.toList().sortedByDescending { it.createdAt }
         }
@@ -122,9 +122,9 @@ class MainScreen : Screen {
         )
         var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
         val pullToRefreshState = rememberPullToRefreshState()
-        var pullLoading by remember { mutableStateOf(state.isLoading) }
-        LaunchedEffect(state.isLoading) {
-            pullLoading = state.isLoading
+        var pullLoading by remember { mutableStateOf(isLoading) }
+        LaunchedEffect(isLoading) {
+            pullLoading = isLoading
         }
 
         BackHandler(selectedTabIndex != 0) {
@@ -144,7 +144,7 @@ class MainScreen : Screen {
                 .fillMaxSize()
         ) {
             AnimatedVisibility(
-                visible = !state.isLoading,
+                visible = !isLoading,
                 enter = fadeIn(animationSpec = tween(500)),
                 exit = ExitTransition.None
             ) {
@@ -504,10 +504,6 @@ private fun MainContent(
                         },
                         isDarkMode = isDarkMode,
                         onChangeDarkMode = userViewModel::changeDarkMode,
-                        friendRequests = friendRequests,
-                        onFriendsButtonClick = {
-                            navigator.push(FriendsScreen())
-                        }
                     )
                 }
             }
@@ -515,110 +511,93 @@ private fun MainContent(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun HomeFABGroup(
-    fabIcon: ImageVector = Icons.Default.Add,
     onAddExpenseClick: () -> Unit,
     onAddGroupClick: () -> Unit,
-    containerColor: Color = MaterialTheme.colorScheme.primary,
-    contentColor: Color = MaterialTheme.colorScheme.onPrimary,
-    expandedContainerColor: Color = MaterialTheme.colorScheme.secondary,
-    expandedContentColor: Color = MaterialTheme.colorScheme.onSecondary,
 ) {
     var isExpanded by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (isExpanded) 1f else 0f,
-        animationSpec = spring(dampingRatio = 1f),
-        label = "scale"
-    )
-    val rotation by animateFloatAsState(
-        targetValue = if (isExpanded) 315f else 0f,
-        animationSpec = spring(dampingRatio = 3f),
-        label = "rotation"
-    )
 
-    Column {
-        Column(
-            modifier = Modifier.offset(
-                x = animateDpAsState(
-                    targetValue = if (isExpanded) 0.dp else 60.dp,
-                    animationSpec = spring(dampingRatio = 1f),
-                    label = "x"
-                ).value, y = animateDpAsState(
-                    targetValue = if (isExpanded) 0.dp else 100.dp,
-                    animationSpec = spring(dampingRatio = 1f),
-                    label = "y"
-                ).value
-            ).scale(scale)
-        ) {
-            Button(
-                onClick = { onAddGroupClick() },
-                shape = ShapeDefaults.Medium,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = containerColor,
-                    contentColor = contentColor
+    FloatingActionButtonMenu(
+        modifier = Modifier.offset(16.dp, 16.dp),
+        expanded = isExpanded,
+        button = {
+            ToggleFloatingActionButton(
+                modifier =
+                    Modifier.semantics {
+                        traversalIndex = -1f
+                        stateDescription = if (isExpanded) "Expanded" else "Collapsed"
+                        contentDescription = "Toggle menu"
+                    },
+                checked = isExpanded,
+                onCheckedChange = { isExpanded = !isExpanded },
+                containerColor = ToggleFloatingActionButtonDefaults.containerColor(
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.secondary
                 ),
-                contentPadding = PaddingValues(horizontal = 12.dp),
-                modifier = Modifier.height(60.dp).align(Alignment.End)
+                containerCornerRadius = ToggleFloatingActionButtonDefaults.containerCornerRadius(
+                    12.dp, 56.dp
+                ),
             ) {
+                val imageVector by remember {
+                    derivedStateOf {
+                        if (checkedProgress > 0.5f) Icons.Filled.Close else Icons.Filled.Add
+                    }
+                }
+                Icon(
+                    painter = rememberVectorPainter(imageVector),
+                    contentDescription = null,
+                    modifier = Modifier.animateIcon(
+                        { checkedProgress },
+                        ToggleFloatingActionButtonDefaults.iconColor(
+                            MaterialTheme.colorScheme.onPrimary,
+                            MaterialTheme.colorScheme.onSecondary
+                        )
+                    ),
+                )
+            }
+        }) {
+        FloatingActionButtonMenuItem(
+            onClick = {
+                onAddGroupClick()
+                isExpanded = false
+            },
+            icon = {
                 Icon(
                     FontAwesomeIcons.Solid.Users,
                     contentDescription = null,
                     modifier = Modifier.size(24.dp)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+            },
+            text = {
                 Text(
                     text = stringResource(Res.string.new_group),
-                    maxLines = 1,
-                    softWrap = true,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
+                    style = MaterialTheme.typography.labelLarge
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(
-                onClick = { onAddExpenseClick() },
-                shape = ShapeDefaults.Medium,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = containerColor,
-                    contentColor = contentColor
-                ),
-                contentPadding = PaddingValues(horizontal = 12.dp),
-                modifier = Modifier.height(60.dp).align(Alignment.End)
-            ) {
+            },
+            containerColor = MaterialTheme.colorScheme.primary,
+        )
+        FloatingActionButtonMenuItem(
+            onClick = {
+                onAddExpenseClick()
+                isExpanded = false
+            },
+            icon = {
                 Icon(
                     FontAwesomeIcons.Solid.DollarSign,
                     contentDescription = null,
                     modifier = Modifier.size(24.dp)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+            },
+            text = {
                 Text(
                     text = stringResource(Res.string.new_expense),
-                    maxLines = 1,
-                    softWrap = true,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
+                    style = MaterialTheme.typography.labelLarge
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        FloatingActionButton(
-            onClick = {
-                isExpanded = !isExpanded
             },
-            shape = ShapeDefaults.Medium,
-            containerColor = if (isExpanded) expandedContainerColor else containerColor,
-            contentColor = if (isExpanded) expandedContentColor else contentColor,
-            modifier = Modifier.align(Alignment.End)
-        ) {
-            Icon(
-                imageVector = fabIcon,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp).rotate(rotation)
-            )
-        }
+            containerColor = MaterialTheme.colorScheme.primary,
+        )
     }
 }
 

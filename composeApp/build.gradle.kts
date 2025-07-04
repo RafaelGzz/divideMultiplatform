@@ -74,7 +74,6 @@ kotlin {
             implementation(libs.firebase.analytics)
             implementation(libs.firebase.crashlytics)
 
-            implementation(libs.kotlinx.datetime)
             implementation(libs.kmpauth.google)
             implementation(libs.kmpauth.firebase)
             implementation(libs.kmpauth.uihelper)
@@ -91,9 +90,6 @@ kotlin {
             api(libs.androidx.datastore.preferences)
 
             implementation(libs.landscapist.coil3)
-            
-            // Chart library
-            //implementation(libs.chart)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -112,8 +108,8 @@ android {
         applicationId = "com.ragl.divide"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1015
-        versionName = "1.0.15"
+        versionCode = 1016
+        versionName = "1.0.16"
     }
     packaging {
         resources {
@@ -149,9 +145,7 @@ android {
 }
 
 dependencies {
-    implementation(libs.androidx.material3.android)
     debugImplementation(compose.uiTooling)
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
 }
-

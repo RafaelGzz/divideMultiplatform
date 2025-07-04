@@ -1,10 +1,11 @@
 package com.ragl.divide.data.models
 
-import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 @Serializable
-data class Expense(
+data class Expense @OptIn(ExperimentalTime::class) constructor(
     override val id: String = "",
     override val title: String = "",
     override val category: Category = Category.GENERAL,

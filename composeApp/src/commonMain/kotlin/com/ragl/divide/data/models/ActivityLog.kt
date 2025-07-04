@@ -1,10 +1,11 @@
 package com.ragl.divide.data.models
 
-import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 @Serializable
-data class ActivityLog(
+data class ActivityLog @OptIn(ExperimentalTime::class) constructor(
     val type: LogType,
     val refId: String,
     val userId: String,

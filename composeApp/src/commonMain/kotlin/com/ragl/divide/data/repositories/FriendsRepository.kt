@@ -9,7 +9,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 interface FriendsRepository {
     suspend fun getFriends(friends: List<String>): Map<String, UserInfo>
@@ -25,6 +26,7 @@ interface FriendsRepository {
     suspend fun getFriendRequestsSent(requests: Map<String, String>): Map<String, UserInfo>
 }
 
+@OptIn(ExperimentalTime::class)
 class FriendsRepositoryImpl(
     private val database: FirebaseDatabase,
     private val auth: FirebaseAuth

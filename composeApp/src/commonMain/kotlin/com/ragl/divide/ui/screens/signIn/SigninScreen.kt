@@ -131,18 +131,23 @@ class SignInScreen : Screen {
         var currentScreen by remember { mutableStateOf("main") } // "main", "login", "signup"
         val navigator = LocalNavigator.currentOrThrow
         val userViewModel = navigator.koinNavigatorScreenModel<UserViewModel>()
-        val loginViewModel: LogInViewModel = koinScreenModel<LogInViewModel>()
-        val signUpViewModel: SignUpViewModel = koinScreenModel<SignUpViewModel>()
+        val authViewModel: AuthViewModel = koinScreenModel<AuthViewModel>()
         val strings: Strings = koinInject()
         val windowSizeClass = getWindowWidthSizeClass()
         val coroutineScope = rememberCoroutineScope()
 
-        val onLoginClick = { currentScreen = "login" }
-        val onSignUpClick = { currentScreen = "signup" }
+        val onLoginClick = { 
+            currentScreen = "login"
+            authViewModel.resetLoginFields()
+        }
+        val onSignUpClick = {
+            currentScreen = "signup"
+            authViewModel.resetSignUpFields()
+        }
         val onBackClick = { currentScreen = "main" }
 
         val onGoogleSignIn: (Result<FirebaseUser?>) -> Unit = { result ->
-            userViewModel.signInWithGoogle(result = result) {
+            authViewModel.signInWithGoogle(result = result) {
                 coroutineScope.launch {
                     if (userViewModel.isFirstTime()) {
                         navigator.replaceAll(OnboardingScreen())
@@ -159,11 +164,12 @@ class SignInScreen : Screen {
         }
 
         val onLoginButtonClick: (String, String) -> Unit = { email, password ->
-            userViewModel.signInWithEmailAndPassword(
+            authViewModel.signInWithEmailAndPassword(
                 email = email,
                 password = password,
                 onSuccess = {
                     coroutineScope.launch {
+                        userViewModel.getUserData()
                         if (userViewModel.isFirstTime()) {
                             navigator.replaceAll(OnboardingScreen())
                         } else {
@@ -175,13 +181,13 @@ class SignInScreen : Screen {
                     if (error == strings.getEmailNotVerified()) {
                         navigator.push(EmailVerificationScreen())
                     } else {
-                        userViewModel.handleError(error)
+                        authViewModel.handleError(error)
                     }
                 })
         }
 
         val onSignUpButtonClick: (String, String, String) -> Unit = { email, password, username ->
-            userViewModel.signUpWithEmailAndPassword(
+            authViewModel.signUpWithEmailAndPassword(
                 email = email,
                 password = password,
                 name = username
@@ -190,41 +196,41 @@ class SignInScreen : Screen {
 
         // Crear estados y acciones
         val loginState = LoginState(
-            email = loginViewModel.email,
-            password = loginViewModel.password,
-            emailError = loginViewModel.emailError,
-            passwordError = loginViewModel.passwordError
+            email = authViewModel.loginEmail,
+            password = authViewModel.loginPassword,
+            emailError = authViewModel.loginEmailError,
+            passwordError = authViewModel.loginPasswordError
         )
 
         val loginActions = LoginActions(
-            onEmailChange = { loginViewModel.updateEmail(it) },
-            onPasswordChange = { loginViewModel.updatePassword(it) },
-            onEmailValidate = { loginViewModel.validateEmail() },
-            onPasswordValidate = { loginViewModel.validatePassword() },
-            isFieldsValid = { loginViewModel.isFieldsValid() }
+            onEmailChange = { authViewModel.updateLoginEmail(it) },
+            onPasswordChange = { authViewModel.updateLoginPassword(it) },
+            onEmailValidate = { authViewModel.validateLoginEmail() },
+            onPasswordValidate = { authViewModel.validateLoginPassword() },
+            isFieldsValid = { authViewModel.isLoginFieldsValid() }
         )
 
         val signUpState = SignUpState(
-            email = signUpViewModel.email,
-            username = signUpViewModel.username,
-            password = signUpViewModel.password,
-            passwordConfirm = signUpViewModel.passwordConfirm,
-            emailError = signUpViewModel.emailError,
-            usernameError = signUpViewModel.usernameError,
-            passwordError = signUpViewModel.passwordError,
-            passwordConfirmError = signUpViewModel.passwordConfirmError
+            email = authViewModel.signUpEmail,
+            username = authViewModel.signUpUsername,
+            password = authViewModel.signUpPassword,
+            passwordConfirm = authViewModel.signUpPasswordConfirm,
+            emailError = authViewModel.signUpEmailError,
+            usernameError = authViewModel.signUpUsernameError,
+            passwordError = authViewModel.signUpPasswordError,
+            passwordConfirmError = authViewModel.signUpPasswordConfirmError
         )
 
         val signUpActions = SignUpActions(
-            onEmailChange = { signUpViewModel.updateEmail(it) },
-            onUsernameChange = { signUpViewModel.updateUsername(it) },
-            onPasswordChange = { signUpViewModel.updatePassword(it) },
-            onPasswordConfirmChange = { signUpViewModel.updatePasswordConfirm(it) },
-            onEmailValidate = { signUpViewModel.validateEmail() },
-            onUsernameValidate = { signUpViewModel.validateUsername() },
-            onPasswordValidate = { signUpViewModel.validatePassword() },
-            onPasswordConfirmValidate = { signUpViewModel.validatePasswordConfirm() },
-            isFieldsValid = { signUpViewModel.isFieldsValid() }
+            onEmailChange = { authViewModel.updateSignUpEmail(it) },
+            onUsernameChange = { authViewModel.updateSignUpUsername(it) },
+            onPasswordChange = { authViewModel.updateSignUpPassword(it) },
+            onPasswordConfirmChange = { authViewModel.updateSignUpPasswordConfirm(it) },
+            onEmailValidate = { authViewModel.validateSignUpEmail() },
+            onUsernameValidate = { authViewModel.validateSignUpUsername() },
+            onPasswordValidate = { authViewModel.validateSignUpPassword() },
+            onPasswordConfirmValidate = { authViewModel.validateSignUpPasswordConfirm() },
+            isFieldsValid = { authViewModel.isSignUpFieldsValid() }
         )
 
         when (windowSizeClass) {

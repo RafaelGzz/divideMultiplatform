@@ -17,24 +17,23 @@ import com.ragl.divide.data.repositories.GroupRepository
 import com.ragl.divide.data.repositories.PreferencesRepository
 import com.ragl.divide.data.repositories.UserRepository
 import com.ragl.divide.data.services.AnalyticsService
+import com.ragl.divide.data.services.AppStateService
 import com.ragl.divide.data.services.GroupExpenseService
 import com.ragl.divide.data.services.ScheduleNotificationService
 import com.ragl.divide.ui.screens.groupProperties.PlatformImageUtils
 import com.ragl.divide.ui.utils.Strings
 import com.ragl.divide.ui.utils.logMessage
-import dev.gitlive.firebase.auth.FirebaseUser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 data class AppState(
-    val isLoading: Boolean = false,
     val groups: Map<String, Group> = emptyMap(),
     val groupMembers: Map<String, List<UserInfo>> = emptyMap(),
     val friends: Map<String, UserInfo> = emptyMap(),
@@ -43,6 +42,7 @@ data class AppState(
     val friendRequestsSent: Map<String, UserInfo> = emptyMap()
 )
 
+@OptIn(ExperimentalTime::class)
 class UserViewModel(
     private var userRepository: UserRepository,
     private var friendsRepository: FriendsRepository,
@@ -52,20 +52,12 @@ class UserViewModel(
     private val scheduleNotificationService: ScheduleNotificationService,
     private val strings: Strings,
     private val analyticsService: AnalyticsService,
-    private val appLifecycleHandler: AppLifecycleHandler
+    private val appLifecycleHandler: AppLifecycleHandler,
+    private val appStateService: AppStateService
 ) : ScreenModel {
 
     private val _state = MutableStateFlow(AppState())
     val state = _state.asStateFlow()
-
-    private val _errorState = MutableStateFlow<String?>(null)
-    val errorState = _errorState.asStateFlow()
-
-    private val _successState = MutableStateFlow<String?>(null)
-    val successState = _successState.asStateFlow()
-
-    private val _countdown = MutableStateFlow(0)
-    val countdown = _countdown.asStateFlow()
 
     var isDarkMode = MutableStateFlow<String?>(null)
 
@@ -122,27 +114,19 @@ class UserViewModel(
     }
 
     fun handleError(message: String?) {
-        _errorState.value = message ?: strings.getUnknownError()
+        appStateService.handleError(message ?: strings.getUnknownError())
     }
 
     fun handleSuccess(message: String) {
-        _successState.value = message
-    }
-
-    fun clearError() {
-        _errorState.value = null
+        appStateService.handleSuccess(message)
     }
 
     fun showLoading() {
-        _state.update {
-            it.copy(isLoading = true)
-        }
+        appStateService.showLoading()
     }
 
     fun hideLoading() {
-        _state.update {
-            it.copy(isLoading = false)
-        }
+        appStateService.hideLoading()
     }
 
     fun changeDarkMode(isDarkMode: Boolean?) {
@@ -211,121 +195,7 @@ class UserViewModel(
         }
     }
 
-    fun signInWithEmailAndPassword(
-        email: String,
-        password: String,
-        onSuccess: () -> Unit,
-        onFail: (String) -> Unit
-    ) {
-        screenModelScope.launch {
-            try {
-                showLoading()
-                if (userRepository.signInWithEmailAndPassword(email, password) != null) {
-                    if (userRepository.isEmailVerified()) {
-                        getUserData()
-                        analyticsService.logEvent("login", mapOf(
-                            "method" to "email"
-                        ))
-                        onSuccess()
-                    } else {
-                        onFail(strings.getEmailNotVerified())
-                    }
-                } else onFail(strings.getFailedToLogin())
-            } catch (e: Exception) {
-                analyticsService.logError(e, "Error en login con email")
-                onFail(handleAuthError(e))
-                logMessage("UserViewModel: signInWithEmailAndPassword", e.message.toString())
-            } finally {
-                hideLoading()
-            }
-        }
-    }
 
-    fun signUpWithEmailAndPassword(
-        email: String, password: String, name: String
-    ) {
-        screenModelScope.launch {
-            try {
-                showLoading()
-                if (userRepository.signUpWithEmailAndPassword(email, password, name) != null) {
-                    analyticsService.logEvent("sign_up", mapOf(
-                        "method" to "email",
-                        "email" to email
-                    ))
-                    userRepository.signOut()
-                    handleSuccess(strings.getVerificationEmailSent())
-                } else handleError(strings.getFailedToLogin())
-            } catch (e: Exception) {
-                analyticsService.logError(e, "Error en registro con email")
-                handleError(handleAuthError(e))
-                logMessage("UserViewModel: signUpWithEmailAndPassword", e.message.toString())
-            } finally {
-                hideLoading()
-            }
-        }
-    }
-
-    fun signInWithGoogle(
-        result: Result<FirebaseUser?>,
-        onSuccess: () -> Unit
-    ) {
-        screenModelScope.launch {
-            try {
-                showLoading()
-                val firebaseUser = result.getOrNull()
-                if (firebaseUser != null) {
-                    val checkedUser = userRepository.getUser(firebaseUser.uid)
-                    if (checkedUser.uuid.isEmpty()) {
-                        val newUser = userRepository.createUserInDatabase()
-                        analyticsService.logEvent("sign_up", mapOf(
-                            "method" to "google",
-                            "email" to newUser.email
-                        ))
-                    } else {
-                        analyticsService.logEvent("login", mapOf(
-                            "method" to "google",
-                            "email" to checkedUser.email
-                        ))
-                    }
-                    onSuccess()
-                } else {
-                    handleError(strings.getFailedToLogin())
-                    analyticsService.logError(result.exceptionOrNull()!!, "Error en login con google")
-                    logMessage(
-                        "UserViewModel: signInWithGoogle",
-                        "${result.exceptionOrNull()?.message}"
-                    )
-                }
-
-            } catch (e: Exception) {
-                analyticsService.logError(e, "Error en login con google")
-                logMessage("UserViewModel", "${e.message}")
-            } finally {
-                hideLoading()
-            }
-        }
-    }
-
-    private fun handleAuthError(e: Exception): String {
-        return when {
-            e.message?.contains("no user record") == true ||
-                    e.message?.contains("password is invalid") == true -> {
-                strings.getEmailPasswordInvalid()
-            }
-
-            e.message?.contains("email address is already in use") == true -> {
-                strings.getEmailAlreadyInUse()
-            }
-
-            e.message?.contains("unusual activity") == true -> {
-                strings.getUnusualActivity()
-            }
-
-            else -> {
-                e.message ?: strings.getUnknownError()
-            }
-        }
-    }
 
     fun signOut(onSignOut: () -> Unit) {
         screenModelScope.launch {
@@ -571,43 +441,7 @@ class UserViewModel(
         }
     }
 
-    fun resendVerificationEmail() {
-        screenModelScope.launch {
-            try {
-                showLoading()
-                userRepository.sendEmailVerification()
-                handleSuccess(strings.getVerificationEmailSent())
-                startCountdown()
-            } catch (e: Exception) {
-                handleError(e.message ?: strings.getUnknownError())
-            } finally {
-                hideLoading()
-            }
-        }
-    }
 
-    private fun startCountdown() {
-        screenModelScope.launch {
-            _countdown.value = 300
-            while (_countdown.value > 0) {
-                delay(1000)
-                _countdown.value--
-            }
-        }
-    }
-
-    suspend fun isEmailVerified(): Boolean {
-        var res = false
-        try {
-            showLoading()
-            res = userRepository.isEmailVerified()
-        } catch (e: Exception) {
-            handleError(e.message ?: strings.getUnknownError())
-        } finally {
-            hideLoading()
-        }
-        return res
-    }
 
     fun updateProfileImage(imagePath: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
         screenModelScope.launch {

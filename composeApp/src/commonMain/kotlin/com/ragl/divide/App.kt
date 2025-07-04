@@ -28,26 +28,30 @@ import com.mmk.kmpauth.google.GoogleAuthProvider
 import com.ragl.divide.ui.components.ContentWithMessageBar
 import com.ragl.divide.ui.components.MessageBarPosition
 import com.ragl.divide.ui.components.rememberMessageBarState
+import com.ragl.divide.data.services.AppStateService
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.main.MainScreen
 import com.ragl.divide.ui.screens.signIn.SignInScreen
 import com.ragl.divide.ui.theme.DivideTheme
 import com.ragl.divide.ui.utils.logMessage
-import kotlinx.datetime.Clock
 import org.koin.compose.koinInject
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
+@OptIn(ExperimentalTime::class)
 @Composable
 fun App() {
 
     var loaded by remember { mutableStateOf(false) }
     val userViewModel: UserViewModel = koinInject()
+    val appStateService: AppStateService = koinInject()
     val darkModeState by userViewModel.isDarkMode.collectAsState()
     val startAtLogin by userViewModel.startAtLogin
     val isInitializing by userViewModel.isInitializing
     val messageBarState = rememberMessageBarState()
-    val errorState by userViewModel.errorState.collectAsState()
-    val successState by userViewModel.successState.collectAsState()
-    val appState by userViewModel.state.collectAsState()
+    val errorState by appStateService.errorState.collectAsState()
+    val successState by appStateService.successState.collectAsState()
+    val isLoading by appStateService.isLoading.collectAsState()
 
     LaunchedEffect(Unit) {
         val startTime = Clock.System.now().toEpochMilliseconds()
@@ -64,7 +68,7 @@ fun App() {
     LaunchedEffect(errorState) {
         errorState?.let { errorMessage ->
             messageBarState.addError(Exception(errorMessage))
-            userViewModel.clearError()
+            appStateService.clearError()
         }
     }
 
@@ -103,7 +107,7 @@ fun App() {
             }
 
             // Indicador de carga global
-            if (appState.isLoading || isInitializing || !loaded) {
+            if (isLoading || isInitializing || !loaded) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()

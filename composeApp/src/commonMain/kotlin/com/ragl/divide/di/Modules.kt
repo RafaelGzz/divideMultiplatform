@@ -10,6 +10,7 @@ import com.ragl.divide.data.repositories.PreferencesRepository
 import com.ragl.divide.data.repositories.UserRepository
 import com.ragl.divide.data.repositories.UserRepositoryImpl
 import com.ragl.divide.data.services.AnalyticsService
+import com.ragl.divide.data.services.AppStateService
 import com.ragl.divide.data.services.GroupExpenseService
 import com.ragl.divide.ui.screens.UserViewModel
 import com.ragl.divide.ui.screens.addFriends.AddFriendsViewModel
@@ -24,8 +25,7 @@ import com.ragl.divide.ui.screens.groupPayment.GroupPaymentViewModel
 import com.ragl.divide.ui.screens.groupPaymentProperties.GroupPaymentPropertiesViewModel
 import com.ragl.divide.ui.screens.groupProperties.GroupPropertiesViewModel
 import com.ragl.divide.ui.screens.onboarding.OnboardingViewModel
-import com.ragl.divide.ui.screens.signIn.LogInViewModel
-import com.ragl.divide.ui.screens.signIn.SignUpViewModel
+import com.ragl.divide.ui.screens.signIn.AuthViewModel
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.analytics.FirebaseAnalytics
 import dev.gitlive.firebase.analytics.analytics
@@ -53,8 +53,7 @@ val sharedModule = module {
     singleOf(::PreferencesRepository)
 
     singleOf(::UserViewModel)
-    factoryOf(::LogInViewModel)
-    factoryOf(::SignUpViewModel)
+    factoryOf(::AuthViewModel)
     factoryOf(::OnboardingViewModel)
     factoryOf(::ExpensePropertiesViewModel)
     factoryOf(::ExpenseViewModel)
@@ -70,6 +69,7 @@ val sharedModule = module {
 
     singleOf(::GroupExpenseService)
     singleOf(::AnalyticsService)
+    singleOf(::AppStateService)
 
     // FIREBASE DEPENDENCIES
     single {
