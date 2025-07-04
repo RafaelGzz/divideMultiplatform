@@ -20,20 +20,18 @@ jobs:
         distribution: 'temurin'
         
     - name: Setup Gradle
-      uses: gradle/gradle-build-action@v3
-      with:
-        gradle-version: wrapper
+      uses: gradle/actions/setup-gradle@v4
         
     - name: Create keystore.properties
       run: |
-        echo "storeFile=composeApp/divide-release-key.jks" > keystore.properties
+        echo "storeFile=divide-release-key.jks" > keystore.properties
         echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> keystore.properties
         echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> keystore.properties
         echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> keystore.properties
         
     - name: Decode keystore
       run: |
-        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > composeApp/divide-release-key.jks
+        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > divide-release-key.jks
         
     - name: Create google-services.json
       run: |
