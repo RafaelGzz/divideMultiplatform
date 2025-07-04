@@ -1,6 +1,6 @@
 # Configuración de Deployment Automático
 
-Este documento explica cómo configurar GitHub Actions para desplegar automáticamente la app a Play Console como prueba interna.
+Este documento explica cómo configurar GitHub Actions para desplegar automáticamente la app a Play Console como prueba cerrada (alpha).
 
 ## Prerrequisitos
 
@@ -71,7 +71,7 @@ El workflow se ejecuta automáticamente cuando haces push a la rama `master`.
 
 ### Deployment manual
 1. Ve a Actions en tu repositorio de GitHub
-2. Selecciona "Deploy to Play Console Internal Testing"
+2. Selecciona "Deploy to Play Console Closed Testing"
 3. Haz clic en "Run workflow"
 4. Opcionalmente, especifica una nueva versión:
    - Version name: e.g., "1.0.16"
@@ -81,7 +81,7 @@ El workflow se ejecuta automáticamente cuando haces push a la rama `master`.
 
 Después de ejecutar el workflow:
 
-1. Ve a Play Console → Testing → Internal testing
+1. Ve a Play Console → Testing → Closed testing
 2. Verifica que la nueva versión esté disponible
 3. El bundle también se guarda como artifact en GitHub Actions por 30 días
 
