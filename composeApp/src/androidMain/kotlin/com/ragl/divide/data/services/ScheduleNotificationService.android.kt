@@ -13,24 +13,25 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import com.ragl.divide.data.models.Frequency
 import com.ragl.divide.data.models.getInMillis
-import com.ragl.divide.ui.utils.formatDate
-import com.ragl.divide.ui.utils.logMessage
+import com.ragl.divide.domain.services.ScheduleNotificationService
+import com.ragl.divide.presentation.utils.formatDate
+import com.ragl.divide.presentation.utils.logMessage
 import java.util.Calendar
 import java.util.TimeZone
 
-actual class ScheduleNotificationService(
+actual class ScheduleNotificationServiceImpl(
     private val context: Context
-) {
+): ScheduleNotificationService {
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
     private val logTag = "ScheduleNotification"
 
-    actual fun canScheduleExactAlarms() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+    actual override fun canScheduleExactAlarms() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         alarmManager.canScheduleExactAlarms()
     } else {
         true
     }
 
-    actual fun hasNotificationPermission(): Boolean = 
+    actual override fun hasNotificationPermission(): Boolean =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ContextCompat.checkSelfPermission(
                 context,
@@ -40,14 +41,14 @@ actual class ScheduleNotificationService(
             true
         }
 
-    actual fun wasNotificationPermissionRejectedPermanently(): Boolean = 
+    actual override fun wasNotificationPermissionRejectedPermanently(): Boolean =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             NotificationPermissionActivity.wasPermissionRejectedPermanently(context)
         } else {
             false
         }
 
-    actual fun requestNotificationPermission() {
+    actual override fun requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             // Verificar si el permiso fue rechazado permanentemente
             if (NotificationPermissionActivity.wasPermissionRejectedPermanently(context)) {
@@ -67,7 +68,7 @@ actual class ScheduleNotificationService(
         }
     }
 
-    actual fun requestScheduleExactAlarmPermission() {
+    actual override fun requestScheduleExactAlarmPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -77,7 +78,7 @@ actual class ScheduleNotificationService(
         }
     }
 
-    actual fun scheduleNotification(
+    actual override fun scheduleNotification(
         id: Int,
         title: String,
         message: String,
@@ -154,7 +155,7 @@ actual class ScheduleNotificationService(
         }
     }
 
-    actual fun cancelNotification(id: Int) {
+    actual override fun cancelNotification(id: Int) {
         val intent = Intent(context, Notifications::class.java)
 
         // Es importante recrear el PendingIntent exactamente igual que cuando se creó
@@ -173,7 +174,7 @@ actual class ScheduleNotificationService(
         }
     }
 
-    actual fun cancelAllNotifications() {
+    actual override fun cancelAllNotifications() {
         try {
             // Cancelar todas las notificaciones mostradas
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager

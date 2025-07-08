@@ -2,7 +2,8 @@ package com.ragl.divide.data.services
 
 import com.ragl.divide.data.models.Frequency
 import com.ragl.divide.data.models.getInMillis
-import com.ragl.divide.ui.utils.logMessage
+import com.ragl.divide.domain.services.ScheduleNotificationService
+import com.ragl.divide.presentation.utils.logMessage
 import platform.Foundation.NSDate
 import platform.Foundation.NSDateFormatter
 import platform.Foundation.NSLocale
@@ -22,26 +23,26 @@ import platform.UserNotifications.UNNotificationTrigger
 import platform.UserNotifications.UNTimeIntervalNotificationTrigger
 import platform.UserNotifications.UNUserNotificationCenter
 
-actual class ScheduleNotificationService {
+actual class ScheduleNotificationServiceImpl: ScheduleNotificationService {
     private val logTag = "ScheduleNotification"
     private val notificationCenter = UNUserNotificationCenter.currentNotificationCenter()
     
-    actual fun hasNotificationPermission(): Boolean {
+    actual override fun hasNotificationPermission(): Boolean {
         return true
     }
     
-    actual fun requestNotificationPermission() {
+    actual override fun requestNotificationPermission() {
         requestNotificationPermission { granted ->
             logMessage(logTag, "Permisos de notificación solicitados: ${if (granted) "concedidos" else "denegados"}")
         }
     }
     
-    actual fun wasNotificationPermissionRejectedPermanently(): Boolean {
+    actual override fun wasNotificationPermissionRejectedPermanently(): Boolean {
         // En iOS no hay concepto de "rechazado permanentemente" como en Android
         return false
     }
     
-    actual fun scheduleNotification(
+    actual override fun scheduleNotification(
         id: Int,
         title: String,
         message: String,
@@ -145,9 +146,9 @@ actual class ScheduleNotificationService {
         return formatter.stringFromDate(date) ?: "$epochSeconds"
     }
 
-    actual fun canScheduleExactAlarms(): Boolean = true
+    actual override fun canScheduleExactAlarms(): Boolean = true
 
-    actual fun requestScheduleExactAlarmPermission() {
+    actual override fun requestScheduleExactAlarmPermission() {
         // En iOS no es necesario un permiso adicional para alarmas exactas
         // Pero podemos solicitar los permisos de notificación de nuevo
         requestNotificationPermission { granted ->
@@ -155,7 +156,7 @@ actual class ScheduleNotificationService {
         }
     }
 
-    actual fun cancelNotification(id: Int) {
+    actual override fun cancelNotification(id: Int) {
         try {
             notificationCenter.removePendingNotificationRequestsWithIdentifiers(listOf("$id"))
             notificationCenter.removeDeliveredNotificationsWithIdentifiers(listOf("$id"))
@@ -166,7 +167,7 @@ actual class ScheduleNotificationService {
     }
     
     // Método para cancelar todas las notificaciones
-    actual fun cancelAllNotifications() {
+    actual override fun cancelAllNotifications() {
         try {
             notificationCenter.removeAllPendingNotificationRequests()
             notificationCenter.removeAllDeliveredNotifications()

@@ -4,9 +4,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.ragl.divide.data.models.Frequency
-import com.ragl.divide.data.repositories.UserRepository
-import com.ragl.divide.ui.utils.Strings
-import com.ragl.divide.ui.utils.logMessage
+import com.ragl.divide.domain.repositories.UserRepository
+import com.ragl.divide.domain.services.ScheduleNotificationService
+import com.ragl.divide.presentation.utils.Strings
+import com.ragl.divide.presentation.utils.logMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
@@ -26,7 +27,7 @@ class BootReminderNotificationsReceiver : BroadcastReceiver(), KoinComponent {
     @OptIn(ExperimentalTime::class)
     override fun onReceive(context: Context, intent: Intent) = goAsync {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
-            val scheduleNotificationService = ScheduleNotificationService(context)
+            val scheduleNotificationService by inject<ScheduleNotificationService>()
 
             logMessage(logTag, "Dispositivo reiniciado, reprogramando notificaciones")
             val currentUser = userRepository.getFirebaseUser()

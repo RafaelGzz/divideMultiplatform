@@ -1,9 +1,9 @@
 package com.ragl.divide.data.services
 
 import com.ragl.divide.data.models.Category
-import com.ragl.divide.data.models.GroupEvent
-import com.ragl.divide.data.models.GroupExpense
-import com.ragl.divide.data.models.GroupPayment
+import com.ragl.divide.data.models.Event
+import com.ragl.divide.data.models.EventExpense
+import com.ragl.divide.data.models.EventPayment
 import com.ragl.divide.data.models.PaymentType
 import com.ragl.divide.data.models.SplitMethod
 import kotlin.test.Test
@@ -12,7 +12,7 @@ import kotlin.test.assertTrue
 
 class GroupExpenseServiceTest {
 
-    private val service = GroupExpenseService()
+    private val service = GroupExpenseServiceImpl()
 
     // Helper function para crear gastos de prueba
     private fun createTestExpense(
@@ -22,7 +22,7 @@ class GroupExpenseServiceTest {
         payers: Map<String, Double> = mapOf("user1" to 100.0),
         debtors: Map<String, Double> = mapOf("user2" to 50.0, "user3" to 50.0),
         splitMethod: SplitMethod = SplitMethod.EQUALLY
-    ) = GroupExpense(
+    ) = EventExpense(
         id = id,
         title = title,
         amount = amount,
@@ -39,7 +39,7 @@ class GroupExpenseServiceTest {
         to: String = "user1",
         amount: Double = 25.0,
         description: String = "Test Payment"
-    ) = GroupPayment(
+    ) = EventPayment(
         id = id,
         from = from,
         to = to,
@@ -52,11 +52,11 @@ class GroupExpenseServiceTest {
     private fun createTestEvent(
         id: String = "event1",
         title: String = "Test Event",
-        expenses: Map<String, GroupExpense> = emptyMap(),
-        payments: Map<String, GroupPayment> = emptyMap(),
+        expenses: Map<String, EventExpense> = emptyMap(),
+        payments: Map<String, EventPayment> = emptyMap(),
         settled: Boolean = false,
         currentDebts: Map<String, Map<String, Double>> = emptyMap()
-    ) = GroupEvent(
+    ) = Event(
         id = id,
         title = title,
         expenses = expenses,
@@ -74,7 +74,7 @@ class GroupExpenseServiceTest {
             debtors = mapOf("user2" to 50.0, "user3" to 50.0)
         )
         val expenses = listOf(expense)
-        val payments = emptyList<GroupPayment>()
+        val payments = emptyList<EventPayment>()
 
         // Act
         val result = service.calculateDebts(expenses, payments)
@@ -127,7 +127,7 @@ class GroupExpenseServiceTest {
             debtors = mapOf("user1" to 40.0)
         )
         val expenses = listOf(expense1, expense2)
-        val payments = emptyList<GroupPayment>()
+        val payments = emptyList<EventPayment>()
 
         // Act
         val result = service.calculateDebts(expenses, payments, simplify = true)
@@ -151,7 +151,7 @@ class GroupExpenseServiceTest {
             debtors = mapOf("user1" to 50.0)
         )
         val expenses = listOf(expense1, expense2)
-        val payments = emptyList<GroupPayment>()
+        val payments = emptyList<EventPayment>()
         val expensesToSettle = mutableListOf<String>()
         val paymentsToSettle = mutableListOf<String>()
 
@@ -230,7 +230,7 @@ class GroupExpenseServiceTest {
             debtors = mapOf("user2" to 40.0, "user3" to 40.0, "user4" to 40.0)
         )
         val expenses = listOf(expense)
-        val payments = emptyList<GroupPayment>()
+        val payments = emptyList<EventPayment>()
 
         // Act
         val result = service.calculateDebts(expenses, payments)
@@ -364,7 +364,7 @@ class GroupExpenseServiceTest {
             debtors = mapOf("user2" to 0.005)
         )
         val expenses = listOf(expense)
-        val payments = emptyList<GroupPayment>()
+        val payments = emptyList<EventPayment>()
 
         // Act
         val result = service.calculateDebts(expenses, payments)
@@ -387,7 +387,7 @@ class GroupExpenseServiceTest {
             debtors = mapOf("userB" to 100.0)
         )
         val expenses = listOf(expense1, expense2)
-        val payments = emptyList<GroupPayment>()
+        val payments = emptyList<EventPayment>()
 
         // Act
         val result = service.calculateDebts(expenses, payments, simplify = true)
@@ -400,8 +400,8 @@ class GroupExpenseServiceTest {
     @Test
     fun testCalculateDebts_EmptyInputs() {
         // Arrange
-        val expenses = emptyList<GroupExpense>()
-        val payments = emptyList<GroupPayment>()
+        val expenses = emptyList<EventExpense>()
+        val payments = emptyList<EventPayment>()
 
         // Act
         val result = service.calculateDebts(expenses, payments)
@@ -413,7 +413,7 @@ class GroupExpenseServiceTest {
     @Test
     fun testCalculateDebts_OnlyPayments() {
         // Arrange
-        val expenses = emptyList<GroupExpense>()
+        val expenses = emptyList<EventExpense>()
         val payment = createTestPayment(
             from = "user1",
             to = "user2",
@@ -436,7 +436,7 @@ class GroupExpenseServiceTest {
             debtors = mapOf("user1" to 100.0)
         )
         val expenses = listOf(expense)
-        val payments = emptyList<GroupPayment>()
+        val payments = emptyList<EventPayment>()
 
         // Act
         val result = service.calculateDebts(expenses, payments)
@@ -489,7 +489,7 @@ class GroupExpenseServiceTest {
             debtors = mapOf("user2" to 0.0)
         )
         val expenses = listOf(expense)
-        val payments = emptyList<GroupPayment>()
+        val payments = emptyList<EventPayment>()
 
         // Act
         val result = service.calculateDebts(expenses, payments)
@@ -507,7 +507,7 @@ class GroupExpenseServiceTest {
             debtors = mapOf("user2" to 11.11, "user3" to 11.11, "user4" to 11.11)
         )
         val expenses = listOf(expense)
-        val payments = emptyList<GroupPayment>()
+        val payments = emptyList<EventPayment>()
 
         // Act
         val result = service.calculateDebts(expenses, payments)

@@ -1,13 +1,15 @@
 package com.ragl.divide.data.repositories
 
+import com.ragl.divide.data.models.Event
+import com.ragl.divide.data.models.EventExpense
+import com.ragl.divide.data.models.EventPayment
 import com.ragl.divide.data.models.ExpenseType
 import com.ragl.divide.data.models.Group
-import com.ragl.divide.data.models.GroupEvent
-import com.ragl.divide.data.models.GroupExpense
-import com.ragl.divide.data.models.GroupPayment
 import com.ragl.divide.data.models.User
-import com.ragl.divide.data.services.GroupExpenseService
-import com.ragl.divide.ui.utils.logMessage
+import com.ragl.divide.domain.repositories.GroupRepository
+import com.ragl.divide.domain.repositories.UserRepository
+import com.ragl.divide.domain.services.GroupExpenseService
+import com.ragl.divide.presentation.utils.logMessage
 import dev.gitlive.firebase.database.DatabaseReference
 import dev.gitlive.firebase.database.FirebaseDatabase
 import dev.gitlive.firebase.storage.File
@@ -18,31 +20,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.firstOrNull
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
-
-interface GroupRepository {
-    suspend fun getGroups(groupIds: Map<String, String>): Map<String, Group>
-    suspend fun getGroup(id: String): Group
-    suspend fun saveGroup(group: Group, photo: File?): Group
-    suspend fun uploadPhoto(photo: File, id: String): String
-    suspend fun getPhoto(id: String): String
-    suspend fun addUser(groupId: String, userId: String)
-    suspend fun getUsers(userIds: Collection<String>): List<User>
-    suspend fun leaveGroup(groupId: String)
-    suspend fun deleteGroup(groupId: String, image: String)
-    suspend fun saveGroupExpense(groupId: String, expense: GroupExpense): GroupExpense
-    suspend fun deleteGroupExpense(groupId: String, expense: GroupExpense)
-    suspend fun saveGroupPayment(groupId: String, payment: GroupPayment): GroupPayment
-    suspend fun deleteGroupPayment(groupId: String, payment: GroupPayment)
-    suspend fun saveEvent(groupId: String, event: GroupEvent): GroupEvent
-    suspend fun deleteEvent(groupId: String, eventId: String)
-    suspend fun getEvent(groupId: String, eventId: String): GroupEvent
-    suspend fun getEvents(groupId: String): Map<String, GroupEvent>
-    suspend fun settleEvent(groupId: String, eventId: String)
-    suspend fun reopenEvent(groupId: String, eventId: String)
-    suspend fun saveRecurringExpense(groupId: String, expense: GroupExpense): GroupExpense
-    suspend fun updateRecurringExpense(groupId: String, expense: GroupExpense): GroupExpense
-    suspend fun deleteRecurringExpense(groupId: String, expenseId: String)
-}
 
 @OptIn(ExperimentalTime::class)
 class GroupRepositoryImpl(
@@ -202,7 +179,7 @@ class GroupRepositoryImpl(
         logMessage("GroupRepositoryImpl", "deleteGroup: $groupId - executed in ${executionTime}ms")
     }
 
-    override suspend fun saveGroupExpense(groupId: String, expense: GroupExpense): GroupExpense {
+    override suspend fun saveGroupExpense(groupId: String, expense: EventExpense): EventExpense {
         val startTime = Clock.System.now().toEpochMilliseconds()
         val newExpense = expense.copy(
             id = expense.id.ifEmpty {
@@ -226,7 +203,7 @@ class GroupRepositoryImpl(
         return newExpense
     }
 
-    override suspend fun deleteGroupExpense(groupId: String, expense: GroupExpense) {
+    override suspend fun deleteGroupExpense(groupId: String, expense: EventExpense) {
         val startTime = Clock.System.now().toEpochMilliseconds()
         val groupRef = database.reference("groups/$groupId")
         if (expense.eventId.isNotEmpty())
@@ -243,7 +220,7 @@ class GroupRepositoryImpl(
         updateCurrentDebts(groupId, expense.eventId)
     }
 
-    override suspend fun saveGroupPayment(groupId: String, payment: GroupPayment): GroupPayment {
+    override suspend fun saveGroupPayment(groupId: String, payment: EventPayment): EventPayment {
         val startTime = Clock.System.now().toEpochMilliseconds()
         val newPayment = payment.copy(id = payment.id.ifEmpty {
             "id${Clock.System.now().toEpochMilliseconds()}"
@@ -265,7 +242,7 @@ class GroupRepositoryImpl(
         return newPayment
     }
 
-    override suspend fun deleteGroupPayment(groupId: String, payment: GroupPayment) {
+    override suspend fun deleteGroupPayment(groupId: String, payment: EventPayment) {
         val startTime = Clock.System.now().toEpochMilliseconds()
         val groupRef = database.reference("groups/$groupId")
         if (payment.eventId.isNotEmpty())
@@ -282,7 +259,7 @@ class GroupRepositoryImpl(
         updateCurrentDebts(groupId, payment.eventId)
     }
 
-    override suspend fun saveEvent(groupId: String, event: GroupEvent): GroupEvent {
+    override suspend fun saveEvent(groupId: String, event: Event): Event {
         val startTime = Clock.System.now().toEpochMilliseconds()
         val newEvent = event.copy(
             id = event.id.ifEmpty { "event${Clock.System.now().toEpochMilliseconds()}" },
@@ -298,17 +275,17 @@ class GroupRepositoryImpl(
         return newEvent
     }
 
-    override suspend fun getEvent(groupId: String, eventId: String): GroupEvent {
+    override suspend fun getEvent(groupId: String, eventId: String): Event {
         val startTime = Clock.System.now().toEpochMilliseconds()
         val groupRef = database.reference("groups/$groupId")
         val result = groupRef.child("events").child(eventId).valueEvents.firstOrNull()
-            ?.value<GroupEvent>() ?: GroupEvent()
+            ?.value<Event>() ?: Event()
         val executionTime = Clock.System.now().toEpochMilliseconds() - startTime
         logMessage("GroupRepositoryImpl", "getEvent: $eventId - executed in ${executionTime}ms")
         return result
     }
 
-    override suspend fun getEvents(groupId: String): Map<String, GroupEvent> = coroutineScope {
+    override suspend fun getEvents(groupId: String): Map<String, Event> = coroutineScope {
         val startTime = Clock.System.now().toEpochMilliseconds()
         val groupRef = database.reference("groups/$groupId")
         val snapshot = groupRef.child("events").valueEvents.firstOrNull()
@@ -316,12 +293,12 @@ class GroupRepositoryImpl(
 
         val deferredResults = children.map { childSnapshot ->
             async {
-                childSnapshot.value<GroupEvent>()
+                childSnapshot.value<Event>()
             }
         }
 
         val results = deferredResults.awaitAll()
-        val events = mutableMapOf<String, GroupEvent>()
+        val events = mutableMapOf<String, Event>()
 
         results.forEach { event ->
             events[event.id] = event
@@ -365,8 +342,8 @@ class GroupRepositoryImpl(
 
     override suspend fun saveRecurringExpense(
         groupId: String,
-        expense: GroupExpense
-    ): GroupExpense {
+        expense: EventExpense
+    ): EventExpense {
         val startTime = Clock.System.now().toEpochMilliseconds()
         val newExpense = expense.copy(
             id = expense.id.ifEmpty { "id${Clock.System.now().toEpochMilliseconds()}" },
@@ -386,8 +363,8 @@ class GroupRepositoryImpl(
 
     override suspend fun updateRecurringExpense(
         groupId: String,
-        expense: GroupExpense
-    ): GroupExpense {
+        expense: EventExpense
+    ): EventExpense {
         val startTime = Clock.System.now().toEpochMilliseconds()
         val groupRef = database.reference("groups/$groupId")
         groupRef.child("recurringExpenses").child(expense.id).setValue(expense)
@@ -431,13 +408,13 @@ class GroupRepositoryImpl(
         coroutineScope {
             val expensesDeferred = async {
                 groupRef.child("events/$eventId/expenses").valueEvents.firstOrNull()?.children?.map {
-                    it.value<GroupExpense>()
+                    it.value<EventExpense>()
                 } ?: emptyList()
             }
 
             val paymentsDeferred = async {
                 groupRef.child("events/$eventId/payments").valueEvents.firstOrNull()?.children?.map {
-                    it.value<GroupPayment>()
+                    it.value<EventPayment>()
                 } ?: emptyList()
             }
 

@@ -1,7 +1,8 @@
 package com.ragl.divide.data.repositories
 
 import com.ragl.divide.data.models.UserInfo
-import com.ragl.divide.ui.utils.logMessage
+import com.ragl.divide.domain.repositories.FriendsRepository
+import com.ragl.divide.presentation.utils.logMessage
 import dev.gitlive.firebase.auth.FirebaseAuth
 import dev.gitlive.firebase.database.DataSnapshot
 import dev.gitlive.firebase.database.FirebaseDatabase
@@ -12,19 +13,6 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
-interface FriendsRepository {
-    suspend fun getFriends(friends: List<String>): Map<String, UserInfo>
-    suspend fun getGroupMembers(userIds: List<String>, localUsers: Map<String, UserInfo>): List<UserInfo>
-    suspend fun searchUsers(query: String, existing: List<UserInfo>): Map<String, UserInfo>
-    suspend fun addFriend(friend: UserInfo): UserInfo
-    suspend fun sendFriendRequest(friendId: String): Boolean
-    suspend fun acceptFriendRequest(friendId: String): Boolean
-    suspend fun cancelFriendRequest(friendId: String): Boolean
-    suspend fun rejectFriendRequest(friendId: String): Boolean
-    suspend fun removeFriend(friendId: String): Boolean
-    suspend fun getFriendRequestsReceived(requests: Map<String, String>): Map<String, UserInfo>
-    suspend fun getFriendRequestsSent(requests: Map<String, String>): Map<String, UserInfo>
-}
 
 @OptIn(ExperimentalTime::class)
 class FriendsRepositoryImpl(

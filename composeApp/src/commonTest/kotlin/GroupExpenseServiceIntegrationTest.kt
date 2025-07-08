@@ -1,9 +1,9 @@
 package com.ragl.divide.data.services
 
 import com.ragl.divide.data.models.Category
-import com.ragl.divide.data.models.GroupEvent
-import com.ragl.divide.data.models.GroupExpense
-import com.ragl.divide.data.models.GroupPayment
+import com.ragl.divide.data.models.Event
+import com.ragl.divide.data.models.EventExpense
+import com.ragl.divide.data.models.EventPayment
 import com.ragl.divide.data.models.PaymentType
 import com.ragl.divide.data.models.SplitMethod
 import kotlin.test.Test
@@ -15,7 +15,7 @@ import kotlin.test.assertTrue
  */
 class GroupExpenseServiceIntegrationTest {
 
-    private val service = GroupExpenseService()
+    private val service = GroupExpenseServiceImpl()
 
     @Test
     fun testRealWorldScenario_WeekendTrip() {
@@ -23,7 +23,7 @@ class GroupExpenseServiceIntegrationTest {
         val users = listOf("Alice", "Bob", "Charlie", "Diana")
         
         // Gastos del viaje
-        val hotelExpense = GroupExpense(
+        val hotelExpense = EventExpense(
             id = "hotel",
             title = "Hotel",
             amount = 400.0,
@@ -33,7 +33,7 @@ class GroupExpenseServiceIntegrationTest {
             category = Category.TRAVEL
         )
         
-        val dinnerExpense = GroupExpense(
+        val dinnerExpense = EventExpense(
             id = "dinner",
             title = "Cena grupal",
             amount = 200.0,
@@ -43,7 +43,7 @@ class GroupExpenseServiceIntegrationTest {
             category = Category.FOOD
         )
         
-        val gasExpense = GroupExpense(
+        val gasExpense = EventExpense(
             id = "gas",
             title = "Gasolina",
             amount = 80.0,
@@ -54,7 +54,7 @@ class GroupExpenseServiceIntegrationTest {
         )
         
         // Algunos pagos parciales
-        val payment1 = GroupPayment(
+        val payment1 = EventPayment(
             id = "payment1",
             from = "Bob",
             to = "Alice",
@@ -63,7 +63,7 @@ class GroupExpenseServiceIntegrationTest {
             type = PaymentType.TRANSFER
         )
         
-        val payment2 = GroupPayment(
+        val payment2 = EventPayment(
             id = "payment2",
             from = "Diana",
             to = "Charlie",
@@ -105,7 +105,7 @@ class GroupExpenseServiceIntegrationTest {
         // Arrange - Simulando gastos compartidos de un apartamento
         val expenses = listOf(
             // Renta mensual
-            GroupExpense(
+            EventExpense(
                 id = "rent",
                 title = "Renta Enero",
                 amount = 1200.0,
@@ -116,7 +116,7 @@ class GroupExpenseServiceIntegrationTest {
             ),
             
             // Servicios
-            GroupExpense(
+            EventExpense(
                 id = "utilities",
                 title = "Electricidad y Gas",
                 amount = 150.0,
@@ -127,7 +127,7 @@ class GroupExpenseServiceIntegrationTest {
             ),
             
             // Compras del supermercado
-            GroupExpense(
+            EventExpense(
                 id = "groceries",
                 title = "Supermercado",
                 amount = 300.0,
@@ -139,7 +139,7 @@ class GroupExpenseServiceIntegrationTest {
         )
         
         val payments = listOf(
-            GroupPayment(
+            EventPayment(
                 id = "jane_to_john",
                 from = "Jane",
                 to = "John",
@@ -148,7 +148,7 @@ class GroupExpenseServiceIntegrationTest {
                 type = PaymentType.TRANSFER
             ),
             
-            GroupPayment(
+            EventPayment(
                 id = "jim_to_jane",
                 from = "Jim",
                 to = "Jane",
@@ -176,7 +176,7 @@ class GroupExpenseServiceIntegrationTest {
     @Test
     fun testComplexEventConsolidation() {
         // Arrange - Múltiples eventos con deudas que se pueden consolidar
-        val event1 = GroupEvent(
+        val event1 = Event(
             id = "birthday_party",
             title = "Fiesta de cumpleaños",
             currentDebts = mapOf(
@@ -187,7 +187,7 @@ class GroupExpenseServiceIntegrationTest {
             category = Category.ENTERTAINMENT
         )
         
-        val event2 = GroupEvent(
+        val event2 = Event(
             id = "dinner_out",
             title = "Cena fuera",
             currentDebts = mapOf(
@@ -198,7 +198,7 @@ class GroupExpenseServiceIntegrationTest {
             category = Category.FOOD
         )
         
-        val event3 = GroupEvent(
+        val event3 = Event(
             id = "movie_night",
             title = "Noche de películas",
             currentDebts = mapOf(
@@ -251,7 +251,7 @@ class GroupExpenseServiceIntegrationTest {
         val users = (1..10).map { "User$it" }
         
         // Crear un gasto grande que todos comparten
-        val bigExpense = GroupExpense(
+        val bigExpense = EventExpense(
             id = "big_expense",
             title = "Evento grande",
             amount = 1000.0,
@@ -263,7 +263,7 @@ class GroupExpenseServiceIntegrationTest {
         
         // Crear varios pagos parciales
         val payments = (2..6).map { i ->
-            GroupPayment(
+            EventPayment(
                 id = "payment$i",
                 from = "User$i",
                 to = "User1",
@@ -298,7 +298,7 @@ class GroupExpenseServiceIntegrationTest {
     fun testCircularDebtResolution() {
         // Arrange - Crear un escenario con deudas circulares
         val expenses = listOf(
-            GroupExpense(
+            EventExpense(
                 id = "expense1",
                 title = "A paga por B",
                 amount = 100.0,
@@ -307,7 +307,7 @@ class GroupExpenseServiceIntegrationTest {
                 splitMethod = SplitMethod.CUSTOM,
                 category = Category.GENERAL
             ),
-            GroupExpense(
+            EventExpense(
                 id = "expense2",
                 title = "B paga por C",
                 amount = 80.0,
@@ -316,7 +316,7 @@ class GroupExpenseServiceIntegrationTest {
                 splitMethod = SplitMethod.CUSTOM,
                 category = Category.GENERAL
             ),
-            GroupExpense(
+            EventExpense(
                 id = "expense3",
                 title = "C paga por A",
                 amount = 60.0,
@@ -346,7 +346,7 @@ class GroupExpenseServiceIntegrationTest {
         // Arrange - Simular diferentes tipos de gastos con diferentes cantidades
         val expenses = listOf(
             // Gasto pequeño
-            GroupExpense(
+            EventExpense(
                 id = "coffee",
                 title = "Café",
                 amount = 15.50,
@@ -357,7 +357,7 @@ class GroupExpenseServiceIntegrationTest {
             ),
             
             // Gasto mediano
-            GroupExpense(
+            EventExpense(
                 id = "lunch",
                 title = "Almuerzo",
                 amount = 45.80,
@@ -368,7 +368,7 @@ class GroupExpenseServiceIntegrationTest {
             ),
             
             // Gasto con decimales complejos
-            GroupExpense(
+            EventExpense(
                 id = "taxi",
                 title = "Taxi",
                 amount = 23.33,

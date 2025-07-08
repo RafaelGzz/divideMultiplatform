@@ -6,8 +6,9 @@ import androidx.datastore.preferences.core.Preferences
 import com.ragl.divide.AndroidAppLifecycleHandler
 import com.ragl.divide.AppLifecycleHandler
 import com.ragl.divide.createDataStore
-import com.ragl.divide.data.services.ScheduleNotificationService
-import com.ragl.divide.ui.utils.Strings
+import com.ragl.divide.data.services.ScheduleNotificationServiceImpl
+import com.ragl.divide.domain.services.ScheduleNotificationService
+import com.ragl.divide.presentation.utils.Strings
 import org.koin.core.module.Module
 import org.koin.dsl.bind
 import org.koin.dsl.module
@@ -18,7 +19,7 @@ actual val platformModule: Module = module {
     }.bind<DataStore<Preferences>>()
 
     single{
-        ScheduleNotificationService(context = get())
+        ScheduleNotificationServiceImpl(context = get())
     }.bind<ScheduleNotificationService>()
 
     single{

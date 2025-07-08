@@ -14,7 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import com.google.firebase.FirebaseApp
-import com.ragl.divide.ui.screens.UserViewModel
+import com.ragl.divide.domain.repositories.PreferencesRepository
 import org.koin.compose.koinInject
 
 class MainActivity : ComponentActivity() {
@@ -49,8 +49,8 @@ fun DivideApp(activity: ComponentActivity) {
 
 @Composable
 private fun StatusBarEffect(activity: ComponentActivity) {
-    val userViewModel: UserViewModel = koinInject()
-    val darkModeState by userViewModel.isDarkMode.collectAsState()
+    val preferencesRepository: PreferencesRepository = koinInject()
+    val darkModeState by preferencesRepository.darkModeFlow.collectAsState(initial = null)
     val isDarkTheme = darkModeState?.toBoolean() ?: isSystemInDarkTheme()
     
     DisposableEffect(isDarkTheme) {

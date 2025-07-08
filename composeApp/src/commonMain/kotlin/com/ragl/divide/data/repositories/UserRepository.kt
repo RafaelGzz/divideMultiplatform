@@ -3,7 +3,8 @@ package com.ragl.divide.data.repositories
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.data.models.Payment
 import com.ragl.divide.data.models.User
-import com.ragl.divide.ui.utils.logMessage
+import com.ragl.divide.domain.repositories.UserRepository
+import com.ragl.divide.presentation.utils.logMessage
 import dev.gitlive.firebase.auth.FirebaseAuth
 import dev.gitlive.firebase.auth.FirebaseUser
 import dev.gitlive.firebase.database.FirebaseDatabase
@@ -15,29 +16,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.firstOrNull
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
-
-interface UserRepository {
-    fun getFirebaseUser(): FirebaseUser?
-    suspend fun createUserInDatabase(): User
-    suspend fun getUser(id: String): User
-    suspend fun signInWithEmailAndPassword(email: String, password: String): User?
-    suspend fun signUpWithEmailAndPassword(email: String, password: String, name: String): User?
-    suspend fun signOut()
-    suspend fun getExpense(id: String): Expense
-    suspend fun getExpenses(): Map<String, Expense>
-    suspend fun saveExpense(expense: Expense): Expense
-    suspend fun deleteExpense(id: String)
-    suspend fun getExpensePayments(expenseId: String): Map<String, Payment>
-    suspend fun saveExpensePayment(payment: Payment, expenseId: String, expensePaid: Boolean): Payment
-    suspend fun deleteExpensePayment(paymentId: String, amount: Double, expenseId: String)
-    suspend fun addGroupToUser(id: String, userId: String)
-    suspend fun removeGroupFromUser(groupId: String, userId: String)
-    suspend fun sendEmailVerification()
-    suspend fun isEmailVerified(): Boolean
-    suspend fun saveProfilePhoto(photo: File): String
-    suspend fun getProfilePhoto(userId: String): String
-    suspend fun updateUserName(newName: String): Boolean
-}
 
 @OptIn(ExperimentalTime::class)
 class UserRepositoryImpl(
