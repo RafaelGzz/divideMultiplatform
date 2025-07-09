@@ -63,7 +63,6 @@ import com.ragl.divide.presentation.components.AdaptiveFAB
 import com.ragl.divide.presentation.components.CollapsedDropdownCard
 import com.ragl.divide.presentation.components.DivideTextField
 import com.ragl.divide.presentation.components.ExpandedDropdownCard
-import com.ragl.divide.presentation.screens.UserViewModel
 
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.add_expense

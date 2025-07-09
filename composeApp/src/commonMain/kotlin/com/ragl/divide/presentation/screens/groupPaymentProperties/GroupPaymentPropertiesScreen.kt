@@ -53,7 +53,6 @@ import com.ragl.divide.presentation.components.DivideTextField
 import com.ragl.divide.presentation.components.ExpandedDropdownCard
 import com.ragl.divide.presentation.components.NetworkImage
 import com.ragl.divide.presentation.components.NetworkImageType
-import com.ragl.divide.presentation.screens.UserViewModel
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.add
 import dividemultiplatform.composeapp.generated.resources.amount

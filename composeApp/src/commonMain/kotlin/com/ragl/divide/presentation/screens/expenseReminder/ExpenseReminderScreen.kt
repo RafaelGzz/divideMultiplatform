@@ -52,7 +52,6 @@ import com.ragl.divide.data.models.Frequency
 import com.ragl.divide.domain.services.AppStateService
 import com.ragl.divide.presentation.components.AdaptiveFAB
 import com.ragl.divide.presentation.components.DateTimePickerDialog
-import com.ragl.divide.presentation.screens.UserViewModel
 import com.ragl.divide.presentation.screens.expenseProperties.ExpensePropertiesViewModel
 import com.ragl.divide.presentation.utils.formatDate
 import dividemultiplatform.composeapp.generated.resources.Res
