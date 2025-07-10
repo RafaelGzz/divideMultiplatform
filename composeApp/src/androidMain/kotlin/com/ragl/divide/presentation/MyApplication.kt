@@ -1,4 +1,4 @@
-package com.ragl.divide
+package com.ragl.divide.presentation
 
 import android.app.Application
 import com.ragl.divide.di.initKoin

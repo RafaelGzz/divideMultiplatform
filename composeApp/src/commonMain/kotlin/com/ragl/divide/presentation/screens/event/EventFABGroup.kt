@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.dp
 import compose.icons.FontAwesomeIcons
 import compose.icons.fontawesomeicons.Solid
 import compose.icons.fontawesomeicons.solid.DollarSign
-import compose.icons.fontawesomeicons.solid.PeopleArrows
+import compose.icons.fontawesomeicons.solid.HandHoldingUsd
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.add_expense
 import dividemultiplatform.composeapp.generated.resources.make_a_payment
@@ -115,7 +115,7 @@ fun EventFABGroup(
                 modifier = Modifier.height(60.dp).align(Alignment.End)
             ) {
                 Icon(
-                    FontAwesomeIcons.Solid.PeopleArrows,
+                    FontAwesomeIcons.Solid.HandHoldingUsd,
                     contentDescription = null,
                     modifier = Modifier.size(24.dp)
                 )

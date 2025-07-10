@@ -1,4 +1,4 @@
-package com.ragl.divide.presentation.screens.groupExpenseProperties
+package com.ragl.divide.presentation.screens.eventExpenseProperties
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -108,7 +108,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
 
-class GroupExpensePropertiesScreen(
+class EventExpensePropertiesScreen(
     private val groupId: String,
     private val expenseId: String? = null,
     private val eventId: String
@@ -121,7 +121,7 @@ class GroupExpensePropertiesScreen(
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val vm = koinScreenModel<GroupExpensePropertiesViewModel>()
+        val vm = koinScreenModel<EventExpensePropertiesViewModel>()
         val strings = koinInject<Strings>()
         val appStateService: AppStateService = koinInject()
 
@@ -369,7 +369,7 @@ class GroupExpensePropertiesScreen(
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
     @Composable
     private fun StepByStepLayout(
-        vm: GroupExpensePropertiesViewModel,
+        vm: EventExpensePropertiesViewModel,
         currentStep: Int,
         onNextStep: () -> Unit,
         paidByDropdownExpanded: Boolean,
@@ -834,7 +834,7 @@ class GroupExpensePropertiesScreen(
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
     @Composable
     private fun ExistingExpenseLayout(
-        vm: GroupExpensePropertiesViewModel,
+        vm: EventExpensePropertiesViewModel,
         paidByDropdownExpanded: Boolean,
         onPaidByDropdownExpandedChange: (Boolean) -> Unit,
         methodDropdownExpanded: Boolean,

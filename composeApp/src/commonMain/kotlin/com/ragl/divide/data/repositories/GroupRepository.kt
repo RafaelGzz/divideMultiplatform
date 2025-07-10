@@ -179,7 +179,7 @@ class GroupRepositoryImpl(
         logMessage("GroupRepositoryImpl", "deleteGroup: $groupId - executed in ${executionTime}ms")
     }
 
-    override suspend fun saveGroupExpense(groupId: String, expense: EventExpense): EventExpense {
+    override suspend fun saveEventExpense(groupId: String, expense: EventExpense): EventExpense {
         val startTime = Clock.System.now().toEpochMilliseconds()
         val newExpense = expense.copy(
             id = expense.id.ifEmpty {
@@ -203,7 +203,7 @@ class GroupRepositoryImpl(
         return newExpense
     }
 
-    override suspend fun deleteGroupExpense(groupId: String, expense: EventExpense) {
+    override suspend fun deleteEventExpense(groupId: String, expense: EventExpense) {
         val startTime = Clock.System.now().toEpochMilliseconds()
         val groupRef = database.reference("groups/$groupId")
         if (expense.eventId.isNotEmpty())
@@ -220,7 +220,7 @@ class GroupRepositoryImpl(
         updateCurrentDebts(groupId, expense.eventId)
     }
 
-    override suspend fun saveGroupPayment(groupId: String, payment: EventPayment): EventPayment {
+    override suspend fun saveEventPayment(groupId: String, payment: EventPayment): EventPayment {
         val startTime = Clock.System.now().toEpochMilliseconds()
         val newPayment = payment.copy(id = payment.id.ifEmpty {
             "id${Clock.System.now().toEpochMilliseconds()}"
@@ -242,7 +242,7 @@ class GroupRepositoryImpl(
         return newPayment
     }
 
-    override suspend fun deleteGroupPayment(groupId: String, payment: EventPayment) {
+    override suspend fun deleteEventPayment(groupId: String, payment: EventPayment) {
         val startTime = Clock.System.now().toEpochMilliseconds()
         val groupRef = database.reference("groups/$groupId")
         if (payment.eventId.isNotEmpty())
@@ -426,16 +426,10 @@ class GroupRepositoryImpl(
             val payments = paymentsDeferred.await()
             val simplifyDebts = simplifyDebtsDeferred.await()
 
-
-            val expensesToSettle = mutableListOf<String>()
-            val paymentsToSettle = mutableListOf<String>()
-
             val currentDebts = groupExpenseService.calculateDebts(
                 expenses,
                 payments,
-                simplifyDebts,
-                expensesToSettle,
-                paymentsToSettle
+                simplifyDebts
             )
 
             val updates = mutableMapOf<String, Any?>()

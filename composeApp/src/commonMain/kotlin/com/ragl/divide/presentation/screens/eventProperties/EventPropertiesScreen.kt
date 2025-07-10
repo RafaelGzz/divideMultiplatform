@@ -66,7 +66,7 @@ import dividemultiplatform.composeapp.generated.resources.category
 import dividemultiplatform.composeapp.generated.resources.delete
 import dividemultiplatform.composeapp.generated.resources.delete_event
 import dividemultiplatform.composeapp.generated.resources.delete_event_message
-import dividemultiplatform.composeapp.generated.resources.description
+import dividemultiplatform.composeapp.generated.resources.description_optional
 import dividemultiplatform.composeapp.generated.resources.edit_event
 import dividemultiplatform.composeapp.generated.resources.event_title
 import dividemultiplatform.composeapp.generated.resources.new_event
@@ -215,7 +215,7 @@ class EventPropertiesScreen(
                         DivideTextField(
                             value = eventState.description,
                             onValueChange = viewModel::updateDescription,
-                            label = stringResource(Res.string.description),
+                            label = stringResource(Res.string.description_optional),
                             imeAction = ImeAction.Default,
                             characterLimit = viewModel.descriptionCharacterLimit,
                             error = viewModel.descriptionError,

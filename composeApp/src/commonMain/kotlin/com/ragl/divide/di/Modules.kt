@@ -32,10 +32,10 @@ import com.ragl.divide.presentation.screens.eventProperties.EventPropertiesViewM
 import com.ragl.divide.presentation.screens.expense.ExpenseViewModel
 import com.ragl.divide.presentation.screens.expenseProperties.ExpensePropertiesViewModel
 import com.ragl.divide.presentation.screens.group.GroupViewModel
-import com.ragl.divide.presentation.screens.groupExpense.GroupExpenseViewModel
-import com.ragl.divide.presentation.screens.groupExpenseProperties.GroupExpensePropertiesViewModel
-import com.ragl.divide.presentation.screens.groupPayment.GroupPaymentViewModel
-import com.ragl.divide.presentation.screens.groupPaymentProperties.GroupPaymentPropertiesViewModel
+import com.ragl.divide.presentation.screens.eventExpense.EventExpenseViewModel
+import com.ragl.divide.presentation.screens.eventExpenseProperties.EventExpensePropertiesViewModel
+import com.ragl.divide.presentation.screens.eventPayment.EventPaymentViewModel
+import com.ragl.divide.presentation.screens.eventPaymentProperties.EventPaymentPropertiesViewModel
 import com.ragl.divide.presentation.screens.groupProperties.GroupPropertiesViewModel
 import com.ragl.divide.presentation.screens.onboarding.OnboardingViewModel
 import com.ragl.divide.presentation.screens.signIn.AuthViewModel
@@ -71,10 +71,10 @@ val sharedModule = module {
     factoryOf(::ExpenseViewModel)
     factoryOf(::GroupViewModel)
     factoryOf(::GroupPropertiesViewModel)
-    factoryOf(::GroupExpensePropertiesViewModel)
-    factoryOf(::GroupExpenseViewModel)
-    factoryOf(::GroupPaymentPropertiesViewModel)
-    factoryOf(::GroupPaymentViewModel)
+    factoryOf(::EventExpensePropertiesViewModel)
+    factoryOf(::EventExpenseViewModel)
+    factoryOf(::EventPaymentPropertiesViewModel)
+    factoryOf(::EventPaymentViewModel)
     factoryOf(::AddFriendsViewModel)
     factoryOf(::EventViewModel)
     factoryOf(::EventPropertiesViewModel)

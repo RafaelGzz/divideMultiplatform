@@ -35,8 +35,8 @@ interface UserStateHolder {
     fun saveExpense(expense: Expense)
     fun savePayment(expenseId: String, payment: Payment)
     fun deletePayment(expenseId: String, paymentId: String)
-    fun saveGroupExpense(groupId: String, expense: EventExpense)
-    fun removeGroupExpense(groupId: String, expense: EventExpense)
+    fun saveEventExpense(groupId: String, expense: EventExpense)
+    fun deleteEventExpense(groupId: String, expense: EventExpense)
     fun getExpenseById(expenseId: String): Expense
     fun getGroupById(id: String): Group
     fun getEventExpenseById(groupId: String, expenseId: String?, eventId: String): EventExpense

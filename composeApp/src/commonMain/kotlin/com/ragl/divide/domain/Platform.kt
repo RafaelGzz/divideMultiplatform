@@ -1,4 +1,4 @@
-package com.ragl.divide
+package com.ragl.divide.domain
 
 import kotlinx.coroutines.flow.StateFlow
 

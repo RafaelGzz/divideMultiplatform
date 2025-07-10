@@ -1,4 +1,4 @@
-package com.ragl.divide.presentation.screens.groupExpense
+package com.ragl.divide.presentation.screens.eventExpense
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.toMutableStateMap
@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class GroupExpenseViewModel(
+class EventExpenseViewModel(
     private val groupRepository: GroupRepository,
     private val userStateHolder: UserStateHolder
 ) : ScreenModel {
@@ -57,8 +57,8 @@ class GroupExpenseViewModel(
     fun deleteExpense(groupId: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
         screenModelScope.launch {
             try {
-                groupRepository.deleteGroupExpense(groupId, groupExpense.value)
-                userStateHolder.removeGroupExpense(groupId, groupExpense.value)
+                groupRepository.deleteEventExpense(groupId, groupExpense.value)
+                userStateHolder.deleteEventExpense(groupId, groupExpense.value)
                 onSuccess()
             } catch (e: Exception) {
                 onError(e.message ?: "An error occurred")

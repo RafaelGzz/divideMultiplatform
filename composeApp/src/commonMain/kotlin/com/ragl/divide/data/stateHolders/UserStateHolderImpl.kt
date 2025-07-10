@@ -127,7 +127,7 @@ class UserStateHolderImpl(
         }
     }
 
-    override fun saveGroupExpense(groupId: String, expense: EventExpense) {
+    override fun saveEventExpense(groupId: String, expense: EventExpense) {
         _state.update {
             it.copy(
                 groups = it.groups.mapValues { group ->
@@ -151,7 +151,7 @@ class UserStateHolderImpl(
         }
     }
 
-    override fun removeGroupExpense(groupId: String, expense: EventExpense) {
+    override fun deleteEventExpense(groupId: String, expense: EventExpense) {
         _state.update {
             it.copy(
                 groups = it.groups.mapValues { group ->
@@ -415,9 +415,6 @@ class UserStateHolderImpl(
         val group = _state.value.groups[groupId] ?: return
         val simplifyDebts = group.simplifyDebts
 
-        val expensesToSettle = mutableListOf<String>()
-        val paymentsToSettle = mutableListOf<String>()
-
         val expenses = group.events[eventId]?.expenses?.values?.toList() ?: emptyList()
         val payments = group.events[eventId]?.payments?.values?.toList() ?: emptyList()
 
@@ -425,8 +422,6 @@ class UserStateHolderImpl(
             expenses,
             payments,
             simplifyDebts,
-            expensesToSettle,
-            paymentsToSettle
         )
 
         _state.update {

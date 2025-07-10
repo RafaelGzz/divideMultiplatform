@@ -1,4 +1,4 @@
-package com.ragl.divide
+package com.ragl.divide.presentation.screens
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn

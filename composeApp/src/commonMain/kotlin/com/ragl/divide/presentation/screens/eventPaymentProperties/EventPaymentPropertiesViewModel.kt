@@ -1,4 +1,4 @@
-package com.ragl.divide.presentation.screens.groupPaymentProperties
+package com.ragl.divide.presentation.screens.eventPaymentProperties
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -19,7 +19,7 @@ import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 @OptIn(ExperimentalTime::class)
-class GroupPaymentPropertiesViewModel(
+class EventPaymentPropertiesViewModel(
     private val groupRepository: GroupRepository,
     private val userStateHolder: UserStateHolder,
     private val strings: Strings
@@ -64,6 +64,10 @@ class GroupPaymentPropertiesViewModel(
 
     fun updateTo(user: UserInfo) {
         to = user
+    }
+
+    fun updateIsLoan(isLoan: Boolean) {
+        _payment.update { it.copy(isLoan = isLoan) }
     }
 
     fun setGroupAndPayment(
@@ -142,12 +146,12 @@ class GroupPaymentPropertiesViewModel(
                     to = to.uuid,
                     createdAt = Clock.System.now().toEpochMilliseconds(),
                     description = description.trim(),
-                    eventId = eventId ?: ""
+                    eventId = eventId ?: "",
                 )
 
                 screenModelScope.launch {
                     val savedPayment =
-                        groupRepository.saveGroupPayment(
+                        groupRepository.saveEventPayment(
                             groupId = groupId,
                             payment = payment
                         )

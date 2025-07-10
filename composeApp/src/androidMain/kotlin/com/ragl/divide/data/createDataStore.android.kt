@@ -1,4 +1,4 @@
-package com.ragl.divide
+package com.ragl.divide.data
 
 import android.content.Context
 import androidx.datastore.core.DataStore

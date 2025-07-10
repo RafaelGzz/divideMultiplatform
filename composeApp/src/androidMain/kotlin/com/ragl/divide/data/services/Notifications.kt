@@ -13,7 +13,7 @@ import android.media.RingtoneManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
-import com.ragl.divide.MainActivity
+import com.ragl.divide.presentation.MainActivity
 import com.ragl.divide.R
 
 class Notifications : BroadcastReceiver() {

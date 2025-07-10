@@ -1,4 +1,4 @@
-package com.ragl.divide.presentation.screens.groupExpense
+package com.ragl.divide.presentation.screens.eventExpense
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -44,7 +44,7 @@ import com.ragl.divide.data.models.EventExpense
 import com.ragl.divide.data.models.SplitMethod
 import com.ragl.divide.domain.services.AppStateService
 import com.ragl.divide.presentation.components.FriendItem
-import com.ragl.divide.presentation.screens.groupExpenseProperties.GroupExpensePropertiesScreen
+import com.ragl.divide.presentation.screens.eventExpenseProperties.EventExpensePropertiesScreen
 import com.ragl.divide.presentation.utils.Strings
 import com.ragl.divide.presentation.utils.formatCurrency
 import com.ragl.divide.presentation.utils.formatDate
@@ -64,7 +64,7 @@ import dividemultiplatform.composeapp.generated.resources.paid_x
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
-class GroupExpenseScreen(
+class EventExpenseScreen(
     private val groupId: String,
     private val expenseId: String,
     private val eventId: String,
@@ -75,7 +75,7 @@ class GroupExpenseScreen(
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val viewModel = koinScreenModel<GroupExpenseViewModel>()
+        val viewModel = koinScreenModel<EventExpenseViewModel>()
         val strings: Strings = koinInject()
         val appStateService: AppStateService = koinInject()
 
@@ -115,7 +115,7 @@ class GroupExpenseScreen(
                             onClick = {
                                 if (!isEventSettled)
                                     navigator.push(
-                                        GroupExpensePropertiesScreen(
+                                        EventExpensePropertiesScreen(
                                             groupId,
                                             groupExpenseState.id,
                                             eventId

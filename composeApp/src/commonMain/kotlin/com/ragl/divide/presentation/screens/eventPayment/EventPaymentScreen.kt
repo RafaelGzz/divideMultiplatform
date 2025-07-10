@@ -1,4 +1,4 @@
-package com.ragl.divide.presentation.screens.groupPayment
+package com.ragl.divide.presentation.screens.eventPayment
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -40,7 +40,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ragl.divide.domain.services.AppStateService
 import com.ragl.divide.presentation.components.FriendItem
-import com.ragl.divide.presentation.screens.groupPaymentProperties.GroupPaymentPropertiesScreen
+import com.ragl.divide.presentation.screens.eventPaymentProperties.EventPaymentPropertiesScreen
 import com.ragl.divide.presentation.utils.Strings
 import com.ragl.divide.presentation.utils.formatCurrency
 import com.ragl.divide.presentation.utils.formatDate
@@ -50,12 +50,13 @@ import dividemultiplatform.composeapp.generated.resources.cancel
 import dividemultiplatform.composeapp.generated.resources.delete
 import dividemultiplatform.composeapp.generated.resources.delete_payment_confirm
 import dividemultiplatform.composeapp.generated.resources.from
+import dividemultiplatform.composeapp.generated.resources.loan
 import dividemultiplatform.composeapp.generated.resources.payment
 import dividemultiplatform.composeapp.generated.resources.to
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
-class GroupPaymentScreen(
+class EventPaymentScreen(
     private val groupId: String,
     private val paymentId: String,
     private val eventId: String,
@@ -65,7 +66,7 @@ class GroupPaymentScreen(
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val vm = koinScreenModel<GroupPaymentViewModel>()
+        val vm = koinScreenModel<EventPaymentViewModel>()
         val strings: Strings = koinInject()
         val appStateService: AppStateService = koinInject()
 
@@ -81,7 +82,7 @@ class GroupPaymentScreen(
             topBar = {
                 CenterAlignedTopAppBar(
                     title = {
-                        Text(stringResource(Res.string.payment))
+                        Text(stringResource(if (payment.isLoan) Res.string.loan else Res.string.payment))
                     },
                     colors = TopAppBarDefaults.largeTopAppBarColors(
                         scrolledContainerColor = Color.Transparent,
@@ -98,7 +99,7 @@ class GroupPaymentScreen(
                         IconButton(onClick = {
                             if (!isEventSettled)
                                 navigator.push(
-                                    GroupPaymentPropertiesScreen(
+                                    EventPaymentPropertiesScreen(
                                         groupId = groupId,
                                         paymentId = paymentId,
                                         eventId = eventId

@@ -45,7 +45,6 @@ class GroupExpenseServiceTest {
         to = to,
         amount = amount,
         description = description,
-        type = PaymentType.CASH
     )
 
     // Helper function para crear eventos de prueba
@@ -160,8 +159,6 @@ class GroupExpenseServiceTest {
             expenses, 
             payments, 
             simplify = true,
-            expensesToSettle = expensesToSettle,
-            paymentsToSettle = paymentsToSettle
         )
 
         // Assert
@@ -592,8 +589,6 @@ class GroupExpenseServiceTest {
             expenses, 
             payments, 
             simplify = true,
-            expensesToSettle = expensesToSettle,
-            paymentsToSettle = paymentsToSettle
         )
 
         // Assert - No debería haber deudas y debería marcar para liquidar

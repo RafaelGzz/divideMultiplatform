@@ -11,9 +11,7 @@ interface GroupExpenseService {
     fun calculateDebts(
         expenses: Collection<EventExpense>,
         payments: Collection<EventPayment>,
-        simplify: Boolean = false,
-        expensesToSettle: MutableList<String>? = null,
-        paymentsToSettle: MutableList<String>? = null
+        simplify: Boolean = false
     ): Map<String, Map<String, Double>>
     
     /**

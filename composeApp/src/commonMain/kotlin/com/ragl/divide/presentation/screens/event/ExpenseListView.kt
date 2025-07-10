@@ -38,6 +38,7 @@ import compose.icons.fontawesomeicons.solid.DollarSign
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.by
 import dividemultiplatform.composeapp.generated.resources.paid_by
+import dividemultiplatform.composeapp.generated.resources.x_lent_y
 import dividemultiplatform.composeapp.generated.resources.x_paid_y
 import org.jetbrains.compose.resources.stringResource
 
@@ -117,7 +118,7 @@ private fun MonthSection(
                     headline = when (item) {
                         is EventExpense -> item.title
                         is EventPayment -> stringResource(
-                            Res.string.x_paid_y,
+                            if (!item.isLoan) Res.string.x_paid_y else Res.string.x_lent_y,
                             members.find { it.uuid == item.from }?.name ?: "",
                             members.find { it.uuid == item.to }?.name ?: ""
                         )
@@ -146,6 +147,7 @@ private fun MonthSection(
                         is EventExpense -> " · " + stringResource(Res.string.by) + " " + getPaidByNames(
                             item.payers.keys.toList()
                         )
+
                         is EventPayment -> ""
                         else -> ""
                     },
@@ -153,9 +155,11 @@ private fun MonthSection(
                         is EventExpense -> {
                             { onExpenseClick(item.id) }
                         }
+
                         is EventPayment -> {
                             { onPaymentClick(item.id) }
                         }
+
                         else -> null
                     },
                     modifier = Modifier
@@ -255,7 +259,7 @@ private fun GroupExpenseItem(
                 is EventPayment -> {
                     Text(
                         stringResource(
-                            Res.string.x_paid_y,
+                            if (!item.isLoan) Res.string.x_paid_y else Res.string.x_lent_y,
                             members.find { it.uuid == item.from }?.name ?: "",
                             members.find { it.uuid == item.to }?.name ?: ""
                         ),

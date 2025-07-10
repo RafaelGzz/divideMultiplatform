@@ -154,8 +154,10 @@
     <string name="pending">Pendiente</string>
     <string name="pending_expenses">Gastos pendientes</string>
     <string name="paid_expenses">Gastos pagados</string>
-    <string name="x_paid_y">%1$s le pagó a %2$s</string>
+    <string name="x_paid_y">%1$s pagó a %2$s</string>
+    <string name="x_lent_y">%1$s prestó a %2$s</string>
     <string name="split">Reparto</string>
+    <string name="loan">Préstamo</string>
 
     <!-- Groups -->
     <string name="add_group">Añadir Grupo</string>
@@ -205,7 +207,7 @@
     <string name="edit_event">Editar Evento</string>
     <string name="new_event">Nuevo Evento</string>
     <string name="event_title">Título del evento</string>
-    <string name="description">Descripción</string>
+    <string name="description_optional">Descripción (opcional)</string>
     <string name="delete_event">Eliminar Evento</string>
     <string name="cannot_delete_event">No puedes eliminar el evento mientras existan deudas o créditos</string>
     <string name="settled_events">Eventos liquidados (%1$s)</string>
@@ -306,6 +308,11 @@
     <string name="category_travel">Viajes</string>
     <string name="category_utilities">Servicios</string>
     <string name="category_gifts">Regalos</string>
+
+    <!-- Payment Types -->
+    <string name="cash">Efectivo</string>
+    <string name="transfer">Transferencia</string>
+    <string name="other_payment">Otro</string>
 
     <!-- Onboarding -->
     <string name="welcome_to_divide">¡Bienvenido a Divide!</string>

@@ -1,9 +1,9 @@
 package com.ragl.divide.domain.repositories
 
-import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.Event
 import com.ragl.divide.data.models.EventExpense
 import com.ragl.divide.data.models.EventPayment
+import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.User
 import dev.gitlive.firebase.storage.File
 
@@ -17,10 +17,10 @@ interface GroupRepository {
     suspend fun getUsers(userIds: Collection<String>): List<User>
     suspend fun leaveGroup(groupId: String)
     suspend fun deleteGroup(groupId: String, image: String)
-    suspend fun saveGroupExpense(groupId: String, expense: EventExpense): EventExpense
-    suspend fun deleteGroupExpense(groupId: String, expense: EventExpense)
-    suspend fun saveGroupPayment(groupId: String, payment: EventPayment): EventPayment
-    suspend fun deleteGroupPayment(groupId: String, payment: EventPayment)
+    suspend fun saveEventExpense(groupId: String, expense: EventExpense): EventExpense
+    suspend fun deleteEventExpense(groupId: String, expense: EventExpense)
+    suspend fun saveEventPayment(groupId: String, payment: EventPayment): EventPayment
+    suspend fun deleteEventPayment(groupId: String, payment: EventPayment)
     suspend fun saveEvent(groupId: String, event: Event): Event
     suspend fun deleteEvent(groupId: String, eventId: String)
     suspend fun getEvent(groupId: String, eventId: String): Event

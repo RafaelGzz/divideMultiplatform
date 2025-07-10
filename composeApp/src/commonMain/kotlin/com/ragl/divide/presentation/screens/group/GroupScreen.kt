@@ -84,7 +84,7 @@ import com.ragl.divide.presentation.components.NetworkImageType
 import com.ragl.divide.presentation.components.UserAvatarSmall
 import com.ragl.divide.presentation.screens.event.EventScreen
 import com.ragl.divide.presentation.screens.eventProperties.EventPropertiesScreen
-import com.ragl.divide.presentation.screens.groupPaymentProperties.GroupPaymentPropertiesScreen
+import com.ragl.divide.presentation.screens.eventPaymentProperties.EventPaymentPropertiesScreen
 import com.ragl.divide.presentation.screens.groupProperties.GroupPropertiesScreen
 import com.ragl.divide.presentation.utils.formatDate
 import compose.icons.FontAwesomeIcons
@@ -378,7 +378,7 @@ class GroupScreen(
                         onPayDebtClicked = {
                             navigator.push(EventScreen(groupId, it.eventId))
                             navigator.push(
-                                GroupPaymentPropertiesScreen(
+                                EventPaymentPropertiesScreen(
                                     groupId = groupId,
                                     eventId = it.eventId,
                                     currentDebtInfo = it

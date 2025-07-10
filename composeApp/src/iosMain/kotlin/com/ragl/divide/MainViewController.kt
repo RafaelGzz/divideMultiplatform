@@ -1,9 +1,8 @@
 package com.ragl.divide
 
-import androidx.compose.runtime.remember
 import androidx.compose.ui.window.ComposeUIViewController
 import com.ragl.divide.di.initKoin
-import createDataStore
+import com.ragl.divide.presentation.screens.App
 
 fun MainViewController() = ComposeUIViewController(configure = {
     initKoin()

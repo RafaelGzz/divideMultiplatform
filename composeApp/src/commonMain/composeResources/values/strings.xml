@@ -155,7 +155,9 @@
     <string name="pending_expenses">Pending expenses</string>
     <string name="paid_expenses">Paid expenses</string>
     <string name="x_paid_y">%1$s paid %2$s</string>
+    <string name="x_lent_y">%1$s lent %2$s</string>
     <string name="split">Split</string>
+    <string name="loan">Loan</string>
 
     <!-- Groups -->
     <string name="add_group">Add Group</string>
@@ -204,7 +206,7 @@
     <string name="edit_event">Edit Event</string>
     <string name="new_event">New Event</string>
     <string name="event_title">Event Title</string>
-    <string name="description">Description</string>
+    <string name="description_optional">Description (optional)</string>
     <string name="delete_event">Delete Event</string>
     <string name="cannot_delete_event">You cannot delete the event while debts or credits exist</string>
     <string name="settled_events">Settled events (%1$s)</string>
@@ -305,6 +307,11 @@
     <string name="category_travel">Travel</string>
     <string name="category_utilities">Utilities</string>
     <string name="category_gifts">Gifts</string>
+
+    <!-- Payment Types -->
+    <string name="cash">Cash</string>
+    <string name="transfer">Transfer</string>
+    <string name="other_payment">Other</string>
 
     <!-- Onboarding -->
     <string name="welcome_to_divide">Welcome to Divide!</string>

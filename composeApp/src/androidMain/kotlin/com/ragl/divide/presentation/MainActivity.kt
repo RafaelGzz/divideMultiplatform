@@ -1,4 +1,4 @@
-package com.ragl.divide
+package com.ragl.divide.presentation
 
 import android.graphics.Color
 import android.os.Bundle
@@ -15,6 +15,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import com.google.firebase.FirebaseApp
 import com.ragl.divide.domain.repositories.PreferencesRepository
+import com.ragl.divide.presentation.screens.App
 import org.koin.compose.koinInject
 
 class MainActivity : ComponentActivity() {

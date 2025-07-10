@@ -1,7 +1,8 @@
-package com.ragl.divide
+package com.ragl.divide.domain
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.datetime.Clock
 
 class IOSPlatform : Platform {
     override val name: String = "iOS"
@@ -17,7 +18,7 @@ class IOSAppLifecycleHandler : AppLifecycleHandler {
     private val backgroundThreshold = 5 * 60 * 1000L // 5 minutos en milisegundos
     
     override fun onAppResume() {
-        val currentTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+        val currentTime = Clock.System.now().toEpochMilliseconds()
         val wasInBackgroundLongTime = (currentTime - lastPauseTime) > backgroundThreshold
         
         _isAppInForeground.value = true
@@ -29,7 +30,7 @@ class IOSAppLifecycleHandler : AppLifecycleHandler {
     }
     
     override fun onAppPause() {
-        lastPauseTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+        lastPauseTime = Clock.System.now().toEpochMilliseconds()
         _isAppInForeground.value = false
     }
     

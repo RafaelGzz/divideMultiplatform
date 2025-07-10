@@ -1,4 +1,4 @@
-package com.ragl.divide.presentation.screens.groupExpenseProperties
+package com.ragl.divide.presentation.screens.eventExpenseProperties
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class GroupExpensePropertiesViewModel(
+class EventExpensePropertiesViewModel(
     private val groupRepository: GroupRepository,
     private val userStateHolder: UserStateHolder,
     private val strings: Strings
@@ -224,11 +224,11 @@ class GroupExpensePropertiesViewModel(
                     }
                 )
                 screenModelScope.launch {
-                    val savedExpense = groupRepository.saveGroupExpense(
+                    val savedExpense = groupRepository.saveEventExpense(
                         groupId = _group.value.id,
                         expense = expense
                     )
-                    userStateHolder.saveGroupExpense(_group.value.id, savedExpense)
+                    userStateHolder.saveEventExpense(_group.value.id, savedExpense)
                     onSuccess()
                 }
             }

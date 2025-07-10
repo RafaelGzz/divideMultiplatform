@@ -1,7 +1,7 @@
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import com.ragl.divide.DATA_STORE_FILE_NAME
-import com.ragl.divide.createDataStore
+import com.ragl.divide.data.DATA_STORE_FILE_NAME
+import com.ragl.divide.data.createDataStore
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager

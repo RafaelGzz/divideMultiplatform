@@ -1,4 +1,4 @@
-package com.ragl.divide.presentation.screens.groupPayment
+package com.ragl.divide.presentation.screens.eventPayment
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class GroupPaymentViewModel(
+class EventPaymentViewModel(
     private val groupRepository: GroupRepository,
     private val userStateHolder: UserStateHolder
 ) : ScreenModel {
@@ -37,7 +37,7 @@ class GroupPaymentViewModel(
             val members = userStateHolder.getGroupMembersWithGuests(groupId)
 
             _payment.update { payment }
-            this@GroupPaymentViewModel.groupId = groupId
+            this@EventPaymentViewModel.groupId = groupId
             fromUser = members.firstOrNull { it.uuid == payment.from } ?: UserInfo()
             toUser = members.firstOrNull { it.uuid == payment.to } ?: UserInfo()
         }
@@ -49,7 +49,7 @@ class GroupPaymentViewModel(
     ) {
         screenModelScope.launch {
             try {
-                groupRepository.deleteGroupPayment(groupId, _payment.value)
+                groupRepository.deleteEventPayment(groupId, _payment.value)
                 userStateHolder.deleteGroupPayment(groupId, _payment.value)
                 onSuccess()
             } catch (e: Exception) {

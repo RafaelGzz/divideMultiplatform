@@ -63,11 +63,11 @@ import com.ragl.divide.domain.services.AppStateService
 import com.ragl.divide.presentation.components.CollapsedDebtsCard
 import com.ragl.divide.presentation.components.DebtInfo
 import com.ragl.divide.presentation.components.ExpandedDebtsCard
+import com.ragl.divide.presentation.screens.eventExpense.EventExpenseScreen
+import com.ragl.divide.presentation.screens.eventExpenseProperties.EventExpensePropertiesScreen
+import com.ragl.divide.presentation.screens.eventPayment.EventPaymentScreen
+import com.ragl.divide.presentation.screens.eventPaymentProperties.EventPaymentPropertiesScreen
 import com.ragl.divide.presentation.screens.eventProperties.EventPropertiesScreen
-import com.ragl.divide.presentation.screens.groupExpense.GroupExpenseScreen
-import com.ragl.divide.presentation.screens.groupExpenseProperties.GroupExpensePropertiesScreen
-import com.ragl.divide.presentation.screens.groupPayment.GroupPaymentScreen
-import com.ragl.divide.presentation.screens.groupPaymentProperties.GroupPaymentPropertiesScreen
 import com.ragl.divide.presentation.utils.formatCurrency
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.activity
@@ -191,7 +191,7 @@ class EventScreen(
                             EventFABGroup(
                                 onAddExpenseClick = {
                                     navigator.push(
-                                        GroupExpensePropertiesScreen(
+                                        EventExpensePropertiesScreen(
                                             groupId,
                                             eventId = eventId
                                         )
@@ -199,7 +199,7 @@ class EventScreen(
                                 },
                                 onAddPaymentClick = {
                                     navigator.push(
-                                        GroupPaymentPropertiesScreen(
+                                        EventPaymentPropertiesScreen(
                                             groupId,
                                             eventId = eventId
                                         )
@@ -286,14 +286,14 @@ class EventScreen(
                                     members = viewModel.members,
                                     onExpenseClick = {
                                         navigator.push(
-                                            GroupExpenseScreen(
+                                            EventExpenseScreen(
                                                 groupId, it, eventId, eventState.settled
                                             )
                                         )
                                     },
                                     onPaymentClick = { paymentId ->
                                         navigator.push(
-                                            GroupPaymentScreen(
+                                            EventPaymentScreen(
                                                 groupId, paymentId, eventId, eventState.settled
                                             )
                                         )
@@ -319,7 +319,7 @@ class EventScreen(
                         onDismiss = { isDebtsExpanded = false },
                         onPayDebtClicked = { debt ->
                             navigator.push(
-                                GroupPaymentPropertiesScreen(
+                                EventPaymentPropertiesScreen(
                                     groupId = groupId, eventId = eventId, currentDebtInfo = debt
                                 )
                             )

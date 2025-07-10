@@ -60,7 +60,6 @@ class GroupExpenseServiceIntegrationTest {
             to = "Alice",
             amount = 50.0,
             description = "Parte del hotel",
-            type = PaymentType.TRANSFER
         )
         
         val payment2 = EventPayment(
@@ -69,7 +68,6 @@ class GroupExpenseServiceIntegrationTest {
             to = "Charlie",
             amount = 20.0,
             description = "Gasolina",
-            type = PaymentType.CASH
         )
         
         val expenses = listOf(hotelExpense, dinnerExpense, gasExpense)
@@ -145,7 +143,6 @@ class GroupExpenseServiceIntegrationTest {
                 to = "John",
                 amount = 350.0,
                 description = "Renta + mi parte",
-                type = PaymentType.TRANSFER
             ),
             
             EventPayment(
@@ -154,7 +151,6 @@ class GroupExpenseServiceIntegrationTest {
                 to = "Jane",
                 amount = 50.0,
                 description = "Servicios",
-                type = PaymentType.CASH
             )
         )
 
@@ -269,7 +265,6 @@ class GroupExpenseServiceIntegrationTest {
                 to = "User1",
                 amount = 50.0,
                 description = "Pago parcial",
-                type = PaymentType.TRANSFER
             )
         }
         

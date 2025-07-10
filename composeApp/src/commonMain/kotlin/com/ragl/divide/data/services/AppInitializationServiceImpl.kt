@@ -2,7 +2,7 @@ package com.ragl.divide.data.services
 
 import com.mmk.kmpauth.google.GoogleAuthCredentials
 import com.mmk.kmpauth.google.GoogleAuthProvider
-import com.ragl.divide.AppLifecycleHandler
+import com.ragl.divide.domain.AppLifecycleHandler
 import com.ragl.divide.domain.repositories.UserRepository
 import com.ragl.divide.domain.services.AppInitializationService
 import com.ragl.divide.domain.stateHolders.UserStateHolder

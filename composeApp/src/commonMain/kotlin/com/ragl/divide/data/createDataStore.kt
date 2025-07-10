@@ -1,4 +1,4 @@
-package com.ragl.divide
+package com.ragl.divide.data
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory

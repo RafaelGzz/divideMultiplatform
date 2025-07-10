@@ -1,7 +1,8 @@
-package com.ragl.divide
+package com.ragl.divide.domain
 
 import android.app.Activity
 import android.app.Application
+import android.os.Build
 import android.os.Bundle
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -9,7 +10,7 @@ import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 class AndroidPlatform : Platform {
-    override val name: String = "Android ${android.os.Build.VERSION.SDK_INT}"
+    override val name: String = "Android ${Build.VERSION.SDK_INT}"
 }
 
 actual fun getPlatform(): Platform = AndroidPlatform()
