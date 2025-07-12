@@ -78,12 +78,12 @@ jobs:
       
     - name: 🧪 Run tests before deployment
       run: |
-        echo "Running tests before deployment..."
+        echo "Running tests before deployment (includes debug compilation)..."
         ./gradlew test testDebugUnitTest --continue --stacktrace
       
     - name: 📦 Build release bundle
       run: |
-        echo "Building release bundle..."
+        echo "Building release bundle (includes release compilation)..."
         ./gradlew bundleRelease --stacktrace
       
     - name: 🎯 Determine release track
