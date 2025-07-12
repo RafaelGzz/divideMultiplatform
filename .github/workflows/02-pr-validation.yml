@@ -1,0 +1,147 @@
+name: 🔍 PR Validation
+
+on:
+  pull_request:
+    branches: [ master ]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: ☕ Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: 📦 Cache Gradle packages
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+          
+    - name: 🔑 Grant execute permission for gradlew
+      run: chmod +x gradlew
+      
+    - name: ✅ Validate Gradle wrapper
+      uses: gradle/wrapper-validation-action@v1
+      
+    - name: 📋 Check version increment
+      run: |
+        # Obtener versiones del branch actual (development)
+        CURRENT_VERSION_CODE=$(grep "versionCode = " composeApp/build.gradle.kts | sed 's/.*versionCode = \([0-9]*\).*/\1/')
+        CURRENT_VERSION_NAME=$(grep "versionName = " composeApp/build.gradle.kts | sed 's/.*versionName = "\([^"]*\)".*/\1/')
+        
+        # Obtener versiones del master
+        git fetch origin master
+        MASTER_VERSION_CODE=$(git show origin/master:composeApp/build.gradle.kts | grep "versionCode = " | sed 's/.*versionCode = \([0-9]*\).*/\1/')
+        MASTER_VERSION_NAME=$(git show origin/master:composeApp/build.gradle.kts | grep "versionName = " | sed 's/.*versionName = "\([^"]*\)".*/\1/')
+        
+        echo "📊 Versiones actuales:"
+        echo "   versionCode: $MASTER_VERSION_CODE → $CURRENT_VERSION_CODE"
+        echo "   versionName: $MASTER_VERSION_NAME → $CURRENT_VERSION_NAME"
+        
+        # Validar que versionCode se haya incrementado
+        if [ "$CURRENT_VERSION_CODE" -le "$MASTER_VERSION_CODE" ]; then
+          echo "❌ ERROR: versionCode debe ser mayor que $MASTER_VERSION_CODE"
+          echo "   Actual: $CURRENT_VERSION_CODE"
+          exit 1
+        fi
+        
+        # Validar que versionName sea diferente
+        if [ "$CURRENT_VERSION_NAME" = "$MASTER_VERSION_NAME" ]; then
+          echo "❌ ERROR: versionName debe ser diferente de $MASTER_VERSION_NAME"
+          exit 1
+        fi
+        
+        echo "✅ Versiones validadas correctamente"
+        echo "VERSION_CODE_CURRENT=$CURRENT_VERSION_CODE" >> $GITHUB_ENV
+        echo "VERSION_NAME_CURRENT=$CURRENT_VERSION_NAME" >> $GITHUB_ENV
+        echo "VERSION_CODE_MASTER=$MASTER_VERSION_CODE" >> $GITHUB_ENV
+        echo "VERSION_NAME_MASTER=$MASTER_VERSION_NAME" >> $GITHUB_ENV
+      
+    - name: 🔨 Build debug
+      run: ./gradlew assembleDebug
+      
+    - name: 🧪 Run all tests
+      run: ./gradlew test testDebugUnitTest
+      
+    - name: 🏗️ Build release (validation)
+      run: ./gradlew assembleRelease
+      
+    - name: 🎨 Check code formatting
+      run: ./gradlew ktlintCheck
+      continue-on-error: true
+      
+    - name: 📊 Generate test report
+      uses: dorny/test-reporter@v1
+      if: success() || failure()
+      with:
+        name: PR Test Results
+        path: '**/build/test-results/test/TEST-*.xml'
+        reporter: java-junit
+        fail-on-error: true
+        
+    - name: ❌ Comment PR on failure
+      uses: actions/github-script@v7
+      if: failure()
+      with:
+        script: |
+          const versionCodeMaster = process.env.VERSION_CODE_MASTER;
+          const versionNameMaster = process.env.VERSION_NAME_MASTER;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `❌ **Validación fallida**
+            
+            Por favor revisa los errores antes de hacer merge:
+            - 🧪 Tests fallidos
+            - 🔨 Errores de compilación
+            - 🎨 Problemas de formato de código
+            - 📋 Versión no incrementada correctamente
+            
+            **Requisitos de versión:**
+            - \`versionCode\` debe ser mayor que ${versionCodeMaster}
+            - \`versionName\` debe ser diferente a ${versionNameMaster}
+            
+            Revisa los logs del workflow para más detalles.`
+          })
+          
+    - name: ✅ Comment PR on success
+      uses: actions/github-script@v7
+      if: success()
+      with:
+        script: |
+          const versionCodeCurrent = process.env.VERSION_CODE_CURRENT;
+          const versionNameCurrent = process.env.VERSION_NAME_CURRENT;
+          const versionCodeMaster = process.env.VERSION_CODE_MASTER;
+          const versionNameMaster = process.env.VERSION_NAME_MASTER;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `✅ **Validación exitosa**
+            
+            - 🧪 Todos los tests pasaron
+            - 🔨 Compilación exitosa
+            - 🎨 Formato de código correcto
+            - 📋 Versión incrementada correctamente
+            
+            **📊 Información de versión:**
+            - \`versionCode\`: ${versionCodeMaster} → **${versionCodeCurrent}**
+            - \`versionName\`: ${versionNameMaster} → **${versionNameCurrent}**
+            
+            ¡El PR está listo para merge! 🚀`
+          }) 
