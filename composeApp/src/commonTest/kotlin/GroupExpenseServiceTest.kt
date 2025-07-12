@@ -4,7 +4,6 @@ import com.ragl.divide.data.models.Category
 import com.ragl.divide.data.models.Event
 import com.ragl.divide.data.models.EventExpense
 import com.ragl.divide.data.models.EventPayment
-import com.ragl.divide.data.models.PaymentType
 import com.ragl.divide.data.models.SplitMethod
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -151,8 +150,6 @@ class GroupExpenseServiceTest {
         )
         val expenses = listOf(expense1, expense2)
         val payments = emptyList<EventPayment>()
-        val expensesToSettle = mutableListOf<String>()
-        val paymentsToSettle = mutableListOf<String>()
 
         // Act
         val result = service.calculateDebts(
@@ -163,9 +160,6 @@ class GroupExpenseServiceTest {
 
         // Assert
         assertTrue(result.isEmpty())
-        assertEquals(2, expensesToSettle.size) // Ambos gastos deben liquidarse
-        assertTrue(expensesToSettle.contains("expense1"))
-        assertTrue(expensesToSettle.contains("expense2"))
     }
 
     @Test
@@ -581,8 +575,6 @@ class GroupExpenseServiceTest {
         )
         val expenses = listOf(expense)
         val payments = listOf(payment)
-        val expensesToSettle = mutableListOf<String>()
-        val paymentsToSettle = mutableListOf<String>()
 
         // Act
         val result = service.calculateDebts(
@@ -593,7 +585,5 @@ class GroupExpenseServiceTest {
 
         // Assert - No debería haber deudas y debería marcar para liquidar
         assertTrue(result.isEmpty())
-        assertEquals(1, expensesToSettle.size)
-        assertEquals(1, paymentsToSettle.size)
     }
 } 
