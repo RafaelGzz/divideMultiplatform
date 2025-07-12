@@ -40,6 +40,18 @@ jobs:
     - name: 🔧 Setup Gradle
       uses: gradle/actions/setup-gradle@v4
         
+    - name: 🔍 Validate required secrets
+      run: |
+        if [ -z "${{ secrets.KEYSTORE_PASSWORD }}" ] || [ -z "${{ secrets.KEYSTORE_BASE64 }}" ] || [ -z "${{ secrets.GOOGLE_SERVICES_JSON }}" ] || [ -z "${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}" ]; then
+          echo "❌ ERROR: Faltan secrets requeridos para el deployment"
+          echo "   KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD != '' }}"
+          echo "   KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 != '' }}"
+          echo "   GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON != '' }}"
+          echo "   GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON != '' }}"
+          exit 1
+        fi
+        echo "✅ Todos los secrets requeridos están configurados"
+        
     - name: 🔑 Create keystore.properties
       run: |
         echo "storeFile=divide-release-key.jks" > keystore.properties
@@ -65,10 +77,14 @@ jobs:
       run: chmod +x gradlew
       
     - name: 🧪 Run tests before deployment
-      run: ./gradlew test testDebugUnitTest
+      run: |
+        echo "Running tests before deployment..."
+        ./gradlew test testDebugUnitTest --continue --stacktrace
       
     - name: 📦 Build release bundle
-      run: ./gradlew bundleRelease
+      run: |
+        echo "Building release bundle..."
+        ./gradlew bundleRelease --stacktrace
       
     - name: 🎯 Determine release track
       id: track

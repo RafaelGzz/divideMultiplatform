@@ -32,20 +32,62 @@ jobs:
     - name: 🔑 Grant execute permission for gradlew
       run: chmod +x gradlew
       
+    - name: 📱 Create google-services.json
+      run: |
+        if [ -n "${{ secrets.GOOGLE_SERVICES_JSON }}" ]; then
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > composeApp/google-services.json
+        else
+          # Crear archivo dummy para tests
+          cat > composeApp/google-services.json << 'EOF'
+        {
+          "project_info": {
+            "project_number": "123456789",
+            "project_id": "dummy-project"
+          },
+          "client": [
+            {
+              "client_info": {
+                "mobilesdk_app_id": "1:123456789:android:dummy",
+                "android_client_info": {
+                  "package_name": "com.ragl.divide"
+                }
+              },
+              "oauth_client": [],
+              "api_key": [
+                {
+                  "current_key": "dummy-key"
+                }
+              ],
+              "services": {
+                "appinvite_service": {
+                  "other_platform_oauth_client": []
+                }
+              }
+            }
+          ],
+          "configuration_version": "1"
+        }
+        EOF
+        fi
+      
     - name: 🔨 Build debug
-      run: ./gradlew assembleDebug
+      run: |
+        echo "Building debug version..."
+        ./gradlew assembleDebug --stacktrace
       
     - name: 🧪 Run unit tests
-      run: ./gradlew test testDebugUnitTest
+      run: |
+        echo "Running unit tests..."
+        ./gradlew test testDebugUnitTest --continue --stacktrace
       
     - name: 📊 Generate test report
       uses: dorny/test-reporter@v1
       if: success() || failure()
       with:
         name: Test Results
-        path: '**/build/test-results/test/TEST-*.xml'
+        path: '**/build/test-results/**/TEST-*.xml'
         reporter: java-junit
-        fail-on-error: true
+        fail-on-error: false
         
     - name: 📤 Upload test results
       uses: actions/upload-artifact@v4
