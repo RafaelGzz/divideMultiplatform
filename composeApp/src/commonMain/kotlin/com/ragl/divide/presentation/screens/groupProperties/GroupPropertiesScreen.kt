@@ -181,13 +181,16 @@ class GroupPropertiesScreen(
                         TextButton(onClick = {
                             appStateService.showLoading()
                             dialogEnabled = false
-                            viewModel.deleteGroup({
-                                appStateService.hideLoading()
-                                navigator.replaceAll(MainScreen())
-                            }) {
-                                appStateService.hideLoading()
-                                appStateService.handleError(it)
-                            }
+                            viewModel.deleteGroup(
+                                onSuccess = {
+                                    appStateService.hideLoading()
+                                    navigator.replaceAll(MainScreen())
+                                },
+                                onError = {
+                                    appStateService.hideLoading()
+                                    appStateService.handleError(it)
+                                }
+                            )
                         }) {
                             Text(stringResource(Res.string.delete))
                         }
@@ -351,7 +354,7 @@ class GroupPropertiesScreen(
                                 if (viewModel.validateName()) {
                                     appStateService.showLoading()
                                     viewModel.saveGroup(
-                                        onSuccess = { group ->
+                                        onSuccess = {
                                             appStateService.hideLoading()
                                             navigator.pop()
                                         },
@@ -501,7 +504,7 @@ class GroupPropertiesScreen(
                             itemsIndexed(guestsList) { index, (guestId, guestName) ->
                                 var showGuestMenu by remember { mutableStateOf(false) }
                                 val canRemove =
-                                    remember(guestId) { viewModel.canRemoveGuest(guestId) }
+                                    remember { viewModel.canRemoveGuest(guestId) }
 
                                 FriendItem(
                                     headline = guestName,

@@ -6,15 +6,15 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.EventExpense
 import com.ragl.divide.data.models.UserInfo
-import com.ragl.divide.domain.repositories.GroupRepository
 import com.ragl.divide.domain.stateHolders.UserStateHolder
+import com.ragl.divide.domain.usecases.eventExpense.DeleteEventExpenseUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class EventExpenseViewModel(
-    private val groupRepository: GroupRepository,
+    private val deleteEventExpenseUseCase: DeleteEventExpenseUseCase,
     private val userStateHolder: UserStateHolder
 ) : ScreenModel {
     private val _eventExpense = MutableStateFlow(EventExpense())
@@ -56,12 +56,13 @@ class EventExpenseViewModel(
 
     fun deleteExpense(groupId: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
         screenModelScope.launch {
-            try {
-                groupRepository.deleteEventExpense(groupId, groupExpense.value)
-                userStateHolder.deleteEventExpense(groupId, groupExpense.value)
-                onSuccess()
-            } catch (e: Exception) {
-                onError(e.message ?: "An error occurred")
+            when(val result = deleteEventExpenseUseCase(groupId, _eventExpense.value)){
+                is DeleteEventExpenseUseCase.Result.Success -> {
+                    onSuccess()
+                }
+                is DeleteEventExpenseUseCase.Result.Error -> {
+                    onError(result.message)
+                }
             }
         }
     }

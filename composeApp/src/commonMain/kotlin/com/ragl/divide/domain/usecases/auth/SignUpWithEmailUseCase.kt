@@ -2,16 +2,14 @@ package com.ragl.divide.domain.usecases.auth
 
 import com.ragl.divide.domain.repositories.UserRepository
 import com.ragl.divide.domain.services.AnalyticsService
-import com.ragl.divide.presentation.utils.Strings
 
 class SignUpWithEmailUseCase(
     private val userRepository: UserRepository,
     private val analyticsService: AnalyticsService,
-    private val strings: Strings
 ) {
     sealed class Result {
         object Success : Result()
-        data class Error(val message: String) : Result()
+        data class Error(val exception: Exception) : Result()
     }
 
     suspend operator fun invoke(email: String, password: String, name: String): Result {
@@ -25,28 +23,13 @@ class SignUpWithEmailUseCase(
                 userRepository.signOut()
                 Result.Success
             } else {
-                Result.Error(strings.getSomethingWentWrong())
+                Result.Error(Exception("Failed to sign up"))
             }
         } catch (e: Exception) {
             analyticsService.logError(e, "Error en registro con email")
-            Result.Error(handleAuthError(e))
+            Result.Error(e)
         }
     }
 
-    private fun handleAuthError(e: Exception): String {
-        return when {
-            e.message?.contains("email address is already in use") == true -> {
-                strings.getEmailAlreadyInUse()
-            }
-            e.message?.contains("weak-password") == true -> {
-                strings.getPasswordMinLength()
-            }
-            e.message?.contains("invalid-email") == true -> {
-                strings.getInvalidEmailAddress()
-            }
-            else -> {
-                e.message ?: strings.getUnknownError()
-            }
-        }
-    }
+
 } 

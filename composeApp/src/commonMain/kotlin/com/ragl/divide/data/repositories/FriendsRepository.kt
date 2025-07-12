@@ -96,21 +96,13 @@ class FriendsRepositoryImpl(
         }
         
         val results = deferredResults.awaitAll()
-        val map = mutableMapOf<String, UserInfo>()
-        
-        results.forEach { friendInfo ->
-            map[friendInfo.uuid] = friendInfo
-        }
+
+        val map = results.filter{ it.uuid != uuid && it !in existing }.associateBy { it.uuid } as MutableMap<String, UserInfo>
 
         val executionTime = Clock.System.now().toEpochMilliseconds() - startTime
         logMessage("FriendsRepositoryImpl", "searchUsers: ${map.size} - executed in ${executionTime}ms")
 
-        return@coroutineScope map.apply {
-            remove(uuid)
-            existing.forEach {
-                remove(it.uuid)
-            }
-        }
+        map
     }
 
     override suspend fun addFriend(friend: UserInfo): UserInfo {

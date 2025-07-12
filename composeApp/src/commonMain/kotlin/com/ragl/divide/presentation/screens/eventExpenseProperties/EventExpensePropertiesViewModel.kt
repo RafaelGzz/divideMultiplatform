@@ -11,17 +11,16 @@ import com.ragl.divide.data.models.ExpenseType
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.SplitMethod
 import com.ragl.divide.data.models.UserInfo
-import com.ragl.divide.domain.repositories.GroupRepository
 import com.ragl.divide.domain.stateHolders.UserStateHolder
+import com.ragl.divide.domain.usecases.eventExpense.SaveEventExpenseUseCase
 import com.ragl.divide.presentation.utils.Strings
-import com.ragl.divide.presentation.utils.logMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class EventExpensePropertiesViewModel(
-    private val groupRepository: GroupRepository,
+    private val saveEventExpenseUseCase: SaveEventExpenseUseCase,
     private val userStateHolder: UserStateHolder,
     private val strings: Strings
 ) : ScreenModel {
@@ -200,41 +199,41 @@ class EventExpensePropertiesViewModel(
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        try {
-            if (validateTitle() && validateAmount()) {
-                val expense = _expense.value.copy(
-                    title = title,
-                    amount = amount.toDouble(),
-                    expenseType = expenseType,
-                    eventId = eventId ?: "",
-                    payers = when (splitMethod) {
-                        SplitMethod.EQUALLY -> mapOf(payer.uuid to if (payer.uuid in selectedMembers) amountPerPerson else amount.toDouble())
-                        SplitMethod.PERCENTAGES -> mapOf(payer.uuid to (percentages[payer.uuid]?.toDouble() ?: 0.0))
-                        SplitMethod.CUSTOM -> mapOf(payer.uuid to (quantities[payer.uuid] ?: 0.0))
-                    },
-                    splitMethod = splitMethod,
-                    debtors = when (splitMethod) {
-                        SplitMethod.EQUALLY -> selectedMembers.associateWith { amountPerPerson }
-                            .filter { it.key != payer.uuid && it.value > 0.0}
-
-                        SplitMethod.PERCENTAGES -> percentages.mapValues { it.value.toDouble() }
-                            .filter { it.key != payer.uuid && it.value > 0.0}
-
-                        SplitMethod.CUSTOM -> quantities.filter { it.key != payer.uuid && it.value > 0.0}
-                    }
-                )
-                screenModelScope.launch {
-                    val savedExpense = groupRepository.saveEventExpense(
-                        groupId = _group.value.id,
-                        expense = expense
+        if (validateTitle() && validateAmount()) {
+            val expense = _expense.value.copy(
+                title = title,
+                amount = amount.toDouble(),
+                expenseType = expenseType,
+                eventId = eventId ?: "",
+                payers = when (splitMethod) {
+                    SplitMethod.EQUALLY -> mapOf(payer.uuid to if (payer.uuid in selectedMembers) amountPerPerson else amount.toDouble())
+                    SplitMethod.PERCENTAGES -> mapOf(
+                        payer.uuid to (percentages[payer.uuid]?.toDouble() ?: 0.0)
                     )
-                    userStateHolder.saveEventExpense(_group.value.id, savedExpense)
-                    onSuccess()
+
+                    SplitMethod.CUSTOM -> mapOf(payer.uuid to (quantities[payer.uuid] ?: 0.0))
+                },
+                splitMethod = splitMethod,
+                debtors = when (splitMethod) {
+                    SplitMethod.EQUALLY -> selectedMembers.associateWith { amountPerPerson }
+                        .filter { it.key != payer.uuid && it.value > 0.0 }
+
+                    SplitMethod.PERCENTAGES -> percentages.mapValues { it.value.toDouble() }
+                        .filter { it.key != payer.uuid && it.value > 0.0 }
+
+                    SplitMethod.CUSTOM -> quantities.filter { it.key != payer.uuid && it.value > 0.0 }
+                }
+            )
+            screenModelScope.launch {
+                when (val result = saveEventExpenseUseCase(_group.value.id, expense)) {
+                    is SaveEventExpenseUseCase.Result.Success -> {
+                        onSuccess()
+                    }
+                    is SaveEventExpenseUseCase.Result.Error -> {
+                        onError(result.message)
+                    }
                 }
             }
-        } catch (e: Exception) {
-            logMessage("saveExpense", e.stackTraceToString())
-            onError(e.message.toString())
         }
     }
 }

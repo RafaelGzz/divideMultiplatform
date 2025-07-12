@@ -29,8 +29,8 @@ class AuthViewModel(
     private val sendEmailVerificationUseCase: SendEmailVerificationUseCase,
     private val checkEmailVerificationUseCase: CheckEmailVerificationUseCase,
     private val appStateService: AppStateService
-): ScreenModel {
-    
+) : ScreenModel {
+
     private val _countdown = MutableStateFlow(0)
     val countdown = _countdown.asStateFlow()
 
@@ -113,7 +113,13 @@ class AuthViewModel(
     }
 
     fun isSignUpFieldsValid(): Boolean {
-        return validateSignUpEmail().and(validateSignUpUsername().and(validateSignUpPassword().and(validateSignUpPasswordConfirm())))
+        return validateSignUpEmail().and(
+            validateSignUpUsername().and(
+                validateSignUpPassword().and(
+                    validateSignUpPasswordConfirm()
+                )
+            )
+        )
     }
 
     fun validateSignUpEmail(): Boolean {
@@ -166,28 +172,17 @@ class AuthViewModel(
     }
 
     fun validateSignUpPasswordConfirm(): Boolean {
-        signUpPasswordConfirmError = if (signUpPasswordConfirm.isNotBlank() && signUpPasswordConfirm == signUpPassword) {
-            ""
-        } else {
-            strings.getPasswordsNotMatch()
-        }
+        signUpPasswordConfirmError =
+            if (signUpPasswordConfirm.isNotBlank() && signUpPasswordConfirm == signUpPassword) {
+                ""
+            } else {
+                strings.getPasswordsNotMatch()
+            }
         return signUpPasswordConfirmError.isEmpty()
     }
 
     fun handleError(message: String?) {
         appStateService.handleError(message ?: strings.getUnknownError())
-    }
-
-    fun handleSuccess(message: String) {
-        appStateService.handleSuccess(message)
-    }
-
-    private fun showLoading() {
-        appStateService.showLoading()
-    }
-
-    private fun hideLoading() {
-        appStateService.hideLoading()
     }
 
     fun resetLoginFields() {
@@ -215,25 +210,22 @@ class AuthViewModel(
         onFail: (String) -> Unit
     ) {
         screenModelScope.launch {
-            try {
-                showLoading()
-                when (val result = signInWithEmailUseCase(email, password)) {
-                    is SignInWithEmailUseCase.Result.Success -> {
-                        onSuccess()
-                    }
-                    is SignInWithEmailUseCase.Result.EmailNotVerified -> {
-                        onFail(strings.getEmailNotVerified())
-                    }
-                    is SignInWithEmailUseCase.Result.Error -> {
-                        onFail(result.message)
-                    }
+            appStateService.showLoading()
+            when (val result = signInWithEmailUseCase(email, password)) {
+                is SignInWithEmailUseCase.Result.Success -> {
+                    onSuccess()
                 }
-            } catch (e: Exception) {
-                onFail(e.message ?: strings.getUnknownError())
-                logMessage("AuthViewModel: signInWithEmailAndPassword", e.message.toString())
-            } finally {
-                hideLoading()
+
+                is SignInWithEmailUseCase.Result.EmailNotVerified -> {
+                    onFail(strings.getEmailNotVerified())
+                }
+
+                is SignInWithEmailUseCase.Result.Error -> {
+                    logMessage("SignInWithEmailUseCase", result.exception.message ?: result.exception.stackTraceToString())
+                    onFail(handleSignInError(result.exception))
+                }
             }
+            appStateService.hideLoading()
         }
     }
 
@@ -241,22 +233,18 @@ class AuthViewModel(
         email: String, password: String, name: String
     ) {
         screenModelScope.launch {
-            try {
-                showLoading()
-                when (val result = signUpWithEmailUseCase(email, password, name)) {
-                    is SignUpWithEmailUseCase.Result.Success -> {
-                        handleSuccess(strings.getVerificationEmailSent())
-                    }
-                    is SignUpWithEmailUseCase.Result.Error -> {
-                        handleError(result.message)
-                    }
+            appStateService.showLoading()
+            when (val result = signUpWithEmailUseCase(email, password, name)) {
+                is SignUpWithEmailUseCase.Result.Success -> {
+                    appStateService.handleSuccess(strings.getVerificationEmailSent())
                 }
-            } catch (e: Exception) {
-                handleError(e.message ?: strings.getUnknownError())
-                logMessage("AuthViewModel: signUpWithEmailAndPassword", e.message.toString())
-            } finally {
-                hideLoading()
+
+                is SignUpWithEmailUseCase.Result.Error -> {
+                    logMessage("SignUpWithEmailUseCase", result.exception.message ?: result.exception.stackTraceToString())
+                    appStateService.handleError(handleSignUpError(result.exception))
+                }
             }
+            appStateService.hideLoading()
         }
     }
 
@@ -265,87 +253,73 @@ class AuthViewModel(
         onSuccess: () -> Unit
     ) {
         screenModelScope.launch {
-            try {
-                showLoading()
-                when (val useCaseResult = signInWithGoogleUseCase(result)) {
-                    is SignInWithGoogleUseCase.Result.Success -> {
-                        onSuccess()
-                    }
-                    is SignInWithGoogleUseCase.Result.Error -> {
-                        handleError(useCaseResult.message)
-                        logMessage("AuthViewModel: signInWithGoogle", useCaseResult.message)
-                    }
+            appStateService.showLoading()
+            when (val useCaseResult = signInWithGoogleUseCase(result)) {
+                is SignInWithGoogleUseCase.Result.Success -> {
+                    onSuccess()
                 }
-            } catch (e: Exception) {
-                handleError(e.message ?: strings.getUnknownError())
-                logMessage("AuthViewModel", "${e.message}")
-            } finally {
-                hideLoading()
+
+                is SignInWithGoogleUseCase.Result.Error -> {
+                    logMessage("SignInWithGoogleUseCase", useCaseResult.exception.message ?: useCaseResult.exception.stackTraceToString())
+                    appStateService.handleError(strings.getUnknownError())
+                }
             }
+            appStateService.hideLoading()
         }
     }
 
     fun signOut(onSignOut: () -> Unit) {
         screenModelScope.launch {
-            try {
-                showLoading()
-                when (val result = signOutUseCase()) {
-                    is SignOutUseCase.Result.Success -> {
-                        onSignOut()
-                    }
-                    is SignOutUseCase.Result.Error -> {
-                        handleError(result.message)
-                        logMessage("AuthViewModel", result.message)
-                    }
+            appStateService.showLoading()
+            when (val result = signOutUseCase()) {
+                is SignOutUseCase.Result.Success -> {
+                    onSignOut()
                 }
-            } catch (e: Exception) {
-                handleError(e.message ?: strings.getUnknownError())
-                logMessage("AuthViewModel", e.message.toString())
-            } finally {
-                hideLoading()
+
+                is SignOutUseCase.Result.Error -> {
+                    logMessage("SignOutUseCase", result.exception.message ?: result.exception.stackTraceToString())
+                    appStateService.handleError(strings.getUnknownError())
+                }
             }
+            appStateService.hideLoading()
         }
     }
 
     fun resendVerificationEmail() {
         screenModelScope.launch {
-            try {
-                showLoading()
-                when (val result = sendEmailVerificationUseCase()) {
-                    is SendEmailVerificationUseCase.Result.Success -> {
-                        handleSuccess(strings.getVerificationEmailSent())
-                        startCountdown()
-                    }
-                    is SendEmailVerificationUseCase.Result.Error -> {
-                        handleError(result.message)
-                    }
+            appStateService.showLoading()
+            when (val result = sendEmailVerificationUseCase()) {
+                is SendEmailVerificationUseCase.Result.Success -> {
+                    appStateService.handleSuccess(strings.getVerificationEmailSent())
+                    startCountdown()
                 }
-            } catch (e: Exception) {
-                handleError(e.message ?: strings.getUnknownError())
-            } finally {
-                hideLoading()
+
+                is SendEmailVerificationUseCase.Result.Error -> {
+                    logMessage("SendEmailVerificationUseCase", result.exception.message ?: result.exception.stackTraceToString())
+                    appStateService.handleError(strings.getUnknownError())
+                }
             }
+            appStateService.hideLoading()
         }
     }
 
-    suspend fun isEmailVerified(): Boolean {
-        var res = false
-        try {
-            showLoading()
-            when (val result = checkEmailVerificationUseCase()) {
-                is CheckEmailVerificationUseCase.Result.Success -> {
-                    res = result.isVerified
-                }
-                is CheckEmailVerificationUseCase.Result.Error -> {
-                    handleError(result.message)
+    suspend fun isEmailVerified(onSuccess: () -> Unit) {
+        appStateService.showLoading()
+        when (val result = checkEmailVerificationUseCase()) {
+            is CheckEmailVerificationUseCase.Result.Success -> {
+                if (result.isVerified) {
+                    onSuccess()
+                } else {
+                    appStateService.handleError(strings.getEmailNotVerified())
                 }
             }
-        } catch (e: Exception) {
-            handleError(e.message ?: strings.getUnknownError())
-        } finally {
-            hideLoading()
+
+            is CheckEmailVerificationUseCase.Result.Error -> {
+                logMessage("CheckEmailVerificationUseCase", result.exception.message ?: result.exception.stackTraceToString())
+                appStateService.handleError(strings.getUnknownError())
+            }
         }
-        return res
+        appStateService.hideLoading()
     }
 
     private fun startCountdown() {
@@ -354,6 +328,41 @@ class AuthViewModel(
             while (_countdown.value > 0) {
                 delay(1000)
                 _countdown.value--
+            }
+        }
+    }
+
+    private fun handleSignInError(e: Exception): String {
+        return when {
+            e.message?.contains("no user record") == true ||
+                    e.message?.contains("password is invalid") == true -> {
+                strings.getEmailPasswordInvalid()
+            }
+            e.message?.contains("email address is already in use") == true -> {
+                strings.getEmailAlreadyInUse()
+            }
+            e.message?.contains("unusual activity") == true -> {
+                strings.getUnusualActivity()
+            }
+            else -> {
+                e.message ?: strings.getUnknownError()
+            }
+        }
+    }
+
+    private fun handleSignUpError(e: Exception): String {
+        return when {
+            e.message?.contains("email address is already in use") == true -> {
+                strings.getEmailAlreadyInUse()
+            }
+            e.message?.contains("weak-password") == true -> {
+                strings.getPasswordMinLength()
+            }
+            e.message?.contains("invalid-email") == true -> {
+                strings.getInvalidEmailAddress()
+            }
+            else -> {
+                e.message ?: strings.getUnknownError()
             }
         }
     }

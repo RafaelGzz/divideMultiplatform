@@ -83,8 +83,8 @@ import com.ragl.divide.presentation.components.NetworkImage
 import com.ragl.divide.presentation.components.NetworkImageType
 import com.ragl.divide.presentation.components.UserAvatarSmall
 import com.ragl.divide.presentation.screens.event.EventScreen
-import com.ragl.divide.presentation.screens.eventProperties.EventPropertiesScreen
 import com.ragl.divide.presentation.screens.eventPaymentProperties.EventPaymentPropertiesScreen
+import com.ragl.divide.presentation.screens.eventProperties.EventPropertiesScreen
 import com.ragl.divide.presentation.screens.groupProperties.GroupPropertiesScreen
 import com.ragl.divide.presentation.utils.formatDate
 import compose.icons.FontAwesomeIcons
@@ -198,9 +198,7 @@ class GroupScreen(
                     PullToRefreshBox(
                         isRefreshing = isRefreshing,
                         onRefresh = {
-                            viewModel.refreshGroup(
-                                onError = appStateService::handleError
-                            )
+                            viewModel.refreshGroup()
                         },
                         state = pullToRefreshState,
                         modifier = Modifier.padding(paddingValues)

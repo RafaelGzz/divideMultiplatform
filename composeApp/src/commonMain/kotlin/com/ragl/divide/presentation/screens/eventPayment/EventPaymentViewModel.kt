@@ -7,15 +7,15 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.EventPayment
 import com.ragl.divide.data.models.UserInfo
-import com.ragl.divide.domain.repositories.GroupRepository
 import com.ragl.divide.domain.stateHolders.UserStateHolder
+import com.ragl.divide.domain.usecases.eventPayment.DeleteEventPaymentUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class EventPaymentViewModel(
-    private val groupRepository: GroupRepository,
+    private val deleteEventPaymentUseCase: DeleteEventPaymentUseCase,
     private val userStateHolder: UserStateHolder
 ) : ScreenModel {
     
@@ -48,12 +48,13 @@ class EventPaymentViewModel(
         onError: (String) -> Unit
     ) {
         screenModelScope.launch {
-            try {
-                groupRepository.deleteEventPayment(groupId, _payment.value)
-                userStateHolder.deleteGroupPayment(groupId, _payment.value)
-                onSuccess()
-            } catch (e: Exception) {
-                onError(e.message ?: "Error al eliminar el pago")
+            when(val result = deleteEventPaymentUseCase.invoke(groupId, _payment.value)) {
+                is DeleteEventPaymentUseCase.Result.Success -> {
+                    onSuccess()
+                }
+                is DeleteEventPaymentUseCase.Result.Error -> {
+                    onError(result.message)
+                }
             }
         }
     }

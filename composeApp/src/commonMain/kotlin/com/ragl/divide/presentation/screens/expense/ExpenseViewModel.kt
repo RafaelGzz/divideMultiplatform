@@ -4,9 +4,10 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.data.models.Payment
-import com.ragl.divide.domain.repositories.UserRepository
-import com.ragl.divide.domain.services.ScheduleNotificationService
 import com.ragl.divide.domain.stateHolders.UserStateHolder
+import com.ragl.divide.domain.usecases.expense.DeleteExpenseUseCase
+import com.ragl.divide.domain.usecases.payment.DeleteExpensePaymentUseCase
+import com.ragl.divide.domain.usecases.payment.SaveExpensePaymentUseCase
 import com.ragl.divide.presentation.utils.Strings
 import com.ragl.divide.presentation.utils.logMessage
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,8 +18,9 @@ import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 class ExpenseViewModel(
-    private val userRepository: UserRepository,
-    private val scheduleNotificationService: ScheduleNotificationService,
+    private val deleteExpenseUseCase: DeleteExpenseUseCase,
+    private val deleteExpensePaymentUseCase: DeleteExpensePaymentUseCase,
+    private val saveExpensePaymentUseCase: SaveExpensePaymentUseCase,
     private val userStateHolder: UserStateHolder,
     private val strings: Strings
 ) : ScreenModel {
@@ -33,16 +35,14 @@ class ExpenseViewModel(
 
     fun deleteExpense(onSuccess: () -> Unit, onFailure: (String) -> Unit) {
         screenModelScope.launch {
-            try {
-                userRepository.deleteExpense(_expense.value.id)
-                scheduleNotificationService.cancelNotification(
-                    _expense.value.id.takeLast(5).toInt()
-                )
-                userStateHolder.removeExpense(_expense.value.id)
-                onSuccess()
-            } catch (e: Exception) {
-                logMessage("ExpenseViewModel", e.message ?: "")
-                onFailure(e.message ?: strings.getSomethingWentWrong())
+            when (val result = deleteExpenseUseCase(_expense.value.id)) {
+                is DeleteExpenseUseCase.Result.Success -> {
+                    onSuccess()
+                }
+                is DeleteExpenseUseCase.Result.Error -> {
+                    logMessage("DeleteExpenseUseCase", result.exception.message ?: result.exception.stackTraceToString())
+                    onFailure(strings.getUnknownError())
+                }
             }
         }
     }
@@ -54,20 +54,23 @@ class ExpenseViewModel(
         onSuccess: () -> Unit
     ) {
         screenModelScope.launch {
-            try {
-                _expense.update {
-                    it.copy(
-                        payments = it.payments - paymentId,
-                        amountPaid = it.amountPaid - amount,
-                        paid = false
-                    )
+            _expense.update {
+                it.copy(
+                    payments = it.payments - paymentId,
+                    amountPaid = it.amountPaid - amount,
+                    paid = false
+                )
+            }
+            when (val deleteResult =
+                deleteExpensePaymentUseCase(paymentId, amount, _expense.value)) {
+                is DeleteExpensePaymentUseCase.Result.Success -> {
+                    onSuccess()
                 }
-                userRepository.saveExpense(_expense.value)
-                userStateHolder.deletePayment(_expense.value.id, paymentId)
-                onSuccess()
-            } catch (e: Exception) {
-                logMessage("ExpenseViewModel", e.message ?: "")
-                onFailure(e.message ?: strings.getErrorDeletingPayment())
+
+                is DeleteExpensePaymentUseCase.Result.Error -> {
+                    logMessage("DeleteExpensePaymentUseCase", deleteResult.exception.message ?: deleteResult.exception.stackTraceToString())
+                    onFailure(strings.getUnknownError())
+                }
             }
         }
     }
@@ -75,36 +78,37 @@ class ExpenseViewModel(
     @OptIn(ExperimentalTime::class)
     fun addPayment(
         amount: Double,
-        onSuccess: (Payment) -> Unit,
+        onSuccess: () -> Unit,
         onFailure: (String) -> Unit,
         onPaidExpense: () -> Unit
     ) {
         screenModelScope.launch {
-            try {
-                val id = "id${Clock.System.now().toEpochMilliseconds()}"
-                val newPayment = Payment(
-                    amount = amount,
-                    id = id
+            val id = "id${Clock.System.now().toEpochMilliseconds()}"
+            val newPayment = Payment(
+                amount = amount,
+                id = id
+            )
+            _expense.update {
+                it.copy(
+                    payments = it.payments + (id to newPayment),
+                    amountPaid = it.amountPaid + amount,
+                    paid = (it.amountPaid + amount) == it.amount
                 )
-                _expense.update {
-                    it.copy(
-                        payments = it.payments + (id to newPayment),
-                        amountPaid = it.amountPaid + amount,
-                        paid = (it.amountPaid + amount) == it.amount
-                    )
+            }
+            when (val savePaymentResult = saveExpensePaymentUseCase(_expense.value)) {
+                is SaveExpensePaymentUseCase.Result.Success -> {
+                    onSuccess()
                 }
-                userRepository.saveExpense(_expense.value)
-                userStateHolder.savePayment(_expense.value.id, newPayment)
-                onSuccess(newPayment)
-                if (_expense.value.paid) {
-                    scheduleNotificationService.cancelNotification(
-                        _expense.value.id.takeLast(5).toInt()
-                    )
+
+                is SaveExpensePaymentUseCase.Result.Paid -> {
+                    onSuccess()
                     onPaidExpense()
                 }
-            } catch (e: Exception) {
-                logMessage("ExpenseViewModel", e.message ?: "")
-                onFailure(e.message ?: strings.getUnknownError())
+
+                is SaveExpensePaymentUseCase.Result.Error -> {
+                    logMessage("SaveExpensePaymentUseCase", savePaymentResult.exception.message ?: savePaymentResult.exception.stackTraceToString())
+                    onFailure(strings.getUnknownError())
+                }
             }
         }
     }

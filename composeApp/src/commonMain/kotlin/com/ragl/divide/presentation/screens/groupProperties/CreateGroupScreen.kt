@@ -141,7 +141,7 @@ class CreateGroupScreen : Screen {
                             if (viewModel.validateName()) {
                                 appStateService.showLoading()
                                 viewModel.saveGroup(
-                                    onSuccess = { group ->
+                                    onSuccess = {
                                         appStateService.hideLoading()
                                         navigator.pop()
                                     },

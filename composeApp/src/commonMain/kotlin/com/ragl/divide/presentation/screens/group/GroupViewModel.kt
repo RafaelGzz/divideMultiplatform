@@ -8,10 +8,9 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.Event
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.UserInfo
-import com.ragl.divide.domain.repositories.GroupRepository
+import com.ragl.divide.domain.services.AppStateService
 import com.ragl.divide.domain.stateHolders.UserStateHolder
-import com.ragl.divide.presentation.utils.Strings
-import com.ragl.divide.presentation.utils.logMessage
+import com.ragl.divide.domain.usecases.group.RefreshGroupUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,9 +18,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class GroupViewModel(
-    private val groupRepository: GroupRepository,
+    private val refreshGroupUseCase: RefreshGroupUseCase,
     private val userStateHolder: UserStateHolder,
-    private val strings: Strings
+    private val appStateService: AppStateService
 ) : ScreenModel {
 
     private val _group = MutableStateFlow(Group())
@@ -50,27 +49,21 @@ class GroupViewModel(
         }
     }
 
-    fun refreshGroup(onError: (String) -> Unit) {
+    fun refreshGroup() {
         screenModelScope.launch {
-            try {
-                _isRefreshing.value = true
-                logMessage("GroupViewModel", "Refreshing group: ${_group.value.id}")
+            _isRefreshing.value = true
+            when (val result = refreshGroupUseCase(_group.value.id)) {
+                is RefreshGroupUseCase.Result.Success -> {
+                    _group.update { result.group }
+                    updateEvents(result.group.events.values.toList())
+                    members = userStateHolder.getGroupMembersWithGuests(_group.value.id)
+                }
 
-                val freshGroup = groupRepository.getGroup(_group.value.id)
-
-                _group.update { freshGroup }
-                updateEvents(freshGroup.events.values.toList())
-
-                userStateHolder.updateGroupInState(_group.value.id, freshGroup)
-                members = userStateHolder.getGroupMembersWithGuests(_group.value.id)
-
-                logMessage("GroupViewModel", "Group refreshed successfully")
-            } catch (e: Exception) {
-                logMessage("GroupViewModel", "Error refreshing group: ${e.message}")
-                onError(e.message ?: strings.getUnknownError())
-            } finally {
-                _isRefreshing.value = false
+                is RefreshGroupUseCase.Result.Error -> {
+                    appStateService.handleError(result.message)
+                }
             }
+            _isRefreshing.value = false
         }
     }
 }

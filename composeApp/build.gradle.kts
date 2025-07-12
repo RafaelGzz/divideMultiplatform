@@ -14,6 +14,7 @@ plugins {
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.googleServices)
     id("com.google.firebase.crashlytics")
+    id("com.google.firebase.firebase-perf")
 }
 
 val keystoreProperties = Properties().apply {
@@ -73,6 +74,7 @@ kotlin {
             implementation(libs.firebase.storage)
             implementation(libs.firebase.analytics)
             implementation(libs.firebase.crashlytics)
+            implementation(libs.firebase.performance)
 
             implementation(libs.kmpauth.google)
             implementation(libs.kmpauth.firebase)
@@ -108,8 +110,8 @@ android {
         applicationId = "com.ragl.divide"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1101
-        versionName = "1.1.01"
+        versionCode = 1110
+        versionName = "1.1.1"
     }
     packaging {
         resources {

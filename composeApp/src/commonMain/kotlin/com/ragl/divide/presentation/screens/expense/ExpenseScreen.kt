@@ -461,7 +461,7 @@ class ExpenseScreen(private val expenseId: String) : Screen {
                         appStateService.showLoading()
                         expenseViewModel.addPayment(
                             amount = amount,
-                            onSuccess = { savedPayment ->
+                            onSuccess = {
                                 showAddPaymentDialog = false
                                 appStateService.hideLoading()
                             },
@@ -470,7 +470,6 @@ class ExpenseScreen(private val expenseId: String) : Screen {
                                 appStateService.handleError(error)
                             },
                             onPaidExpense = {
-                                //userViewModel.updatePaidExpense(expense.id, true)
                                 navigator.pop()
                                 appStateService.handleSuccess(strings.getCongratulations(expense.title))
                             }

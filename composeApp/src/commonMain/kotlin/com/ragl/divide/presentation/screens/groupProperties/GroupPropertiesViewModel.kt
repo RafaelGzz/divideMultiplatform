@@ -8,9 +8,12 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.UserInfo
 import com.ragl.divide.domain.repositories.FriendsRepository
-import com.ragl.divide.domain.repositories.GroupRepository
 import com.ragl.divide.domain.services.GroupExpenseService
 import com.ragl.divide.domain.stateHolders.UserStateHolder
+import com.ragl.divide.domain.usecases.group.DeleteGroupUseCase
+import com.ragl.divide.domain.usecases.group.LeaveGroupUseCase
+import com.ragl.divide.domain.usecases.group.SaveGroupUseCase
+import com.ragl.divide.presentation.screens.groupProperties.PlatformImageUtils
 import com.ragl.divide.presentation.utils.Strings
 import com.ragl.divide.presentation.utils.logMessage
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,7 +29,9 @@ import kotlin.time.ExperimentalTime
  */
 @OptIn(ExperimentalTime::class)
 class GroupPropertiesViewModel(
-    private val groupRepository: GroupRepository,
+    private val deleteGroupUseCase: DeleteGroupUseCase,
+    private val leaveGroupUseCase: LeaveGroupUseCase,
+    private val saveGroupUseCase: SaveGroupUseCase,
     private val friendsRepository: FriendsRepository,
     private val groupExpenseService: GroupExpenseService,
     private val userStateHolder: UserStateHolder,
@@ -67,7 +72,6 @@ class GroupPropertiesViewModel(
     private fun canLeaveGroup(): Boolean {
         if (currentUserId.isEmpty()) return false
 
-        // Consolidar deudas de todos los eventos usando el servicio
         val consolidatedDebts =
             groupExpenseService.consolidateDebtsFromEventsMap(_group.value.events)
 
@@ -85,11 +89,24 @@ class GroupPropertiesViewModel(
     }
 
     fun canDeleteGroup(): Boolean {
-        // Consolidar deudas de todos los eventos usando el servicio
         val consolidatedDebts =
             groupExpenseService.consolidateDebtsFromEventsMap(_group.value.events)
 
         return consolidatedDebts.isEmpty()
+    }
+
+    fun validateName(): Boolean {
+        return when (_group.value.name) {
+            "" -> {
+                this.nameError = strings.getTitleRequired()
+                false
+            }
+
+            else -> {
+                this.nameError = ""
+                true
+            }
+        }
     }
 
     fun updateName(name: String) {
@@ -205,37 +222,25 @@ class GroupPropertiesViewModel(
     }
 
     fun leaveGroup(onSuccess: () -> Unit, onError: (String) -> Unit) {
+        if (!canLeaveGroup) {
+            onError(strings.getCannotLeaveGroup())
+            return
+        }
         screenModelScope.launch {
-            try {
-                if (!canLeaveGroup()) {
-                    onError(strings.getCannotLeaveGroup())
-                    return@launch
+            when (val result = leaveGroupUseCase(_group.value.id)) {
+                is LeaveGroupUseCase.Result.Success -> {
+                    onSuccess()
                 }
-                groupRepository.leaveGroup(_group.value.id)
-                userStateHolder.removeGroup(_group.value.id)
-                onSuccess()
-            } catch (e: Exception) {
-                logMessage("GroupDetailsViewModel", e.toString())
-                onError(e.message ?: strings.getUnknownError())
+
+                is LeaveGroupUseCase.Result.Error -> {
+                    logMessage("LeaveGroupUseCase", result.exception.message ?: result.exception.stackTraceToString())
+                    onError(strings.getUnknownError())
+                }
             }
         }
     }
 
-    fun validateName(): Boolean {
-        return when (_group.value.name) {
-            "" -> {
-                this.nameError = strings.getTitleRequired()
-                false
-            }
-
-            else -> {
-                this.nameError = ""
-                true
-            }
-        }
-    }
-
-    fun saveGroup(onSuccess: (Group) -> Unit, onError: (String) -> Unit) {
+    fun saveGroup(onSuccess: () -> Unit, onError: (String) -> Unit) {
         if (validateName()) {
             _group.update {
                 it.copy(
@@ -246,56 +251,39 @@ class GroupPropertiesViewModel(
                 )
             }
             screenModelScope.launch {
-                try {
-                    val imageFile = selectedImagePath?.let { path ->
-                        PlatformImageUtils.createFirebaseFile(path)
-                    }
-                    val savedGroup = groupRepository.saveGroup(
-                        _group.value,
-                        imageFile
-                    )
-                    // Limpiar imagen temporal después de guardar
-                    _temporaryImagePath.update { null }
-                    selectedImagePath = null
-
-                    val currentGroupMembers = userStateHolder.getGroupMembers(_group.value.id)
-                    val currentGroupMembersIds = currentGroupMembers.map { it.uuid }
-                    val newGroupUserIds = savedGroup.users.values.toList()
-
-                    val missingUserIds = newGroupUserIds.filter { it !in currentGroupMembersIds }
-                    if (missingUserIds.isNotEmpty()) {
-                        val newGroupMembers = friendsRepository.getFriends(missingUserIds)
-                        val updatedGroupMembers = currentGroupMembers + newGroupMembers.values
-
-                        userStateHolder.setGroupMembers(savedGroup, updatedGroupMembers)
+                val imageFile = selectedImagePath?.let { path ->
+                    PlatformImageUtils.createFirebaseFile(path)
+                }
+                when (val result = saveGroupUseCase(_group.value, imageFile)) {
+                    is SaveGroupUseCase.Result.Success -> {
+                        _temporaryImagePath.update { null }
+                        selectedImagePath = null
+                        onSuccess()
                     }
 
-                    userStateHolder.saveGroup(savedGroup)
-                    onSuccess(savedGroup)
-                } catch (e: Exception) {
-                    logMessage("GroupDetailsViewModel", e.toString())
-                    onError(e.message ?: strings.getUnknownError())
+                    is SaveGroupUseCase.Result.Error -> {
+                        logMessage("SaveGroupUseCase", result.exception.message ?: result.exception.stackTraceToString())
+                        onError(strings.getUnknownError())
+                    }
                 }
             }
         }
     }
 
     fun deleteGroup(onSuccess: () -> Unit, onError: (String) -> Unit) {
+        if (!canDeleteGroup) {
+            onError(strings.getCannotDeleteGroup())
+            return
+        }
         screenModelScope.launch {
-            try {
-                if (!canDeleteGroup()) {
-                    onError(strings.getCannotDeleteGroup())
-                    return@launch
+            when(val result = deleteGroupUseCase(_group.value.id, if (_group.value.image.isNotEmpty()) _group.value.id else "")){
+                is DeleteGroupUseCase.Result.Success -> {
+                    onSuccess()
                 }
-                groupRepository.deleteGroup(
-                    _group.value.id,
-                    if (_group.value.image.isNotEmpty()) _group.value.id else ""
-                )
-                userStateHolder.removeGroup(_group.value.id)
-                onSuccess()
-            } catch (e: Exception) {
-                logMessage("GroupDetailsViewModel", e.toString())
-                onError(e.message ?: strings.getUnknownError())
+                is DeleteGroupUseCase.Result.Error -> {
+                    logMessage("DeleteGroupUseCase", result.exception.message ?: result.exception.stackTraceToString())
+                    onError(strings.getUnknownError())
+                }
             }
         }
     }
