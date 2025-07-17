@@ -7,8 +7,12 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.Event
 import com.ragl.divide.data.models.UserInfo
-import com.ragl.divide.domain.repositories.GroupRepository
+import com.ragl.divide.domain.services.AppStateService
 import com.ragl.divide.domain.stateHolders.UserStateHolder
+import com.ragl.divide.domain.usecases.event.RefreshEventUseCase
+import com.ragl.divide.domain.usecases.event.ReopenEventUseCase
+import com.ragl.divide.domain.usecases.event.SettleEventUseCase
+import com.ragl.divide.presentation.utils.Strings
 import com.ragl.divide.presentation.utils.logMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,8 +21,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class EventViewModel(
-    private val groupRepository: GroupRepository,
-    private val userStateHolder: UserStateHolder
+    private val refreshEventUseCase: RefreshEventUseCase,
+    private val settleEventUseCase: SettleEventUseCase,
+    private val reopenEventUseCase: ReopenEventUseCase,
+    private val userStateHolder: UserStateHolder,
+    private val appStateService: AppStateService,
+    private val strings: Strings
 ) : ScreenModel {
 
     private val _event = MutableStateFlow(Event())
@@ -56,57 +64,47 @@ class EventViewModel(
     }
 
     fun refreshEvent(
-        onError: (String) -> Unit
     ) {
         screenModelScope.launch {
-            try {
-                _isRefreshing.value = true
-                logMessage(
-                    "EventViewModel",
-                    "Refreshing event: ${_event.value.id} in group: $currentGroupId"
-                )
-
-                val freshEvent = groupRepository.getEvent(currentGroupId, _event.value.id)
-
-                _event.update { freshEvent }
-                updateExpensesAndPayments(freshEvent.expenses.values.toList() + freshEvent.payments.values.toList())
-                members = userStateHolder.getGroupMembersWithGuests(currentGroupId)
-                userStateHolder.updateEventInState(currentGroupId, _event.value.id, freshEvent)
-
-                logMessage("EventViewModel", "Event refreshed successfully")
-            } catch (e: Exception) {
-                logMessage("EventViewModel", "Error refreshing event: ${e.message}")
-                onError(e.message ?: "Error al actualizar el evento")
-            } finally {
-                _isRefreshing.value = false
-            }
-        }
-    }
-
-    fun settleEvent(groupId: String, onError: (String) -> Unit) {
-        screenModelScope.launch {
-            try {
-                groupRepository.settleEvent(groupId, _event.value.id)
-                _event.update { it.copy(settled = true) }
-                userStateHolder.settleEvent(groupId, _event.value.id)
-            } catch (e: Exception) {
-                onError(e.message.toString())
-            }
-        }
-    }
-
-    fun reopenEvent(groupId: String, onError: (String) -> Unit) {
-        screenModelScope.launch {
-            try {
-                _event.update {
-                    it.copy(
-                        settled = false
-                    )
+            _isRefreshing.value = true
+            when (val result = refreshEventUseCase(currentGroupId, _event.value.id)) {
+                is RefreshEventUseCase.Result.Success -> {
+                    _event.update { result.event }
+                    updateExpensesAndPayments(result.event.expenses.values.toList() + result.event.payments.values.toList())
+                    members = userStateHolder.getGroupMembersWithGuests(currentGroupId)
                 }
-                groupRepository.reopenEvent(groupId, _event.value.id)
-                userStateHolder.reopenEvent(groupId, _event.value.id)
-            } catch (e: Exception) {
-                onError(e.message.toString())
+                is RefreshEventUseCase.Result.Error -> {
+                    logMessage("RefreshEventUseCase", result.exception.message ?: result.exception.stackTraceToString())
+                    appStateService.handleError(strings.getUnknownError())
+                }
+            }
+        }
+    }
+
+    fun settleEvent(groupId: String) {
+        screenModelScope.launch {
+            when (val result = settleEventUseCase(groupId, _event.value.id)) {
+                is SettleEventUseCase.Result.Success -> {
+                    _event.update { it.copy(settled = true) }
+                }
+                is SettleEventUseCase.Result.Error -> {
+                    logMessage("SettleEventUseCase", result.exception.message ?: result.exception.stackTraceToString())
+                    appStateService.handleError(strings.getUnknownError())
+                }
+            }
+        }
+    }
+
+    fun reopenEvent(groupId: String) {
+        screenModelScope.launch {
+            when (val result = reopenEventUseCase(groupId, _event.value.id)) {
+                is ReopenEventUseCase.Result.Success -> {
+                    _event.update { it.copy(settled = false) }
+                }
+                is ReopenEventUseCase.Result.Error -> {
+                    logMessage("ReopenEventUseCase", result.exception.message ?: result.exception.stackTraceToString())
+                    appStateService.handleError(strings.getUnknownError())
+                }
             }
         }
     }

@@ -30,6 +30,7 @@ import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.ragl.divide.domain.repositories.PreferencesRepository
+import com.ragl.divide.domain.services.AppStateService
 import com.ragl.divide.domain.stateHolders.UserStateHolder
 import com.ragl.divide.presentation.screens.main.MainScreen
 import com.ragl.divide.presentation.screens.onboarding.OnboardingScreen
@@ -55,6 +56,7 @@ class EmailVerificationScreen : Screen {
         val userStateHolder: UserStateHolder = koinInject()
         val preferencesRepository: PreferencesRepository = koinInject()
         val isFirstTime by preferencesRepository.isFirstTimeFlow.collectAsState(false)
+        val appStateService: AppStateService = koinInject()
 
         Box(
             modifier = Modifier
@@ -114,15 +116,13 @@ class EmailVerificationScreen : Screen {
                 Button(
                     onClick = {
                         scope.launch {
-                            if (authViewModel.isEmailVerified()) {
+                            authViewModel.isEmailVerified {
                                 if (isFirstTime) {
                                     navigator.replaceAll(OnboardingScreen())
                                 } else {
                                     userStateHolder.refreshUser()
                                     navigator.replaceAll(MainScreen())
                                 }
-                            } else {
-                                authViewModel.handleError(strings.getEmailNotVerified())
                             }
                         }
                     },

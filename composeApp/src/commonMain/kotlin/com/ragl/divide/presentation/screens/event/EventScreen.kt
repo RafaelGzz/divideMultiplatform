@@ -59,7 +59,6 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.internal.BackHandler
 import com.ragl.divide.data.models.Event
-import com.ragl.divide.domain.services.AppStateService
 import com.ragl.divide.presentation.components.CollapsedDebtsCard
 import com.ragl.divide.presentation.components.DebtInfo
 import com.ragl.divide.presentation.components.ExpandedDebtsCard
@@ -89,7 +88,6 @@ import dividemultiplatform.composeapp.generated.resources.settle_event
 import dividemultiplatform.composeapp.generated.resources.settle_event_confirm
 import dividemultiplatform.composeapp.generated.resources.total_spent
 import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
 
 class EventScreen(
     private val groupId: String,
@@ -104,7 +102,6 @@ class EventScreen(
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = navigator.koinNavigatorScreenModel<EventViewModel>()
-        val appStateService: AppStateService = koinInject()
 
         LaunchedEffect(Unit) {
             viewModel.setEvent(groupId, eventId)
@@ -212,7 +209,7 @@ class EventScreen(
                     PullToRefreshBox(
                         isRefreshing = isRefreshing,
                         onRefresh = {
-                            viewModel.refreshEvent(onError = appStateService::handleError)
+                            viewModel.refreshEvent()
                         },
                         state = pullToRefreshState,
                         modifier = Modifier.padding(paddingValues)
@@ -343,7 +340,6 @@ class EventScreen(
                                 onClick = {
                                     viewModel.settleEvent(
                                         groupId = groupId,
-                                        onError = { appStateService.handleError(it) }
                                     )
                                     showSettleDialog = false
                                 }
@@ -376,7 +372,6 @@ class EventScreen(
                                 onClick = {
                                     viewModel.reopenEvent(
                                         groupId = groupId,
-                                        onError = { appStateService.handleError(it) }
                                     )
                                     showReopenDialog = false
                                 }

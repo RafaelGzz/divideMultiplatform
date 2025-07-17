@@ -6,13 +6,20 @@ import androidx.compose.runtime.setValue
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.UserInfo
-import com.ragl.divide.domain.repositories.FriendsRepository
+import com.ragl.divide.domain.services.AppStateService
 import com.ragl.divide.domain.services.UserService
+import com.ragl.divide.domain.usecases.friend.SearchUsersUseCase
+import com.ragl.divide.domain.usecases.friend.SendFriendRequestUseCase
+import com.ragl.divide.presentation.utils.Strings
+import com.ragl.divide.presentation.utils.logMessage
 import kotlinx.coroutines.launch
 
 class AddFriendsViewModel(
-    private val repository: FriendsRepository,
-    private val userService: UserService
+    private val searchUsersUseCase: SearchUsersUseCase,
+    private val sendFriendRequestUseCase: SendFriendRequestUseCase,
+    private val userService: UserService,
+    private val appStateService: AppStateService,
+    private val strings: Strings
 ) : ScreenModel {
 
     var isLoading by mutableStateOf(false)
@@ -54,7 +61,15 @@ class AddFriendsViewModel(
         screenModelScope.launch {
             isLoading = true
             val existingUsers = friends + friendRequestsSent
-            users = repository.searchUsers(searchText, existingUsers)
+            when (val result = searchUsersUseCase(searchText, existingUsers)) {
+                is SearchUsersUseCase.Result.Success -> {
+                    users = result.users
+                }
+                is SearchUsersUseCase.Result.Error -> {
+                    logMessage("SearchUsersUseCase", result.exception.message ?: result.exception.stackTraceToString())
+                    appStateService.handleError(strings.getUnknownError())
+                }
+            }
             isLoading = false
         }
     }
@@ -63,10 +78,16 @@ class AddFriendsViewModel(
         screenModelScope.launch {
             try {
                 isLoading = true
-                if (repository.sendFriendRequest(selectedUser!!.uuid)) {
-                    updateFriendRequestsSent(friendRequestsSent + selectedUser!!)
-                    searchUser()
-                    userService.sendFriendRequest(selectedUser!!)
+                when (val result = sendFriendRequestUseCase(selectedUser!!.uuid)) {
+                    is SendFriendRequestUseCase.Result.Success -> {
+                        updateFriendRequestsSent(friendRequestsSent + selectedUser!!)
+                        searchUser()
+                        userService.sendFriendRequest(selectedUser!!)
+                    }
+                    is SendFriendRequestUseCase.Result.Error -> {
+                        logMessage("SendFriendRequestUseCase", result.exception.message ?: result.exception.stackTraceToString())
+                        appStateService.handleError(strings.getUnknownError())
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()

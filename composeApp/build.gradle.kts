@@ -14,6 +14,7 @@ plugins {
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.googleServices)
     id("com.google.firebase.crashlytics")
+    id("com.google.firebase.firebase-perf")
 }
 
 val keystoreProperties = Properties().apply {
@@ -73,6 +74,7 @@ kotlin {
             implementation(libs.firebase.storage)
             implementation(libs.firebase.analytics)
             implementation(libs.firebase.crashlytics)
+            implementation(libs.firebase.performance)
 
             implementation(libs.kmpauth.google)
             implementation(libs.kmpauth.firebase)
@@ -108,8 +110,8 @@ android {
         applicationId = "com.ragl.divide"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1101
-        versionName = "1.1.01"
+        versionCode = 1110
+        versionName = "1.1.1"
     }
     packaging {
         resources {
@@ -118,10 +120,13 @@ android {
     }
     signingConfigs {
         create("release") {
-            storeFile = file(keystoreProperties["storeFile"] as String)
-            storePassword = keystoreProperties["storePassword"] as String
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keyPassword"] as String
+            // Solo configurar signing si las propiedades existen
+            if (keystoreProperties.containsKey("storeFile") && keystoreProperties["storeFile"] != null) {
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+            }
         }
     }
     buildTypes {
@@ -132,7 +137,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
+            // Solo usar signingConfig si está configurado
+            if (keystoreProperties.containsKey("storeFile") && keystoreProperties["storeFile"] != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
         debug {
             isMinifyEnabled = false

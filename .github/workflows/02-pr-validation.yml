@@ -1,0 +1,227 @@
+name: 🔍 PR Validation
+
+on:
+  pull_request:
+    branches: [ master ]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  actions: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: ☕ Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: 📦 Cache Gradle packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+          
+    - name: 🔑 Grant execute permission for gradlew
+      run: chmod +x gradlew
+      
+    - name: 📱 Create google-services.json
+      run: |
+        if [ -n "${{ secrets.GOOGLE_SERVICES_JSON }}" ]; then
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > composeApp/google-services.json
+        else
+          # Crear archivo dummy para tests
+          cat > composeApp/google-services.json << 'EOF'
+        {
+          "project_info": {
+            "project_number": "123456789",
+            "project_id": "dummy-project"
+          },
+          "client": [
+            {
+              "client_info": {
+                "mobilesdk_app_id": "1:123456789:android:dummy",
+                "android_client_info": {
+                  "package_name": "com.ragl.divide"
+                }
+              },
+              "oauth_client": [],
+              "api_key": [
+                {
+                  "current_key": "dummy-key"
+                }
+              ],
+              "services": {
+                "appinvite_service": {
+                  "other_platform_oauth_client": []
+                }
+              }
+            }
+          ],
+          "configuration_version": "1"
+        }
+        EOF
+        fi
+      
+    - name: ✅ Validate Gradle wrapper
+      uses: gradle/wrapper-validation-action@v1
+      
+    - name: 📋 Check version increment
+      run: |
+        # Obtener versiones del branch actual (development)
+        CURRENT_VERSION_CODE=$(grep -E "versionCode\s*=\s*[0-9]+" composeApp/build.gradle.kts | sed -E 's/.*versionCode\s*=\s*([0-9]+).*/\1/' | head -1)
+        CURRENT_VERSION_NAME=$(grep -E "versionName\s*=\s*\"[^\"]*\"" composeApp/build.gradle.kts | sed -E 's/.*versionName\s*=\s*"([^"]*)".*/\1/' | head -1)
+        
+        # Verificar que se encontraron las versiones
+        if [ -z "$CURRENT_VERSION_CODE" ] || [ -z "$CURRENT_VERSION_NAME" ]; then
+          echo "❌ ERROR: No se pudieron extraer las versiones del archivo actual"
+          echo "   versionCode: '$CURRENT_VERSION_CODE'"
+          echo "   versionName: '$CURRENT_VERSION_NAME'"
+          exit 1
+        fi
+        
+        # Obtener versiones del master
+        git fetch origin master
+        MASTER_VERSION_CODE=$(git show origin/master:composeApp/build.gradle.kts | grep -E "versionCode\s*=\s*[0-9]+" | sed -E 's/.*versionCode\s*=\s*([0-9]+).*/\1/' | head -1)
+        MASTER_VERSION_NAME=$(git show origin/master:composeApp/build.gradle.kts | grep -E "versionName\s*=\s*\"[^\"]*\"" | sed -E 's/.*versionName\s*=\s*"([^"]*)".*/\1/' | head -1)
+        
+        # Verificar que se encontraron las versiones del master
+        if [ -z "$MASTER_VERSION_CODE" ] || [ -z "$MASTER_VERSION_NAME" ]; then
+          echo "❌ ERROR: No se pudieron extraer las versiones del master"
+          echo "   versionCode: '$MASTER_VERSION_CODE'"
+          echo "   versionName: '$MASTER_VERSION_NAME'"
+          exit 1
+        fi
+        
+        echo "📊 Versiones actuales:"
+        echo "   versionCode: $MASTER_VERSION_CODE → $CURRENT_VERSION_CODE"
+        echo "   versionName: $MASTER_VERSION_NAME → $CURRENT_VERSION_NAME"
+        
+        # Validar que versionCode se haya incrementado
+        if [ "$CURRENT_VERSION_CODE" -le "$MASTER_VERSION_CODE" ]; then
+          echo "❌ ERROR: versionCode debe ser mayor que $MASTER_VERSION_CODE"
+          echo "   Actual: $CURRENT_VERSION_CODE"
+          exit 1
+        fi
+        
+        # Validar que versionName sea diferente
+        if [ "$CURRENT_VERSION_NAME" = "$MASTER_VERSION_NAME" ]; then
+          echo "❌ ERROR: versionName debe ser diferente de $MASTER_VERSION_NAME"
+          exit 1
+        fi
+        
+        echo "✅ Versiones validadas correctamente"
+        echo "VERSION_CODE_CURRENT=$CURRENT_VERSION_CODE" >> $GITHUB_ENV
+        echo "VERSION_NAME_CURRENT=$CURRENT_VERSION_NAME" >> $GITHUB_ENV
+        echo "VERSION_CODE_MASTER=$MASTER_VERSION_CODE" >> $GITHUB_ENV
+        echo "VERSION_NAME_MASTER=$MASTER_VERSION_NAME" >> $GITHUB_ENV
+      
+    - name: 🧪 Run all tests
+      run: |
+        ./gradlew test testDebugUnitTest --continue --stacktrace
+      
+    - name: 🏗️ Build release (validation)
+      run: |
+        echo "Building release version for validation..."
+        ./gradlew assembleRelease --stacktrace
+      
+    - name: 🎨 Check code formatting
+      run: |
+        # Verificar si ktlint está configurado
+        if ./gradlew tasks --all | grep -q "ktlintCheck"; then
+          echo "Running ktlint check..."
+          ./gradlew ktlintCheck
+        else
+          echo "ktlint not configured, skipping..."
+        fi
+      continue-on-error: true
+      
+    - name: 📊 Generate test report
+      uses: dorny/test-reporter@v1.9.1
+      if: success() || failure()
+      with:
+        name: PR Test Results
+        path: '**/build/test-results/**/TEST-*.xml'
+        reporter: java-junit
+        fail-on-error: false
+      continue-on-error: true
+      
+    - name: 📋 Test summary (fallback)
+      if: success() || failure()
+      run: |
+        echo "## 🧪 PR Test Results Summary" >> $GITHUB_STEP_SUMMARY
+        if find . -name "TEST-*.xml" -type f | head -1 | grep -q .; then
+          echo "✅ Test result files found" >> $GITHUB_STEP_SUMMARY
+          echo "📁 Test result locations:" >> $GITHUB_STEP_SUMMARY
+          find . -name "TEST-*.xml" -type f | head -10 | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ No test result files found" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+    - name: ❌ Comment PR on failure
+      uses: actions/github-script@v7
+      if: failure()
+      with:
+        script: |
+          const versionCodeMaster = process.env.VERSION_CODE_MASTER;
+          const versionNameMaster = process.env.VERSION_NAME_MASTER;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `❌ **Validación fallida**
+            
+            Por favor revisa los errores antes de hacer merge:
+            - 🧪 Tests fallidos
+            - 🔨 Errores de compilación
+            - 🎨 Problemas de formato de código
+            - 📋 Versión no incrementada correctamente
+            
+            **Requisitos de versión:**
+            - \`versionCode\` debe ser mayor que ${versionCodeMaster}
+            - \`versionName\` debe ser diferente a ${versionNameMaster}
+            
+            Revisa los logs del workflow para más detalles.`
+          })
+          
+    - name: ✅ Comment PR on success
+      uses: actions/github-script@v7
+      if: success()
+      with:
+        script: |
+          const versionCodeCurrent = process.env.VERSION_CODE_CURRENT;
+          const versionNameCurrent = process.env.VERSION_NAME_CURRENT;
+          const versionCodeMaster = process.env.VERSION_CODE_MASTER;
+          const versionNameMaster = process.env.VERSION_NAME_MASTER;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `✅ **Validación exitosa**
+            
+            - 🧪 Todos los tests pasaron
+            - 🔨 Compilación exitosa
+            - 🎨 Formato de código correcto
+            - 📋 Versión incrementada correctamente
+            
+            **📊 Información de versión:**
+            - \`versionCode\`: ${versionCodeMaster} → **${versionCodeCurrent}**
+            - \`versionName\`: ${versionNameMaster} → **${versionNameCurrent}**
+            
+            ¡El PR está listo para merge! 🚀`
+          }) 

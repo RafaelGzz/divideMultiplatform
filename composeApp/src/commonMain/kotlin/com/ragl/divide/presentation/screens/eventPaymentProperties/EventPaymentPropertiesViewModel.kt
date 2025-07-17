@@ -7,10 +7,11 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.EventPayment
 import com.ragl.divide.data.models.UserInfo
-import com.ragl.divide.domain.repositories.GroupRepository
 import com.ragl.divide.domain.stateHolders.UserStateHolder
+import com.ragl.divide.domain.usecases.eventPayment.SaveEventPaymentUseCase
 import com.ragl.divide.presentation.components.DebtInfo
 import com.ragl.divide.presentation.utils.Strings
+import com.ragl.divide.presentation.utils.logMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -20,7 +21,7 @@ import kotlin.time.ExperimentalTime
 
 @OptIn(ExperimentalTime::class)
 class EventPaymentPropertiesViewModel(
-    private val groupRepository: GroupRepository,
+    private val saveEventPaymentUseCase: SaveEventPaymentUseCase,
     private val userStateHolder: UserStateHolder,
     private val strings: Strings
 ) : ScreenModel {
@@ -138,29 +139,25 @@ class EventPaymentPropertiesViewModel(
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        try {
-            if (validateAmount().and(validateDescription())) {
-                val payment = _payment.value.copy(
-                    amount = amount.toDouble(),
-                    from = from.uuid,
-                    to = to.uuid,
-                    createdAt = Clock.System.now().toEpochMilliseconds(),
-                    description = description.trim(),
-                    eventId = eventId ?: "",
-                )
+        if (validateAmount().and(validateDescription())) {
+            val payment = _payment.value.copy(
+                amount = amount.toDouble(),
+                from = from.uuid,
+                to = to.uuid,
+                createdAt = Clock.System.now().toEpochMilliseconds(),
+                description = description.trim(),
+                eventId = eventId ?: "",
+            )
 
-                screenModelScope.launch {
-                    val savedPayment =
-                        groupRepository.saveEventPayment(
-                            groupId = groupId,
-                            payment = payment
-                        )
-                    userStateHolder.saveGroupPayment(groupId, savedPayment)
-                    onSuccess()
+            screenModelScope.launch {
+                when (val result = saveEventPaymentUseCase(groupId, payment)) {
+                    is SaveEventPaymentUseCase.Result.Success -> onSuccess()
+                    is SaveEventPaymentUseCase.Result.Error -> {
+                    logMessage("SaveEventPaymentUseCase", result.exception.message ?: result.exception.stackTraceToString())
+                    onError(strings.getUnknownError())
+                }
                 }
             }
-        } catch (e: Exception) {
-            onError(e.message.toString())
         }
     }
 }

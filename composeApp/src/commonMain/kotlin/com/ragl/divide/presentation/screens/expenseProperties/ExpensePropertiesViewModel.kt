@@ -11,9 +11,9 @@ import com.ragl.divide.data.models.Category
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.data.models.Frequency
 import com.ragl.divide.data.models.Payment
-import com.ragl.divide.domain.repositories.UserRepository
 import com.ragl.divide.domain.services.ScheduleNotificationService
 import com.ragl.divide.domain.stateHolders.UserStateHolder
+import com.ragl.divide.domain.usecases.expense.SaveExpenseUseCase
 import com.ragl.divide.presentation.utils.Strings
 import com.ragl.divide.presentation.utils.logMessage
 import kotlinx.coroutines.launch
@@ -22,7 +22,7 @@ import kotlin.time.ExperimentalTime
 
 @OptIn(ExperimentalTime::class)
 class ExpensePropertiesViewModel(
-    private val userRepository: UserRepository,
+    private val saveExpenseUseCase: SaveExpenseUseCase,
     private val userStateHolder: UserStateHolder,
     private val scheduleNotificationService: ScheduleNotificationService,
     private val strings: Strings
@@ -183,42 +183,30 @@ class ExpensePropertiesViewModel(
     ) {
         if (validateTitle().and(validateAmount())) {
             screenModelScope.launch {
-                try {
-                    val savedExpense = userRepository.saveExpense(
-                        Expense(
-                            id = id,
-                            title = title.trim(),
-                            amount = amount.toDouble(),
-                            category = category,
-                            reminders = isRemindersEnabled,
-                            payments = payments,
-                            notes = notes.trim(),
-                            frequency = frequency,
-                            startingDate = startingDate,
-                            amountPaid = amountPaid,
-                            createdAt = if (addedDate == 0L) Clock.System.now()
-                                .toEpochMilliseconds() else addedDate,
-                            paid = paid
-                        )
-                    )
-                    scheduleNotificationService.cancelNotification(
-                        savedExpense.id.takeLast(5).toInt()
-                    )
-                    if (isRemindersEnabled) {
-                        scheduleNotificationService.scheduleNotification(
-                            id = savedExpense.id.takeLast(5).toInt(),
-                            title = strings.getAppName(),
-                            message = strings.getNotificationBodyString(title),
-                            startingDateMillis = startingDate,
-                            frequency = frequency,
-                            true
-                        )
+                val expense = Expense(
+                    id = id,
+                    title = title.trim(),
+                    amount = amount.toDouble(),
+                    category = category,
+                    reminders = isRemindersEnabled,
+                    payments = payments,
+                    notes = notes.trim(),
+                    frequency = frequency,
+                    startingDate = startingDate,
+                    amountPaid = amountPaid,
+                    createdAt = if (addedDate == 0L) Clock.System.now()
+                        .toEpochMilliseconds() else addedDate,
+                    paid = paid
+                )
+
+                when(val result = saveExpenseUseCase(expense)){
+                    is SaveExpenseUseCase.Result.Success -> {
+                        onSuccess()
                     }
-                    userStateHolder.saveExpense(savedExpense)
-                    onSuccess()
-                } catch (e: Exception) {
-                    logMessage("ExpenseViewModel", e.stackTraceToString())
-                    onError(e.message ?: strings.getUnknownError())
+                    is SaveExpenseUseCase.Result.Error -> {
+                        logMessage("SaveExpenseUseCase", result.exception.message ?: result.exception.stackTraceToString())
+                        onError(strings.getUnknownError())
+                    }
                 }
             }
         }

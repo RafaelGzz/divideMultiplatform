@@ -3,17 +3,15 @@ package com.ragl.divide.domain.usecases.auth
 import com.ragl.divide.data.models.User
 import com.ragl.divide.domain.repositories.UserRepository
 import com.ragl.divide.domain.services.AnalyticsService
-import com.ragl.divide.presentation.utils.Strings
 import dev.gitlive.firebase.auth.FirebaseUser
 
 class SignInWithGoogleUseCase(
     private val userRepository: UserRepository,
-    private val analyticsService: AnalyticsService,
-    private val strings: Strings
+    private val analyticsService: AnalyticsService
 ) {
     sealed class Result {
         data class Success(val user: User, val isNewUser: Boolean) : Result()
-        data class Error(val message: String) : Result()
+        data class Error(val exception: Exception) : Result()
     }
 
     suspend operator fun invoke(firebaseUserResult: kotlin.Result<FirebaseUser?>): Result {
@@ -42,11 +40,11 @@ class SignInWithGoogleUseCase(
             } else {
                 val exception = firebaseUserResult.exceptionOrNull()
                 analyticsService.logError(exception ?: Exception("Unknown Google sign in error"), "Error en login con google")
-                Result.Error(strings.getFailedToLogin())
+                Result.Error(Exception("Unknown Google sign in error"))
             }
         } catch (e: Exception) {
             analyticsService.logError(e, "Error en login con google")
-            Result.Error(e.message ?: strings.getUnknownError())
+            Result.Error(e)
         }
     }
 } 

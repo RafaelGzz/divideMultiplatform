@@ -7,9 +7,11 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.Category
 import com.ragl.divide.data.models.Event
-import com.ragl.divide.domain.repositories.GroupRepository
 import com.ragl.divide.domain.stateHolders.UserStateHolder
+import com.ragl.divide.domain.usecases.event.DeleteEventUseCase
+import com.ragl.divide.domain.usecases.event.SaveEventUseCase
 import com.ragl.divide.presentation.utils.Strings
+import com.ragl.divide.presentation.utils.logMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,7 +19,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class EventPropertiesViewModel(
-    private val groupRepository: GroupRepository,
+    private val saveEventUseCase: SaveEventUseCase,
+    private val deleteEventUseCase: DeleteEventUseCase,
     private val userStateHolder: UserStateHolder,
     private val strings: Strings
 ) : ScreenModel {
@@ -84,18 +87,19 @@ class EventPropertiesViewModel(
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        if (validateTitle().and(validateDescription())) {
-            try {
-                screenModelScope.launch {
-                    _event.update {
-                        it.copy(description = it.description.trim())
+        screenModelScope.launch {
+            if (validateTitle().and(validateDescription())) {
+                _event.update { it.copy(description = it.description.trim()) }
+                when (val result = saveEventUseCase(groupId, _event.value)) {
+                    is SaveEventUseCase.Result.Success -> {
+                        onSuccess()
                     }
-                    val savedEvent = groupRepository.saveEvent(groupId, _event.value)
-                    userStateHolder.saveEvent(groupId, savedEvent)
-                    onSuccess()
+
+                                    is SaveEventUseCase.Result.Error -> {
+                    logMessage("SaveEventUseCase", result.exception.message ?: result.exception.stackTraceToString())
+                    onError(strings.getUnknownError())
                 }
-            } catch (e: Exception) {
-                onError(e.message.toString())
+                }
             }
         }
     }
@@ -104,18 +108,21 @@ class EventPropertiesViewModel(
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        try {
-            if (!canDeleteGroup) {
-                onError(strings.getCannotDeleteEvent())
-                return
+        if (!canDeleteGroup) {
+            onError(strings.getCannotDeleteEvent())
+            return
+        }
+        screenModelScope.launch {
+            when (val result = deleteEventUseCase(groupId, _event.value.id)) {
+                is DeleteEventUseCase.Result.Success -> {
+                    onSuccess()
+                }
+
+                is DeleteEventUseCase.Result.Error -> {
+                    logMessage("DeleteEventUseCase", result.exception.message ?: result.exception.stackTraceToString())
+                    onError(strings.getUnknownError())
+                }
             }
-            screenModelScope.launch {
-                groupRepository.deleteEvent(groupId, _event.value.id)
-                userStateHolder.deleteEvent(groupId, _event.value.id)
-                onSuccess()
-            }
-        } catch (e: Exception) {
-            onError(e.message.toString())
         }
     }
 } 

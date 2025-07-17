@@ -30,7 +30,7 @@ interface UserStateHolder {
     fun updateFriendRequestsReceived(friendRequestsReceived: Map<String, UserInfo>)
     fun updateFriendRequestsSent(friendRequestsSent: Map<String, UserInfo>)
     fun removeExpense(expenseId: String)
-    fun removeGroup(groupId: String)
+    fun deleteGroup(groupId: String)
     fun saveGroup(group: Group)
     fun saveExpense(expense: Expense)
     fun savePayment(expenseId: String, payment: Payment)
@@ -42,8 +42,8 @@ interface UserStateHolder {
     fun getEventExpenseById(groupId: String, expenseId: String?, eventId: String): EventExpense
     fun getEventPaymentById(groupId: String, paymentId: String?, eventId: String): EventPayment
     fun getUUID(): String
-    fun saveGroupPayment(groupId: String, savedPayment: EventPayment)
-    fun deleteGroupPayment(groupId: String, payment: EventPayment)
+    fun saveEventPayment(groupId: String, savedPayment: EventPayment)
+    fun deleteEventPayment(groupId: String, payment: EventPayment)
     fun updateProfileImage(imagePath: String)
     fun updateUserName(newName: String)
     fun sendFriendRequest(friend: UserInfo)

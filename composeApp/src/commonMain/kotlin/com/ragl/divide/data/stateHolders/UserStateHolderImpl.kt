@@ -72,7 +72,7 @@ class UserStateHolderImpl(
         }
     }
 
-    override fun removeGroup(groupId: String) {
+    override fun deleteGroup(groupId: String) {
         _state.update {
             it.copy(groups = it.groups - groupId)
         }
@@ -205,7 +205,7 @@ class UserStateHolderImpl(
         return _state.value.user.uuid
     }
 
-    override fun saveGroupPayment(groupId: String, savedPayment: EventPayment) {
+    override fun saveEventPayment(groupId: String, savedPayment: EventPayment) {
         _state.update {
             it.copy(
                 groups = it.groups.mapValues { group ->
@@ -229,7 +229,7 @@ class UserStateHolderImpl(
         }
     }
 
-    override fun deleteGroupPayment(groupId: String, payment: EventPayment) {
+    override fun deleteEventPayment(groupId: String, payment: EventPayment) {
         _state.update {
             it.copy(
                 groups = it.groups.mapValues { group ->
@@ -452,7 +452,6 @@ class UserStateHolderImpl(
                 groups = currentState.groups + (groupId to updatedGroup)
             )
         }
-        logMessage("UserViewModel", "Updated group $groupId in state")
     }
 
     override fun updateEventInState(groupId: String, eventId: String, updatedEvent: Event) {
@@ -469,7 +468,6 @@ class UserStateHolderImpl(
                 currentState
             }
         }
-        logMessage("UserViewModel", "Updated event $eventId in group $groupId in state")
     }
 
     @OptIn(ExperimentalTime::class)
