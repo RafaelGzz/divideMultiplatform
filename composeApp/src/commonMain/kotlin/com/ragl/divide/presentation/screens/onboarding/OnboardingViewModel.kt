@@ -2,6 +2,7 @@ package com.ragl.divide.presentation.screens.onboarding
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import com.ragl.divide.domain.services.UserService
+import com.ragl.divide.domain.stateHolders.UserStateHolder
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -11,7 +12,8 @@ data class OnboardingState(
 )
 
 class OnboardingViewModel(
-    private val userService: UserService
+    private val userService: UserService,
+    private val userStateHolder: UserStateHolder
 ): ScreenModel {
 
     private val _state = MutableStateFlow(OnboardingState())
@@ -34,5 +36,6 @@ class OnboardingViewModel(
 
     fun completeOnboarding() {
         userService.completeOnboarding()
+        userStateHolder.refreshUser()
     }
 }
