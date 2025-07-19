@@ -110,8 +110,8 @@ android {
         applicationId = "com.ragl.divide"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1110
-        versionName = "1.1.1"
+        versionCode = 1111
+        versionName = "1.1.11"
     }
     packaging {
         resources {
