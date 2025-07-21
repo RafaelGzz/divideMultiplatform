@@ -1,11 +1,12 @@
-package com.ragl.divide.data.services
+package com.ragl.divide.domain
 
 import com.ragl.divide.data.models.Category
 import com.ragl.divide.data.models.Event
 import com.ragl.divide.data.models.EventExpense
 import com.ragl.divide.data.models.EventPayment
-import com.ragl.divide.data.models.PaymentType
 import com.ragl.divide.data.models.SplitMethod
+import com.ragl.divide.data.services.GroupExpenseServiceImpl
+import kotlin.math.round
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -384,7 +385,7 @@ class GroupExpenseServiceIntegrationTest {
         result.forEach { (_, creditors) ->
             creditors.forEach { (_, amount) ->
                 // Verificar que los montos están redondeados a 2 decimales
-                assertEquals(amount, kotlin.math.round(amount * 100) / 100)
+                assertEquals(amount, round(amount * 100) / 100)
             }
         }
     }

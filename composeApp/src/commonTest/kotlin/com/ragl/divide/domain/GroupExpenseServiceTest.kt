@@ -1,10 +1,11 @@
-package com.ragl.divide.data.services
+package com.ragl.divide.domain
 
 import com.ragl.divide.data.models.Category
 import com.ragl.divide.data.models.Event
 import com.ragl.divide.data.models.EventExpense
 import com.ragl.divide.data.models.EventPayment
 import com.ragl.divide.data.models.SplitMethod
+import com.ragl.divide.data.services.GroupExpenseServiceImpl
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

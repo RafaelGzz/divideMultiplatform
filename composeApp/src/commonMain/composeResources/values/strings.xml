@@ -325,4 +325,11 @@
     <string name="get_started">Get Started</string>
     <string name="skip">Skip</string>
 
+    <!-- Step by step -->
+    <string name="step_x_of_y">Step %1$s of %2$s</string>
+    <string name="basic_information">Basic Information</string>
+    <string name="amount_and_payment">Amount and Payment</string>
+    <string name="expense_division">Expense Division</string>
+    <string name="additional_details">Additional Details</string>
+
 </resources>

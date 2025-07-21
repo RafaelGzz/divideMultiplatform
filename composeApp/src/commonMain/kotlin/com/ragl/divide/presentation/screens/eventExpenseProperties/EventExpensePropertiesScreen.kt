@@ -86,8 +86,12 @@ import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.add
 import dividemultiplatform.composeapp.generated.resources.add_expense
 import dividemultiplatform.composeapp.generated.resources.amount
+import dividemultiplatform.composeapp.generated.resources.amount_and_payment
+import dividemultiplatform.composeapp.generated.resources.back
+import dividemultiplatform.composeapp.generated.resources.basic_information
 import dividemultiplatform.composeapp.generated.resources.currency_es_mx
 import dividemultiplatform.composeapp.generated.resources.dollar_sign
+import dividemultiplatform.composeapp.generated.resources.expense_division
 import dividemultiplatform.composeapp.generated.resources.indicate_percentages
 import dividemultiplatform.composeapp.generated.resources.indicate_quantities
 import dividemultiplatform.composeapp.generated.resources.next
@@ -97,6 +101,7 @@ import dividemultiplatform.composeapp.generated.resources.percent_sign
 import dividemultiplatform.composeapp.generated.resources.remaining_x
 import dividemultiplatform.composeapp.generated.resources.select_who_pays
 import dividemultiplatform.composeapp.generated.resources.split_method
+import dividemultiplatform.composeapp.generated.resources.step_x_of_y
 import dividemultiplatform.composeapp.generated.resources.title
 import dividemultiplatform.composeapp.generated.resources.update
 import dividemultiplatform.composeapp.generated.resources.update_expense
@@ -388,7 +393,7 @@ class EventExpensePropertiesScreen(
         LazyColumn {
             item {
                 Text(
-                    text = "Paso ${currentStep + 1} de 3",
+                    text = stringResource(Res.string.step_x_of_y, currentStep + 1, 3),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 8.dp)
@@ -1219,9 +1224,9 @@ class EventExpensePropertiesScreen(
                 Text(
                     if (currentStep != null && totalSteps != null) {
                         when (currentStep) {
-                            0 -> "Información básica"
-                            1 -> "Cantidad y pago"
-                            2 -> "División del gasto"
+                            0 -> stringResource(Res.string.basic_information)
+                            1 -> stringResource(Res.string.amount_and_payment)
+                            2 -> stringResource(Res.string.expense_division)
                             else -> stringResource(Res.string.add_expense)
                         }
                     } else {
@@ -1234,7 +1239,7 @@ class EventExpensePropertiesScreen(
                 IconButton(onClick = onBackClick) {
                     Icon(
                         if (currentStep != null && currentStep > 0) Icons.Filled.ArrowBack else Icons.Filled.Close,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(Res.string.back),
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
