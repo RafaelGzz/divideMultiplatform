@@ -13,7 +13,6 @@ import com.ragl.divide.domain.stateHolders.UserStateHolder
 import com.ragl.divide.domain.usecases.group.DeleteGroupUseCase
 import com.ragl.divide.domain.usecases.group.LeaveGroupUseCase
 import com.ragl.divide.domain.usecases.group.SaveGroupUseCase
-import com.ragl.divide.presentation.screens.groupProperties.PlatformImageUtils
 import com.ragl.divide.presentation.utils.Strings
 import com.ragl.divide.presentation.utils.logMessage
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -71,6 +70,8 @@ class GroupPropertiesViewModel(
 
     private fun canLeaveGroup(): Boolean {
         if (currentUserId.isEmpty()) return false
+
+        if(members.size == 1) return false
 
         val consolidatedDebts =
             groupExpenseService.consolidateDebtsFromEventsMap(_group.value.events)

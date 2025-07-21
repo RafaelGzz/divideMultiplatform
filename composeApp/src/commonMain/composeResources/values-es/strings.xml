@@ -325,4 +325,12 @@
     <string name="onboarding_description_3">Ve quién debe qué y liquida deudas con nuestro sistema inteligente de simplificación de deudas</string>
     <string name="get_started">Comenzar</string>
     <string name="skip">Saltar</string>
+
+    <!-- Step by step -->
+    <string name="step_x_of_y">Paso %1$s de %2$s</string>
+    <string name="basic_information">Información Básica</string>
+    <string name="amount_and_payment">Cantidad y Pago</string>
+    <string name="expense_division">División del Gasto</string>
+    <string name="additional_details">Detalles Adicionales</string>
+
 </resources>

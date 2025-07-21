@@ -700,7 +700,7 @@ class GroupPropertiesScreen(
                             }
                         }
 
-                        if (!canLeave) {
+                        if (!canLeave && viewModel.members.size > 1) {
                             item {
                                 Text(
                                     text = stringResource(Res.string.cannot_leave_group),

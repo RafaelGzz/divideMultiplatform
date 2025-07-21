@@ -51,7 +51,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.annotation.InternalVoyagerApi
 import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.koin.koinNavigatorScreenModel
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -63,14 +62,17 @@ import com.ragl.divide.presentation.components.AdaptiveFAB
 import com.ragl.divide.presentation.components.CollapsedDropdownCard
 import com.ragl.divide.presentation.components.DivideTextField
 import com.ragl.divide.presentation.components.ExpandedDropdownCard
-
 import dividemultiplatform.composeapp.generated.resources.Res
 import dividemultiplatform.composeapp.generated.resources.add_expense
+import dividemultiplatform.composeapp.generated.resources.additional_details
 import dividemultiplatform.composeapp.generated.resources.amount
+import dividemultiplatform.composeapp.generated.resources.back
+import dividemultiplatform.composeapp.generated.resources.basic_information
 import dividemultiplatform.composeapp.generated.resources.category
 import dividemultiplatform.composeapp.generated.resources.edit
 import dividemultiplatform.composeapp.generated.resources.next
 import dividemultiplatform.composeapp.generated.resources.notes
+import dividemultiplatform.composeapp.generated.resources.step_x_of_y
 import dividemultiplatform.composeapp.generated.resources.title
 import dividemultiplatform.composeapp.generated.resources.update_expense
 import org.jetbrains.compose.resources.stringResource
@@ -260,7 +262,7 @@ class ExpensePropertiesScreen(
 
         Column {
             Text(
-                text = "Paso ${currentStep + 1} de 3",
+                text = stringResource(Res.string.step_x_of_y, currentStep + 1, 3),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -538,9 +540,9 @@ class ExpensePropertiesScreen(
                 Text(
                     if (currentStep != null && totalSteps != null) {
                         when (currentStep) {
-                            0 -> "Información básica"
-                            1 -> "Cantidad"
-                            2 -> "Detalles adicionales"
+                            0 -> stringResource(Res.string.basic_information)
+                            1 -> stringResource(Res.string.amount)
+                            2 -> stringResource(Res.string.additional_details)
                             else -> stringResource(Res.string.add_expense)
                         }
                     } else {
@@ -553,7 +555,7 @@ class ExpensePropertiesScreen(
                 IconButton(onClick = onBackClick) {
                     Icon(
                         if (currentStep != null && currentStep > 0) Icons.Filled.ArrowBack else Icons.Filled.Close,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(Res.string.back),
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
