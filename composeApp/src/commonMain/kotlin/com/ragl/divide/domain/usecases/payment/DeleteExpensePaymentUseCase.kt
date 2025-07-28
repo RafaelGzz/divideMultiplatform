@@ -12,7 +12,7 @@ class DeleteExpensePaymentUseCase(
         data class Error(val exception: Exception) : Result()
     }
 
-    suspend operator fun invoke(paymentId: String, amount: Double, expense: Expense): Result {
+    suspend operator fun invoke(expense: Expense): Result {
         return try {
             userRepository.saveExpense(expense)
             userStateHolder.saveExpense(expense)

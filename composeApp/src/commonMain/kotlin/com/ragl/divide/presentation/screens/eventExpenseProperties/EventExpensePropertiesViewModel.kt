@@ -14,6 +14,7 @@ import com.ragl.divide.data.models.UserInfo
 import com.ragl.divide.domain.stateHolders.UserStateHolder
 import com.ragl.divide.domain.usecases.eventExpense.SaveEventExpenseUseCase
 import com.ragl.divide.presentation.utils.Strings
+import com.ragl.divide.presentation.utils.logMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -230,7 +231,8 @@ class EventExpensePropertiesViewModel(
                         onSuccess()
                     }
                     is SaveEventExpenseUseCase.Result.Error -> {
-                        onError(result.message)
+                        logMessage("SaveEventExpenseUseCase", result.exception.message ?: result.exception.stackTraceToString())
+                        onError(strings.getUnknownError())
                     }
                 }
             }

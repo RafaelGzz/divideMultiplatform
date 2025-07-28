@@ -41,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
@@ -123,8 +124,11 @@ class CreateGroupScreen : Screen {
                     title = {
                         Text(stringResource(Res.string.create_group))
                     },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        Color.Unspecified,
+                        Color.Unspecified,
                         navigationIconContentColor = MaterialTheme.colorScheme.primary,
+                        titleContentColor = Color.Unspecified,
                         actionIconContentColor = MaterialTheme.colorScheme.primary
                     ),
                     navigationIcon = {

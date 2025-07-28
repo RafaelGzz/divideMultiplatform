@@ -26,7 +26,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
+import androidx.compose.material3.DividerDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ShapeDefaults
@@ -598,9 +599,9 @@ class SignInScreen : Screen {
                         .fillMaxWidth()
                         .padding(vertical = 24.dp)
                 ) {
-                    Divider(
-                        modifier = Modifier.weight(1f),
-                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                    HorizontalDivider(
+                        Modifier.weight(1f),
+                        DividerDefaults.Thickness, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                     )
                     Text(
                         text = stringResource(Res.string.or),
@@ -609,9 +610,9 @@ class SignInScreen : Screen {
                         ),
                         modifier = Modifier.padding(horizontal = 16.dp)
                     )
-                    Divider(
+                    HorizontalDivider(
                         modifier = Modifier.weight(1f),
-                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                        thickness = DividerDefaults.Thickness, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                     )
                 }
                 googleButton()

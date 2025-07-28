@@ -59,6 +59,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -332,8 +333,11 @@ class GroupPropertiesScreen(
                             title = {
                                 Text(stringResource(Res.string.update_group))
                             },
-                            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                            colors = TopAppBarDefaults.topAppBarColors(
+                                Color.Unspecified,
+                                Color.Unspecified,
                                 navigationIconContentColor = MaterialTheme.colorScheme.primary,
+                                titleContentColor = Color.Unspecified,
                                 actionIconContentColor = MaterialTheme.colorScheme.primary
                             ),
                             navigationIcon = {
@@ -816,8 +820,11 @@ class GroupPropertiesScreen(
             topBar = {
                 CenterAlignedTopAppBar(
                     title = { Text(stringResource(Res.string.select_friends)) },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        Color.Unspecified,
+                        Color.Unspecified,
                         navigationIconContentColor = MaterialTheme.colorScheme.primary,
+                        titleContentColor = Color.Unspecified,
                         actionIconContentColor = MaterialTheme.colorScheme.primary
                     ),
                     navigationIcon = {

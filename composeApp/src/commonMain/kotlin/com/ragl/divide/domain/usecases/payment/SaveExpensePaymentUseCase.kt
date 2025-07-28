@@ -2,12 +2,11 @@ package com.ragl.divide.domain.usecases.payment
 
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.domain.repositories.UserRepository
-import com.ragl.divide.domain.services.ScheduleNotificationService
 import com.ragl.divide.domain.stateHolders.UserStateHolder
+
 class SaveExpensePaymentUseCase(
     private val userRepository: UserRepository,
-    private val userStateHolder: UserStateHolder,
-    private val scheduleNotificationService: ScheduleNotificationService,
+    private val userStateHolder: UserStateHolder
 ) {
     sealed class Result {
         data object Success : Result()
@@ -20,7 +19,6 @@ class SaveExpensePaymentUseCase(
             userRepository.saveExpense(expense)
             userStateHolder.saveExpense(expense)
             if (expense.paid) {
-                scheduleNotificationService.cancelNotification(expense.id.takeLast(5).toInt())
                 Result.Paid
             } else {
                 Result.Success

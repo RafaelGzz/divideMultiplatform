@@ -417,11 +417,11 @@ private fun GroupDetailsAppBar(
     group: Group
 ) {
     TopAppBar(
-        colors = TopAppBarDefaults.largeTopAppBarColors(
-            scrolledContainerColor = Color.Transparent,
+        colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.Transparent,
+            scrolledContainerColor = Color.Transparent,
             navigationIconContentColor = MaterialTheme.colorScheme.primary,
-            actionIconContentColor = MaterialTheme.colorScheme.primary
+            titleContentColor = Color.Unspecified, actionIconContentColor = MaterialTheme.colorScheme.primary
         ),
         title = {
             Row(

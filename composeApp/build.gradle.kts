@@ -31,6 +31,14 @@ kotlin {
             jvmTarget.set(JvmTarget.JVM_17)
         }
     }
+
+    targets.configureEach {
+        compilations.configureEach {
+            compileTaskProvider.get().compilerOptions{
+                freeCompilerArgs.add("-Xexpect-actual-classes")
+            }
+        }
+    }
     
     listOf(
         iosX64(),
@@ -110,8 +118,8 @@ android {
         applicationId = "com.ragl.divide"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1112
-        versionName = "1.1.12"
+        versionCode = 1113
+        versionName = "1.1.13"
     }
     packaging {
         resources {

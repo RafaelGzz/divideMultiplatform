@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -56,7 +57,7 @@ import dividemultiplatform.composeapp.generated.resources.send_friend_request
 import org.jetbrains.compose.resources.stringResource
 
 class AddFriendsScreen : Screen {
-    
+
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
@@ -64,8 +65,8 @@ class AddFriendsScreen : Screen {
         val viewModel = koinScreenModel<AddFriendsViewModel>()
 
         val userState = LocalUserState.current
-        
-        LaunchedEffect(Unit){
+
+        LaunchedEffect(Unit) {
             viewModel.updateCurrentFriends(userState.friends.values.toList())
             viewModel.updateFriendRequestsSent(userState.friendRequestsSent.values.toList())
         }
@@ -88,7 +89,8 @@ class AddFriendsScreen : Screen {
                         }
                     }
                 )
-            }
+            },
+            modifier = Modifier.imePadding()
         ) { paddingValues ->
             if (showSendRequestDialog) {
                 AlertDialog(
@@ -120,7 +122,7 @@ class AddFriendsScreen : Screen {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                    verticalAlignment = Alignment.Bottom,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     DivideTextField(
@@ -135,7 +137,7 @@ class AddFriendsScreen : Screen {
                         onClick = viewModel::searchUser,
                         modifier = Modifier
                             .wrapContentSize()
-                            .height(55.dp),
+                            .height(56.dp),
                         shape = ShapeDefaults.Medium
                     ) {
                         Icon(Icons.Filled.Search, contentDescription = "Search")
@@ -152,7 +154,6 @@ class AddFriendsScreen : Screen {
                             CircularProgressIndicator(
                                 modifier = Modifier
                                     .padding(16.dp)
-                                    .align(Alignment.CenterHorizontally)
                             )
                         }
                     } else if (viewModel.users.isEmpty()) {

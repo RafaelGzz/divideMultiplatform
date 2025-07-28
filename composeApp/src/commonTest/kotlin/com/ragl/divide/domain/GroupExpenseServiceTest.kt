@@ -587,4 +587,302 @@ class GroupExpenseServiceTest {
         // Assert - No debería haber deudas y debería marcar para liquidar
         assertTrue(result.isEmpty())
     }
+
+    // --- INICIO DE TESTS FUSIONADOS DE GroupExpenseServiceIntegrationTest.kt ---
+
+    @Test
+    fun testRealWorldScenario_WeekendTrip() {
+        // Arrange - Simulando un viaje de fin de semana con 4 amigos
+        val users = listOf("Alice", "Bob", "Charlie", "Diana")
+        
+        // Gastos del viaje
+        val hotelExpense = EventExpense(
+            id = "hotel",
+            title = "Hotel",
+            amount = 400.0,
+            payers = mapOf("Alice" to 400.0), // Alice paga todo el hotel
+            debtors = mapOf("Alice" to 100.0, "Bob" to 100.0, "Charlie" to 100.0, "Diana" to 100.0),
+            splitMethod = SplitMethod.EQUALLY,
+            category = Category.TRAVEL
+        )
+        
+        val dinnerExpense = EventExpense(
+            id = "dinner",
+            title = "Cena grupal",
+            amount = 200.0,
+            payers = mapOf("Bob" to 200.0), // Bob paga la cena
+            debtors = mapOf("Alice" to 50.0, "Bob" to 50.0, "Charlie" to 50.0, "Diana" to 50.0),
+            splitMethod = SplitMethod.EQUALLY,
+            category = Category.FOOD
+        )
+        
+        val gasExpense = EventExpense(
+            id = "gas",
+            title = "Gasolina",
+            amount = 80.0,
+            payers = mapOf("Charlie" to 80.0), // Charlie paga la gasolina
+            debtors = mapOf("Alice" to 20.0, "Bob" to 20.0, "Charlie" to 20.0, "Diana" to 20.0),
+            splitMethod = SplitMethod.EQUALLY,
+            category = Category.TRANSPORT
+        )
+        
+        // Algunos pagos parciales
+        val payment1 = EventPayment(
+            id = "payment1",
+            from = "Bob",
+            to = "Alice",
+            amount = 50.0,
+            description = "Parte del hotel",
+        )
+        
+        val payment2 = EventPayment(
+            id = "payment2",
+            from = "Diana",
+            to = "Charlie",
+            amount = 20.0,
+            description = "Gasolina",
+        )
+        
+        val expenses = listOf(hotelExpense, dinnerExpense, gasExpense)
+        val payments = listOf(payment1, payment2)
+
+        // Act
+        val result = service.calculateDebts(expenses, payments, simplify = true)
+
+        // Assert
+        assertTrue(result.isNotEmpty())
+        
+        // Verificar que las deudas estén balanceadas
+        var totalDebts = 0.0
+        result.forEach { (_, creditors) ->
+            creditors.forEach { (_, amount) ->
+                totalDebts += amount
+            }
+        }
+        assertTrue(totalDebts > 0)
+    }
+
+    @Test
+    fun testRealWorldScenario_SharedApartment() {
+        // Arrange - Simulando gastos compartidos de un apartamento
+        val expenses = listOf(
+            EventExpense(
+                id = "rent",
+                title = "Renta Enero",
+                amount = 1200.0,
+                payers = mapOf("John" to 1200.0),
+                debtors = mapOf("John" to 400.0, "Jane" to 400.0, "Jim" to 400.0),
+                splitMethod = SplitMethod.EQUALLY,
+                category = Category.HOUSING
+            ),
+            EventExpense(
+                id = "utilities",
+                title = "Electricidad y Gas",
+                amount = 150.0,
+                payers = mapOf("Jane" to 150.0),
+                debtors = mapOf("John" to 50.0, "Jane" to 50.0, "Jim" to 50.0),
+                splitMethod = SplitMethod.EQUALLY,
+                category = Category.UTILITIES
+            ),
+            EventExpense(
+                id = "groceries",
+                title = "Supermercado",
+                amount = 300.0,
+                payers = mapOf("Jim" to 300.0),
+                debtors = mapOf("John" to 100.0, "Jane" to 100.0, "Jim" to 100.0),
+                splitMethod = SplitMethod.EQUALLY,
+                category = Category.FOOD
+            )
+        )
+        val payments = listOf(
+            EventPayment(
+                id = "jane_to_john",
+                from = "Jane",
+                to = "John",
+                amount = 350.0,
+                description = "Renta + mi parte",
+            ),
+            EventPayment(
+                id = "jim_to_jane",
+                from = "Jim",
+                to = "Jane",
+                amount = 50.0,
+                description = "Servicios",
+            )
+        )
+        // Act
+        val result = service.calculateDebts(expenses, payments, simplify = true)
+        // Assert
+        assertTrue(result.isNotEmpty())
+        result.forEach { (debtor, creditors) ->
+            creditors.forEach { (creditor, _) ->
+                assertTrue(result[creditor]?.get(debtor) == null || result[creditor]?.get(debtor) == 0.0)
+            }
+        }
+    }
+
+    @Test
+    fun testComplexEventConsolidation() {
+        // Arrange - Múltiples eventos con deudas que se pueden consolidar
+        val event1 = Event(
+            id = "birthday_party",
+            title = "Fiesta de cumpleaños",
+            currentDebts = mapOf(
+                "Alice" to mapOf("Bob" to 50.0, "Charlie" to 30.0),
+                "Bob" to mapOf("Charlie" to 20.0)
+            ),
+            settled = false,
+            category = Category.ENTERTAINMENT
+        )
+        val event2 = Event(
+            id = "dinner_out",
+            title = "Cena fuera",
+            currentDebts = mapOf(
+                "Alice" to mapOf("Bob" to 25.0),
+                "Charlie" to mapOf("Alice" to 40.0, "Bob" to 35.0)
+            ),
+            settled = false,
+            category = Category.FOOD
+        )
+        val event3 = Event(
+            id = "movie_night",
+            title = "Noche de películas",
+            currentDebts = mapOf(
+                "Bob" to mapOf("Alice" to 15.0, "Charlie" to 10.0)
+            ),
+            settled = false,
+            category = Category.ENTERTAINMENT
+        )
+        val events = listOf(event1, event2, event3)
+        // Act
+        val result = service.consolidateDebtsFromEvents(events)
+        // Assert
+        assertTrue(result.isNotEmpty())
+        var totalOwed = 0.0
+        result.forEach { (_, creditors) ->
+            creditors.forEach { (_, amount) ->
+                totalOwed += amount
+            }
+        }
+        assertTrue(totalOwed > 0)
+    }
+
+    @Test
+    fun testLargeGroupScenario() {
+        // Arrange - Grupo grande con muchos participantes
+        val users = (1..10).map { "User$it" }
+        val bigExpense = EventExpense(
+            id = "big_expense",
+            title = "Evento grande",
+            amount = 1000.0,
+            payers = mapOf("User1" to 1000.0),
+            debtors = users.associateWith { 100.0 },
+            splitMethod = SplitMethod.EQUALLY,
+            category = Category.GENERAL
+        )
+        val payments = (2..6).map { i ->
+            EventPayment(
+                id = "payment$i",
+                from = "User$i",
+                to = "User1",
+                amount = 50.0,
+                description = "Pago parcial",
+            )
+        }
+        val expenses = listOf(bigExpense)
+        // Act
+        val result = service.calculateDebts(expenses, payments, simplify = true)
+        // Assert
+        assertTrue(result.isNotEmpty())
+        (2..6).forEach { i ->
+            assertEquals(50.0, result["User$i"]?.get("User1"))
+        }
+        (7..10).forEach { i ->
+            assertEquals(100.0, result["User$i"]?.get("User1"))
+        }
+    }
+
+    @Test
+    fun testCircularDebtResolution() {
+        // Arrange - Crear un escenario con deudas circulares
+        val expenses = listOf(
+            EventExpense(
+                id = "expense1",
+                title = "A paga por B",
+                amount = 100.0,
+                payers = mapOf("A" to 100.0),
+                debtors = mapOf("B" to 100.0),
+                splitMethod = SplitMethod.CUSTOM,
+                category = Category.GENERAL
+            ),
+            EventExpense(
+                id = "expense2",
+                title = "B paga por C",
+                amount = 80.0,
+                payers = mapOf("B" to 80.0),
+                debtors = mapOf("C" to 80.0),
+                splitMethod = SplitMethod.CUSTOM,
+                category = Category.GENERAL
+            ),
+            EventExpense(
+                id = "expense3",
+                title = "C paga por A",
+                amount = 60.0,
+                payers = mapOf("C" to 60.0),
+                debtors = mapOf("A" to 60.0),
+                splitMethod = SplitMethod.CUSTOM,
+                category = Category.GENERAL
+            )
+        )
+        // Act
+        val result = service.calculateDebts(expenses, emptyList(), simplify = true)
+        // Assert
+        assertTrue(result.isNotEmpty())
+        val totalDebtors = result.keys.size
+        assertTrue(totalDebtors <= 2)
+    }
+
+    @Test
+    fun testMixedCurrencyScenario() {
+        // Arrange - Simular diferentes tipos de gastos con diferentes cantidades
+        val expenses = listOf(
+            EventExpense(
+                id = "coffee",
+                title = "Café",
+                amount = 15.50,
+                payers = mapOf("Alice" to 15.50),
+                debtors = mapOf("Alice" to 7.75, "Bob" to 7.75),
+                splitMethod = SplitMethod.EQUALLY,
+                category = Category.FOOD
+            ),
+            EventExpense(
+                id = "lunch",
+                title = "Almuerzo",
+                amount = 45.80,
+                payers = mapOf("Bob" to 45.80),
+                debtors = mapOf("Alice" to 22.90, "Bob" to 22.90),
+                splitMethod = SplitMethod.EQUALLY,
+                category = Category.FOOD
+            ),
+            EventExpense(
+                id = "taxi",
+                title = "Taxi",
+                amount = 23.33,
+                payers = mapOf("Alice" to 23.33),
+                debtors = mapOf("Alice" to 11.67, "Bob" to 11.66),
+                splitMethod = SplitMethod.CUSTOM,
+                category = Category.TRANSPORT
+            )
+        )
+        // Act
+        val result = service.calculateDebts(expenses, emptyList(), simplify = true)
+        // Assert
+        assertTrue(result.isNotEmpty())
+        result.forEach { (_, creditors) ->
+            creditors.forEach { (_, amount) ->
+                assertEquals(amount, kotlin.math.round(amount * 100) / 100)
+            }
+        }
+    }
+// --- FIN DE TESTS FUSIONADOS DE GroupExpenseServiceIntegrationTest.kt ---
 } 

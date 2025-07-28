@@ -9,6 +9,8 @@ import com.ragl.divide.data.models.EventPayment
 import com.ragl.divide.data.models.UserInfo
 import com.ragl.divide.domain.stateHolders.UserStateHolder
 import com.ragl.divide.domain.usecases.eventPayment.DeleteEventPaymentUseCase
+import com.ragl.divide.presentation.utils.Strings
+import com.ragl.divide.presentation.utils.logMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -16,7 +18,8 @@ import kotlinx.coroutines.launch
 
 class EventPaymentViewModel(
     private val deleteEventPaymentUseCase: DeleteEventPaymentUseCase,
-    private val userStateHolder: UserStateHolder
+    private val userStateHolder: UserStateHolder,
+    private val strings: Strings
 ) : ScreenModel {
     
     private val _payment = MutableStateFlow(EventPayment())
@@ -53,7 +56,8 @@ class EventPaymentViewModel(
                     onSuccess()
                 }
                 is DeleteEventPaymentUseCase.Result.Error -> {
-                    onError(result.message)
+                    logMessage("DeleteEventPaymentUseCase", result.exception.message ?: result.exception.stackTraceToString())
+                    onError(strings.getUnknownError())
                 }
             }
         }

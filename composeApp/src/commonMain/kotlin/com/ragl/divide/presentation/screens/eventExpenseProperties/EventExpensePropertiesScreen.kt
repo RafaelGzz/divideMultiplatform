@@ -28,8 +28,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
@@ -923,7 +923,6 @@ class EventExpensePropertiesScreen(
                 }
             }
             item {
-
                 AnimatedVisibility(
                     vm.amount.toDoubleOrNull() != null,
                     enter = fadeIn(),
@@ -937,7 +936,7 @@ class EventExpensePropertiesScreen(
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
                         AnimatedVisibility(
-                            visible = !methodDropdownExpanded
+                            visible = !methodDropdownExpanded,
                         ) {
                             CollapsedDropdownCard(
                                 itemContent = {
@@ -1238,7 +1237,7 @@ class EventExpensePropertiesScreen(
             navigationIcon = {
                 IconButton(onClick = onBackClick) {
                     Icon(
-                        if (currentStep != null && currentStep > 0) Icons.Filled.ArrowBack else Icons.Filled.Close,
+                        if (currentStep != null && currentStep > 0) Icons.AutoMirrored.Filled.ArrowBack else Icons.Filled.Close,
                         contentDescription = stringResource(Res.string.back),
                         tint = MaterialTheme.colorScheme.primary
                     )

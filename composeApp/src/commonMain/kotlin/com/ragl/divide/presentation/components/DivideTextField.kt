@@ -181,8 +181,6 @@ fun DivideTextField(
                     )
                 }
             }
-        } else {
-            Spacer(modifier = Modifier.padding(top = 4.dp))
         }
     }
 }
