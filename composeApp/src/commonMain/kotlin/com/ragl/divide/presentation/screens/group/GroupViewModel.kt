@@ -11,6 +11,8 @@ import com.ragl.divide.data.models.UserInfo
 import com.ragl.divide.domain.services.AppStateService
 import com.ragl.divide.domain.stateHolders.UserStateHolder
 import com.ragl.divide.domain.usecases.group.RefreshGroupUseCase
+import com.ragl.divide.presentation.utils.Strings
+import com.ragl.divide.presentation.utils.logMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,7 +22,8 @@ import kotlinx.coroutines.launch
 class GroupViewModel(
     private val refreshGroupUseCase: RefreshGroupUseCase,
     private val userStateHolder: UserStateHolder,
-    private val appStateService: AppStateService
+    private val appStateService: AppStateService,
+    private val strings: Strings
 ) : ScreenModel {
 
     private val _group = MutableStateFlow(Group())
@@ -60,7 +63,8 @@ class GroupViewModel(
                 }
 
                 is RefreshGroupUseCase.Result.Error -> {
-                    appStateService.handleError(result.message)
+                    logMessage("GetGroupUseCase", result.exception.message ?: result.exception.stackTraceToString())
+                    appStateService.handleError(strings.getUnknownError())
                 }
             }
             _isRefreshing.value = false

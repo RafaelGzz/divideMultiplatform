@@ -94,10 +94,11 @@ class EventExpenseScreen(
             topBar = {
                 CenterAlignedTopAppBar(
                     title = { Text(text = groupExpenseState.title) },
-                    colors = TopAppBarDefaults.largeTopAppBarColors(
-                        scrolledContainerColor = Color.Transparent,
+                    colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
+                        scrolledContainerColor = Color.Transparent,
                         navigationIconContentColor = MaterialTheme.colorScheme.primary,
+                        titleContentColor = Color.Unspecified,
                         actionIconContentColor = MaterialTheme.colorScheme.primary
                     ),
                     navigationIcon = {

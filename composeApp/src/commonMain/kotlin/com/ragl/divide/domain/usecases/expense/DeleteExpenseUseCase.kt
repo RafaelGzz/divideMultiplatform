@@ -1,12 +1,11 @@
 package com.ragl.divide.domain.usecases.expense
 
 import com.ragl.divide.domain.repositories.UserRepository
-import com.ragl.divide.domain.services.ScheduleNotificationService
 import com.ragl.divide.domain.stateHolders.UserStateHolder
+
 class DeleteExpenseUseCase(
     private val userRepository: UserRepository,
-    private val userStateHolder: UserStateHolder,
-    private val scheduleNotificationService: ScheduleNotificationService,
+    private val userStateHolder: UserStateHolder
 ) {
     sealed class Result {
         object Success : Result()
@@ -17,7 +16,6 @@ class DeleteExpenseUseCase(
         return try {
             userRepository.deleteExpense(expenseId)
             userStateHolder.removeExpense(expenseId)
-            scheduleNotificationService.cancelNotification(expenseId.takeLast(5).toInt())
             Result.Success
         } catch (e: Exception) {
             Result.Error(e)

@@ -8,6 +8,8 @@ import com.ragl.divide.data.models.EventExpense
 import com.ragl.divide.data.models.UserInfo
 import com.ragl.divide.domain.stateHolders.UserStateHolder
 import com.ragl.divide.domain.usecases.eventExpense.DeleteEventExpenseUseCase
+import com.ragl.divide.presentation.utils.Strings
+import com.ragl.divide.presentation.utils.logMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -15,7 +17,8 @@ import kotlinx.coroutines.launch
 
 class EventExpenseViewModel(
     private val deleteEventExpenseUseCase: DeleteEventExpenseUseCase,
-    private val userStateHolder: UserStateHolder
+    private val userStateHolder: UserStateHolder,
+    private val strings: Strings,
 ) : ScreenModel {
     private val _eventExpense = MutableStateFlow(EventExpense())
     val groupExpense = _eventExpense.asStateFlow()
@@ -61,7 +64,8 @@ class EventExpenseViewModel(
                     onSuccess()
                 }
                 is DeleteEventExpenseUseCase.Result.Error -> {
-                    onError(result.message)
+                    logMessage("DeleteEventExpenseUseCase", result.exception.message ?: result.exception.stackTraceToString())
+                    onError(strings.getUnknownError())
                 }
             }
         }

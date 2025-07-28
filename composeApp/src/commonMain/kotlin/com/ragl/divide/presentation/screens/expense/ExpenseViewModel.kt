@@ -4,6 +4,7 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.data.models.Payment
+import com.ragl.divide.domain.services.ScheduleNotificationService
 import com.ragl.divide.domain.stateHolders.UserStateHolder
 import com.ragl.divide.domain.usecases.expense.DeleteExpenseUseCase
 import com.ragl.divide.domain.usecases.payment.DeleteExpensePaymentUseCase
@@ -21,6 +22,7 @@ class ExpenseViewModel(
     private val deleteExpenseUseCase: DeleteExpenseUseCase,
     private val deleteExpensePaymentUseCase: DeleteExpensePaymentUseCase,
     private val saveExpensePaymentUseCase: SaveExpensePaymentUseCase,
+    private val scheduleNotificationService: ScheduleNotificationService,
     private val userStateHolder: UserStateHolder,
     private val strings: Strings
 ) : ScreenModel {
@@ -37,6 +39,7 @@ class ExpenseViewModel(
         screenModelScope.launch {
             when (val result = deleteExpenseUseCase(_expense.value.id)) {
                 is DeleteExpenseUseCase.Result.Success -> {
+                    scheduleNotificationService.cancelNotification(_expense.value.id.takeLast(5).toInt())
                     onSuccess()
                 }
                 is DeleteExpenseUseCase.Result.Error -> {
@@ -62,7 +65,7 @@ class ExpenseViewModel(
                 )
             }
             when (val deleteResult =
-                deleteExpensePaymentUseCase(paymentId, amount, _expense.value)) {
+                deleteExpensePaymentUseCase(_expense.value)) {
                 is DeleteExpensePaymentUseCase.Result.Success -> {
                     onSuccess()
                 }
@@ -102,6 +105,7 @@ class ExpenseViewModel(
 
                 is SaveExpensePaymentUseCase.Result.Paid -> {
                     onSuccess()
+                    scheduleNotificationService.cancelNotification(_expense.value.id.takeLast(5).toInt())
                     onPaidExpense()
                 }
 

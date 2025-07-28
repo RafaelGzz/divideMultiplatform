@@ -201,6 +201,19 @@ class ExpensePropertiesViewModel(
 
                 when(val result = saveExpenseUseCase(expense)){
                     is SaveExpenseUseCase.Result.Success -> {
+                        scheduleNotificationService.cancelNotification(
+                            result.expense.id.takeLast(5).toInt()
+                        )
+                        if (result.expense.reminders) {
+                            scheduleNotificationService.scheduleNotification(
+                                id = result.expense.id.takeLast(5).toInt(),
+                                title = strings.getAppName(),
+                                message = strings.getNotificationBodyString(result.expense.title),
+                                startingDateMillis = result.expense.startingDate,
+                                frequency = result.expense.frequency,
+                                true
+                            )
+                        }
                         onSuccess()
                     }
                     is SaveExpenseUseCase.Result.Error -> {

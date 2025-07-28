@@ -84,10 +84,11 @@ class EventPaymentScreen(
                     title = {
                         Text(stringResource(if (payment.isLoan) Res.string.loan else Res.string.payment))
                     },
-                    colors = TopAppBarDefaults.largeTopAppBarColors(
-                        scrolledContainerColor = Color.Transparent,
+                    colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
+                        scrolledContainerColor = Color.Transparent,
                         navigationIconContentColor = MaterialTheme.colorScheme.primary,
+                        titleContentColor = Color.Unspecified,
                         actionIconContentColor = MaterialTheme.colorScheme.primary
                     ),
                     navigationIcon = {

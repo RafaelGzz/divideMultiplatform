@@ -206,8 +206,11 @@ class ExpenseScreen(private val expenseId: String) : Screen {
                                     style = MaterialTheme.typography.titleLarge,
                                 )
                             },
-                            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                            colors = TopAppBarDefaults.topAppBarColors(
+                                Color.Unspecified,
+                                Color.Unspecified,
                                 navigationIconContentColor = MaterialTheme.colorScheme.primary,
+                                titleContentColor = Color.Unspecified,
                                 actionIconContentColor = MaterialTheme.colorScheme.primary
                             ),
                             navigationIcon = {

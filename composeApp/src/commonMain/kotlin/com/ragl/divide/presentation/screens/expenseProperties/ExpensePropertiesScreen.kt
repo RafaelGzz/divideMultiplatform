@@ -24,8 +24,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
@@ -554,7 +554,7 @@ class ExpensePropertiesScreen(
             navigationIcon = {
                 IconButton(onClick = onBackClick) {
                     Icon(
-                        if (currentStep != null && currentStep > 0) Icons.Filled.ArrowBack else Icons.Filled.Close,
+                        if (currentStep != null && currentStep > 0) Icons.AutoMirrored.Filled.ArrowBack else Icons.Filled.Close,
                         contentDescription = stringResource(Res.string.back),
                         tint = MaterialTheme.colorScheme.primary
                     )

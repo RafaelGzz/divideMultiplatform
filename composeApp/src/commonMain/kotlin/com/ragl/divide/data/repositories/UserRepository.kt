@@ -59,14 +59,16 @@ class UserRepositoryImpl(
         val user = getFirebaseUser() ?: throw Exception("User not signed in")
         val userRef = database.reference("users/${user.uid}")
 
-        // Get the first provider data (assuming there is only one)
-        val providerData = user.providerData[1]
+        user.providerData.forEach {
+            logMessage("UserRepository", "provider: ${it.providerId}")
+        }
+        val googleProvider = user.providerData.find { it.providerId == "google.com" }
 
         val userData = User(
             user.uid,
-            user.email ?: providerData.email.orEmpty(),
-            user.displayName ?: providerData.email?.split("@")?.get(0).orEmpty(),
-            (providerData.photoURL ?: "").toString()
+            googleProvider?.email ?: user.email ?: "",
+            googleProvider?.email?.split("@")?.firstOrNull() ?: user.displayName ?: "Usuario",
+            googleProvider?.photoURL ?: ""
         )
         userRef.setValue(userData)
         val executionTime = Clock.System.now().toEpochMilliseconds() - startTime

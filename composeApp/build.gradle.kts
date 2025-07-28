@@ -31,6 +31,14 @@ kotlin {
             jvmTarget.set(JvmTarget.JVM_17)
         }
     }
+
+    targets.configureEach {
+        compilations.configureEach {
+            compileTaskProvider.get().compilerOptions{
+                freeCompilerArgs.add("-Xexpect-actual-classes")
+            }
+        }
+    }
     
     listOf(
         iosX64(),
