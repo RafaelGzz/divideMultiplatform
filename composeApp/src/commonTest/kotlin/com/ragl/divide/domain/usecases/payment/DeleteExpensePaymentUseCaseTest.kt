@@ -64,7 +64,7 @@ class DeleteExpensePaymentUseCaseTest {
 
     private class MockUserRepository : UserRepository {
         override suspend fun deleteExpensePayment(paymentId: String, amount: Double, expenseId: String) {}
-        override fun getFirebaseUser(): FirebaseUser? = null
+        override fun getCurrentUser(): FirebaseUser? = null
         override suspend fun createUserInDatabase(): User = User()
         override suspend fun getUser(id: String): User = User()
         override suspend fun signInWithEmailAndPassword(email: String, password: String): User? = null

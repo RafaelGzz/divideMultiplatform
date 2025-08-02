@@ -27,7 +27,7 @@ class UserRepositoryImpl(
         database.reference("users")
     }
 
-    override fun getFirebaseUser(): FirebaseUser? = auth.currentUser
+    override fun getCurrentUser(): FirebaseUser? = auth.currentUser
 
     override suspend fun signUpWithEmailAndPassword(
         email: String,
@@ -56,12 +56,7 @@ class UserRepositoryImpl(
 
     override suspend fun createUserInDatabase(): User {
         val startTime = Clock.System.now().toEpochMilliseconds()
-        val user = getFirebaseUser() ?: throw Exception("User not signed in")
-        val userRef = database.reference("users/${user.uid}")
-
-        user.providerData.forEach {
-            logMessage("UserRepository", "provider: ${it.providerId}")
-        }
+        val user = getCurrentUser() ?: throw Exception("User not signed in")
         val googleProvider = user.providerData.find { it.providerId == "google.com" }
 
         val userData = User(
@@ -70,7 +65,7 @@ class UserRepositoryImpl(
             googleProvider?.email?.split("@")?.firstOrNull() ?: user.displayName ?: "Usuario",
             googleProvider?.photoURL ?: ""
         )
-        userRef.setValue(userData)
+        database.reference("users/${user.uid}").setValue(userData)
         val executionTime = Clock.System.now().toEpochMilliseconds() - startTime
         logMessage("UserRepository", "createUserInDatabase executed in ${executionTime}ms")
         return userData
@@ -106,7 +101,7 @@ class UserRepositoryImpl(
 
     override suspend fun saveProfilePhoto(photo: File): String {
         val startTime = Clock.System.now().toEpochMilliseconds()
-        val userId = getFirebaseUser()?.uid ?: throw Exception("User not signed in")
+        val userId = getCurrentUser()?.uid ?: throw Exception("User not signed in")
 
         val photoRef = storage.reference("userPictures/$userId.jpg")
         photoRef.putFile(photo)
@@ -131,7 +126,7 @@ class UserRepositoryImpl(
 
     override suspend fun getExpense(id: String): Expense {
         val startTime = Clock.System.now().toEpochMilliseconds()
-        val user = getFirebaseUser() ?: return Expense()
+        val user = getCurrentUser() ?: return Expense()
         val expenseRef = database.reference("users/${user.uid}/expenses/${id}")
         val expense = expenseRef.valueEvents.firstOrNull()?.value<Expense>() ?: Expense()
         val executionTime = Clock.System.now().toEpochMilliseconds() - startTime
@@ -142,7 +137,7 @@ class UserRepositoryImpl(
     override suspend fun getExpenses(): Map<String, Expense> = coroutineScope {
         val startTime = Clock.System.now().toEpochMilliseconds()
         val expenses = mutableMapOf<String, Expense>()
-        val user = getFirebaseUser() ?: return@coroutineScope expenses
+        val user = getCurrentUser() ?: return@coroutineScope expenses
         val userRef = database.reference("users/${user.uid}/expenses")
         val snapshot = userRef.valueEvents.firstOrNull()
 
@@ -166,7 +161,7 @@ class UserRepositoryImpl(
 
     override suspend fun saveExpense(expense: Expense): Expense {
         val startTime = Clock.System.now().toEpochMilliseconds()
-        val user = getFirebaseUser() ?: throw Exception("User not signed in")
+        val user = getCurrentUser() ?: throw Exception("User not signed in")
         val id = expense.id.ifEmpty { "id${Clock.System.now().toEpochMilliseconds()}" }
         val savedExpense = expense.copy(id = id)
         database.reference("users/${user.uid}/expenses").child(id).setValue(savedExpense)
@@ -178,7 +173,7 @@ class UserRepositoryImpl(
     override suspend fun getExpensePayments(expenseId: String): Map<String, Payment> = coroutineScope {
             val startTime = Clock.System.now().toEpochMilliseconds()
             val payments = mutableMapOf<String, Payment>()
-            val user = getFirebaseUser() ?: return@coroutineScope payments
+            val user = getCurrentUser() ?: return@coroutineScope payments
             val userRef = database.reference("users/${user.uid}/expenses/$expenseId/payments")
             val snapshot = userRef.valueEvents.firstOrNull()
 
@@ -202,7 +197,7 @@ class UserRepositoryImpl(
 
     override suspend fun saveExpensePayment(payment: Payment, expenseId: String, expensePaid: Boolean): Payment = coroutineScope {
         val startTime = Clock.System.now().toEpochMilliseconds()
-        val user = getFirebaseUser() ?: throw Exception("User not signed in")
+        val user = getCurrentUser() ?: throw Exception("User not signed in")
         val id = "id${Clock.System.now().toEpochMilliseconds()}"
 
         // Paralelizar las operaciones de lectura y escritura
@@ -241,7 +236,7 @@ class UserRepositoryImpl(
 
     override suspend fun deleteExpensePayment(paymentId: String, amount: Double, expenseId: String) = coroutineScope {
         val startTime = Clock.System.now().toEpochMilliseconds()
-        val user = getFirebaseUser() ?: return@coroutineScope
+        val user = getCurrentUser() ?: return@coroutineScope
 
         val amountPaidRef = database.reference("users/${user.uid}/expenses/$expenseId/amountPaid")
         val paidRef = database.reference("users/${user.uid}/expenses/$expenseId/paid")
@@ -283,7 +278,7 @@ class UserRepositoryImpl(
 
     override suspend fun deleteExpense(id: String) {
         val startTime = Clock.System.now().toEpochMilliseconds()
-        val user = getFirebaseUser() ?: return
+        val user = getCurrentUser() ?: return
         val expensesRef = database.reference("users/${user.uid}/expenses")
         expensesRef.child(id).removeValue()
         val executionTime = Clock.System.now().toEpochMilliseconds() - startTime
@@ -309,10 +304,10 @@ class UserRepositoryImpl(
     override suspend fun updateUserName(newName: String): Boolean {
         val startTime = Clock.System.now().toEpochMilliseconds()
         return try {
-            val userId = getFirebaseUser()?.uid ?: throw Exception("User not signed in")
+            val userId = getCurrentUser()?.uid ?: throw Exception("User not signed in")
 
             // Actualizar en Firebase Auth
-            getFirebaseUser()?.updateProfile(displayName = newName)
+            getCurrentUser()?.updateProfile(displayName = newName)
 
             // Actualizar en Firebase Database
             val userRef = database.reference("users/$userId")

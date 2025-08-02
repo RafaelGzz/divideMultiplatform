@@ -78,6 +78,7 @@ class EventViewModel(
                     appStateService.handleError(strings.getUnknownError())
                 }
             }
+            _isRefreshing.value = false
         }
     }
 

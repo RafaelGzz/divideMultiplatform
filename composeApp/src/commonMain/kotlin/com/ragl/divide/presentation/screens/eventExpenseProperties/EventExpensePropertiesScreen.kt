@@ -238,14 +238,13 @@ class EventExpensePropertiesScreen(
                             text = if (expenseId == null) stringResource(Res.string.add) else stringResource(
                                 Res.string.update
                             ),
-                            modifier = Modifier.imePadding()
                         )
                     }
-                }
+                },
+                modifier = Modifier.imePadding()
             ) { paddingValues ->
                 Column(
                     Modifier
-                        .imePadding()
                         .padding(paddingValues)
                         .padding(horizontal = 16.dp),
                 ) {
@@ -849,7 +848,6 @@ class EventExpensePropertiesScreen(
     ) {
         LazyColumn {
             item {
-
                 DivideTextField(
                     label = stringResource(Res.string.title),
                     value = vm.title,
@@ -883,7 +881,6 @@ class EventExpensePropertiesScreen(
                 )
             }
             item {
-
                 Text(
                     text = stringResource(Res.string.paid_by),
                     style = MaterialTheme.typography.labelMedium,

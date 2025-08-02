@@ -239,7 +239,7 @@ class GroupScreen(
                                     style = MaterialTheme.typography.titleMedium
                                 )
                             }
-                            if (activeEvents.isEmpty() && settledEvents.isEmpty()) {
+                            if (activeEvents.isEmpty()) {
                                 item(span = StaggeredGridItemSpan.FullLine) {
                                     Box(
                                         modifier = Modifier
@@ -249,7 +249,7 @@ class GroupScreen(
                                     ) {
                                         Text(
                                             text = stringResource(Res.string.no_events),
-                                            style = MaterialTheme.typography.bodyMedium,
+                                            style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
@@ -276,81 +276,80 @@ class GroupScreen(
                                         modifier = Modifier.fillMaxSize()
                                     )
                                 }
-                                if (settledEvents.isNotEmpty()) {
-                                    item(span = StaggeredGridItemSpan.FullLine) {
-                                        Row(
-                                            horizontalArrangement = Arrangement.Center,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
+                            }
+                            if (settledEvents.isNotEmpty()) {
+                                item(span = StaggeredGridItemSpan.FullLine) {
+                                    Row(
+                                        horizontalArrangement = Arrangement.Center,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                    ) {
+                                        TextButton(
+                                            onClick = {
+                                                showSettledEvents = !showSettledEvents
+                                            },
+                                            colors = ButtonDefaults.textButtonColors(
+                                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                            ),
+                                            modifier = Modifier.wrapContentWidth()
                                         ) {
-                                            TextButton(
-                                                onClick = {
-                                                    showSettledEvents = !showSettledEvents
-                                                },
-                                                colors = ButtonDefaults.textButtonColors(
-                                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                                ),
-                                                modifier = Modifier.wrapContentWidth()
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.Center,
                                             ) {
-                                                Row(
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.Center,
-                                                ) {
-                                                    Icon(
-                                                        imageVector = if (showSettledEvents) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                                        contentDescription = null,
-                                                        modifier = Modifier.size(20.dp)
-                                                    )
-                                                    Spacer(modifier = Modifier.width(8.dp))
-                                                    Text(
-                                                        text = stringResource(
-                                                            Res.string.settled_events,
-                                                            settledEvents.size
-                                                        ),
-                                                        style = MaterialTheme.typography.labelSmall
-                                                    )
-                                                }
+                                                Icon(
+                                                    imageVector = if (showSettledEvents) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    text = stringResource(
+                                                        Res.string.settled_events,
+                                                        settledEvents.size
+                                                    ),
+                                                    style = MaterialTheme.typography.labelSmall
+                                                )
                                             }
                                         }
                                     }
                                 }
-
-                                items(settledEvents) { event ->
-                                    val debt = event.currentDebts[uuid]?.values?.sum() ?: 0.0
-                                    val credit = event.currentDebts.values.sumOf { userDebts ->
-                                        userDebts[uuid] ?: 0.0
-                                    }
-                                    AnimatedVisibility(
-                                        visible = showSettledEvents,
-                                        enter = slideInVertically(
-                                            animationSpec = tween(350),
-                                            initialOffsetY = { -it + (it / 8) * 5 }
-                                        ) + fadeIn(tween(350)),
-                                        exit = slideOutVertically(
-                                            animationSpec = tween(250),
-                                            targetOffsetY = { -it - (it / 8) }
-                                        ) + fadeOut(tween(100))
-                                    ) {
-                                        EventItem(
-                                            event = event,
-                                            debt = debt,
-                                            credit = credit,
-                                            settled = event.settled,
-                                            onClick = {
-                                                navigator.push(
-                                                    EventScreen(
-                                                        groupId,
-                                                        event.id
-                                                    )
+                            }
+                            items(settledEvents) { event ->
+                                val debt = event.currentDebts[uuid]?.values?.sum() ?: 0.0
+                                val credit = event.currentDebts.values.sumOf { userDebts ->
+                                    userDebts[uuid] ?: 0.0
+                                }
+                                AnimatedVisibility(
+                                    visible = showSettledEvents,
+                                    enter = slideInVertically(
+                                        animationSpec = tween(350),
+                                        initialOffsetY = { -it + (it / 8) * 5 }
+                                    ) + fadeIn(tween(350)),
+                                    exit = slideOutVertically(
+                                        animationSpec = tween(250),
+                                        targetOffsetY = { -it - (it / 8) }
+                                    ) + fadeOut(tween(100))
+                                ) {
+                                    EventItem(
+                                        event = event,
+                                        debt = debt,
+                                        credit = credit,
+                                        settled = event.settled,
+                                        onClick = {
+                                            navigator.push(
+                                                EventScreen(
+                                                    groupId,
+                                                    event.id
                                                 )
-                                            },
-                                            modifier = Modifier.fillMaxSize()
-                                        )
-                                    }
+                                            )
+                                        },
+                                        modifier = Modifier.fillMaxSize()
+                                    )
                                 }
-                                item(span = StaggeredGridItemSpan.FullLine) {
-                                    Spacer(modifier = Modifier.height(80.dp))
-                                }
+                            }
+                            item(span = StaggeredGridItemSpan.FullLine) {
+                                Spacer(modifier = Modifier.height(80.dp))
                             }
                         }
                     }
@@ -421,7 +420,8 @@ private fun GroupDetailsAppBar(
             containerColor = Color.Transparent,
             scrolledContainerColor = Color.Transparent,
             navigationIconContentColor = MaterialTheme.colorScheme.primary,
-            titleContentColor = Color.Unspecified, actionIconContentColor = MaterialTheme.colorScheme.primary
+            titleContentColor = Color.Unspecified,
+            actionIconContentColor = MaterialTheme.colorScheme.primary
         ),
         title = {
             Row(

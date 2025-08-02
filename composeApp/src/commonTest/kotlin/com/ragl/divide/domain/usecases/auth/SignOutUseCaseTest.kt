@@ -73,7 +73,7 @@ class SignOutUseCaseTest {
             signOutCalled = true
         }
 
-        override fun getFirebaseUser(): FirebaseUser? {
+        override fun getCurrentUser(): FirebaseUser? {
             return shouldReturnFirebaseUser
         }
 
