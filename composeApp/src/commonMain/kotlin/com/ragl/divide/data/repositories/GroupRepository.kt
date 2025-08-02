@@ -72,7 +72,7 @@ class GroupRepositoryImpl(
     override suspend fun saveGroup(group: Group, photo: File?): Group {
         val startTime = Clock.System.now().toEpochMilliseconds()
         val id = group.id.ifEmpty { "id${Clock.System.now().toEpochMilliseconds()}" }
-        val uid = userRepository.getFirebaseUser()!!.uid
+        val uid = userRepository.getCurrentUser()!!.uid
         val savedGroup = group.copy(
             users = group.users + (uid to uid),
             image = if (photo != null) uploadPhoto(photo, id) else group.image,
@@ -142,7 +142,7 @@ class GroupRepositoryImpl(
 
     override suspend fun leaveGroup(groupId: String) {
         val startTime = Clock.System.now().toEpochMilliseconds()
-        val user = userRepository.getFirebaseUser() ?: return
+        val user = userRepository.getCurrentUser() ?: return
         val groupRef = database.reference("groups/$groupId/users")
         groupRef.child(user.uid).removeValue()
         val userRef = database.reference("users/${user.uid}/groups")

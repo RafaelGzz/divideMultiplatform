@@ -33,7 +33,7 @@ class AppInitializationServiceImpl(
             )
         )
         try {
-            if (userRepository.getFirebaseUser() != null) {
+            if (userRepository.getCurrentUser() != null) {
                 if (userRepository.isEmailVerified()) {
                     _startAtLogin.value = false
                     logMessage("AppInitializationService", "User is verified, getting data")

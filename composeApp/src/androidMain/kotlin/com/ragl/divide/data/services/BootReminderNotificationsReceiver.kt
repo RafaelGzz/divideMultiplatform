@@ -30,7 +30,7 @@ class BootReminderNotificationsReceiver : BroadcastReceiver(), KoinComponent {
             val scheduleNotificationService by inject<ScheduleNotificationService>()
 
             logMessage(logTag, "Dispositivo reiniciado, reprogramando notificaciones")
-            val currentUser = userRepository.getFirebaseUser()
+            val currentUser = userRepository.getCurrentUser()
             if (currentUser == null) return@goAsync
             val user = userRepository.getUser(currentUser.uid)
             val expenses = user.expenses

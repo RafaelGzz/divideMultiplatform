@@ -15,7 +15,7 @@ class SignOutUseCase(
         return try {
             scheduleNotificationService.cancelAllNotifications()
             userRepository.signOut()
-            if (userRepository.getFirebaseUser() == null) {
+            if (userRepository.getCurrentUser() == null) {
                 Result.Success
             } else {
                 Result.Error(Exception("Still logged in"))

@@ -122,35 +122,27 @@ class EventExpensePropertiesViewModel(
             payer = members.firstOrNull { it.uuid == expense.payers.keys.first() }!!
             splitMethod = expense.splitMethod
 
+            selectedMembers =
+                expense.debtors.keys.toList() + if (expense.payers.entries.first().value > 0.0) listOf(
+                    expense.payers.keys.first()
+                ) else listOf()
             when (expense.splitMethod) {
                 SplitMethod.EQUALLY -> {
-                    selectedMembers =
-                        expense.debtors.keys.toList() + if (expense.payers.entries.first().value > 0.0) listOf(
-                            expense.payers.keys.first()
-                        ) else listOf()
                     amountPerPerson = expense.debtors.values.first()
                     percentages = members.associate { it.uuid to 0 }
                     quantities = members.associate { it.uuid to 0.0 }
                 }
 
                 SplitMethod.PERCENTAGES -> {
-                    selectedMembers =
-                        expense.debtors.keys.toList() + if (expense.payers.entries.first().value > 0.0) listOf(
-                            expense.payers.keys.first()
-                        ) else listOf()
                     quantities = members.associate { it.uuid to 0.0 }
                     percentages =
-                        expense.debtors.mapValues { it.value.toInt() } + expense.payers.mapValues { it.value.toInt() }
+                        members.associate { it.uuid to 0 } + expense.debtors.mapValues { it.value.toInt() } + expense.payers.mapValues { it.value.toInt() }
                 }
 
                 SplitMethod.CUSTOM -> {
-                    selectedMembers =
-                        expense.debtors.keys.toList() + if (expense.payers.entries.first().value > 0.0) listOf(
-                            expense.payers.keys.first()
-                        ) else listOf()
                     percentages = members.associate { it.uuid to 0 }
                     quantities =
-                        expense.debtors + (payer.uuid to expense.payers[payer.uuid]!!)
+                        members.associate { it.uuid to 0.0 } + expense.debtors + (payer.uuid to expense.payers[payer.uuid]!!)
                 }
             }
         } else {

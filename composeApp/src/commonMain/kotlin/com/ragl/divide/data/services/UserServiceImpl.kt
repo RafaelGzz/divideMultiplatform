@@ -58,7 +58,7 @@ class UserServiceImpl(
                 appStateService.showLoading()
                 scheduleNotificationService.cancelAllNotifications()
                 userRepository.signOut()
-                if (userRepository.getFirebaseUser() == null) {
+                if (userRepository.getCurrentUser() == null) {
                     onSignOut()
                     userStateHolder.updateUserState(com.ragl.divide.domain.stateHolders.UserState())
                 }

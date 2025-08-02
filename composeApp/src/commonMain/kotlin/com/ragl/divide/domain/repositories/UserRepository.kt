@@ -7,7 +7,7 @@ import dev.gitlive.firebase.auth.FirebaseUser
 import dev.gitlive.firebase.storage.File
 
 interface UserRepository {
-    fun getFirebaseUser(): FirebaseUser?
+    fun getCurrentUser(): FirebaseUser?
     suspend fun createUserInDatabase(): User
     suspend fun getUser(id: String): User
     suspend fun signInWithEmailAndPassword(email: String, password: String): User?

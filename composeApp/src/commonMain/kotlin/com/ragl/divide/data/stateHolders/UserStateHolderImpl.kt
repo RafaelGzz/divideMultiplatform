@@ -476,7 +476,7 @@ class UserStateHolderImpl(
             appStateService.showLoading()
             val startTime = Clock.System.now().toEpochMilliseconds()
             try {
-                val user = userRepository.getUser(userRepository.getFirebaseUser()!!.uid)
+                val user = userRepository.getUser(userRepository.getCurrentUser()!!.uid)
                 analyticsService.setUserProperties(user.uuid, user.name)
                 val userInfo = UserInfo(user.uuid, user.name, user.photoUrl)
                 val friends = friendsRepository.getFriends(user.friends.keys.toList())

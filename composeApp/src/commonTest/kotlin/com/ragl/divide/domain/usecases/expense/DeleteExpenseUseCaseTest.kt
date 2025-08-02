@@ -62,7 +62,7 @@ class DeleteExpenseUseCaseTest {
         }
 
         // Implementaciones vacías para otros métodos no utilizados en el test
-        override fun getFirebaseUser(): FirebaseUser? = null
+        override fun getCurrentUser(): FirebaseUser? = null
         override suspend fun createUserInDatabase(): User = User()
         override suspend fun getUser(id: String): User = User()
         override suspend fun signInWithEmailAndPassword(email: String, password: String): User? = null
