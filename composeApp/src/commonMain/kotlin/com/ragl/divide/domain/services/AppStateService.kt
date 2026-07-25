@@ -1,7 +1,9 @@
 package com.ragl.divide.domain.services
 
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.StateFlow
 
+@Mockable
 interface AppStateService {
     val isLoading: StateFlow<Boolean>
     val errorState: StateFlow<String?>

@@ -5,7 +5,9 @@ import com.ragl.divide.data.models.Payment
 import com.ragl.divide.data.models.User
 import dev.gitlive.firebase.auth.FirebaseUser
 import dev.gitlive.firebase.storage.File
+import io.mockative.Mockable
 
+@Mockable
 interface UserRepository {
     fun getCurrentUser(): FirebaseUser?
     suspend fun createUserInDatabase(): User

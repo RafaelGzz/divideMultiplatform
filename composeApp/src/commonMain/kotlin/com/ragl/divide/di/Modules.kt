@@ -48,8 +48,6 @@ import com.ragl.divide.domain.usecases.group.LeaveGroupUseCase
 import com.ragl.divide.domain.usecases.group.SaveGroupUseCase
 import com.ragl.divide.domain.usecases.payment.DeleteExpensePaymentUseCase
 import com.ragl.divide.domain.usecases.payment.SaveExpensePaymentUseCase
-import com.ragl.divide.domain.usecases.user.SaveProfilePhotoUseCase
-import com.ragl.divide.domain.usecases.user.UpdateUserNameUseCase
 import com.ragl.divide.presentation.screens.addFriends.AddFriendsViewModel
 import com.ragl.divide.presentation.screens.event.EventViewModel
 import com.ragl.divide.presentation.screens.eventExpense.EventExpenseViewModel
@@ -154,10 +152,6 @@ val sharedModule = module {
     factoryOf(::SendFriendRequestUseCase)
     factoryOf(::AcceptFriendRequestUseCase)
     factoryOf(::RemoveFriendUseCase)
-
-    // USE CASES - USER
-    factoryOf(::UpdateUserNameUseCase)
-    factoryOf(::SaveProfilePhotoUseCase)
 
     // FIREBASE DEPENDENCIES
     single {

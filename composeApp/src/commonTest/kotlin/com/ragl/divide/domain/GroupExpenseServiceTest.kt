@@ -103,7 +103,7 @@ class GroupExpenseServiceTest {
         val result = service.calculateDebts(expenses, payments, simplify = false)
 
         // Assert
-        // Sin simplificación: 
+        // Sin simplificación:
         // - Del gasto: user2 debe 50 a user1, user3 debe 50 a user1
         // - Del pago: user1 debe 25 a user2 (porque user2 pagó a user1)
         assertEquals(3, result.size)
@@ -154,8 +154,8 @@ class GroupExpenseServiceTest {
 
         // Act
         val result = service.calculateDebts(
-            expenses, 
-            payments, 
+            expenses,
+            payments,
             simplify = true,
         )
 
@@ -180,14 +180,14 @@ class GroupExpenseServiceTest {
 
         // Act - Sin simplificación: los pagos se agregan como deudas adicionales
         val resultNoSimplify = service.calculateDebts(expenses, payments, simplify = false)
-        
+
         // Act - Con simplificación: los pagos reducen deudas existentes
         val resultWithSimplify = service.calculateDebts(expenses, payments, simplify = true)
 
         // Assert - Sin simplificación: deuda original + pago (el "to" debe al "from")
         assertEquals(60.0, resultNoSimplify["user1"]?.get("user2")) // user1 debe a user2: 60 (del pago)
         assertEquals(100.0, resultNoSimplify["user2"]?.get("user1")) // user2 debe a user1: 100 (del gasto)
-        
+
         // Assert - Con simplificación: deuda original - pago
         assertEquals(40.0, resultWithSimplify["user2"]?.get("user1"))
     }
@@ -542,7 +542,7 @@ class GroupExpenseServiceTest {
             debtors = mapOf("userB" to 40.0, "userC" to 40.0, "userD" to 40.0)
         )
         val expense2 = createTestExpense(
-            id = "expense2", 
+            id = "expense2",
             payers = mapOf("userB" to 80.0),
             debtors = mapOf("userA" to 20.0, "userC" to 30.0, "userD" to 30.0)
         )
@@ -579,8 +579,8 @@ class GroupExpenseServiceTest {
 
         // Act
         val result = service.calculateDebts(
-            expenses, 
-            payments, 
+            expenses,
+            payments,
             simplify = true,
         )
 
@@ -594,7 +594,7 @@ class GroupExpenseServiceTest {
     fun testRealWorldScenario_WeekendTrip() {
         // Arrange - Simulando un viaje de fin de semana con 4 amigos
         val users = listOf("Alice", "Bob", "Charlie", "Diana")
-        
+
         // Gastos del viaje
         val hotelExpense = EventExpense(
             id = "hotel",
@@ -605,7 +605,7 @@ class GroupExpenseServiceTest {
             splitMethod = SplitMethod.EQUALLY,
             category = Category.TRAVEL
         )
-        
+
         val dinnerExpense = EventExpense(
             id = "dinner",
             title = "Cena grupal",
@@ -615,7 +615,7 @@ class GroupExpenseServiceTest {
             splitMethod = SplitMethod.EQUALLY,
             category = Category.FOOD
         )
-        
+
         val gasExpense = EventExpense(
             id = "gas",
             title = "Gasolina",
@@ -625,7 +625,7 @@ class GroupExpenseServiceTest {
             splitMethod = SplitMethod.EQUALLY,
             category = Category.TRANSPORT
         )
-        
+
         // Algunos pagos parciales
         val payment1 = EventPayment(
             id = "payment1",
@@ -634,7 +634,7 @@ class GroupExpenseServiceTest {
             amount = 50.0,
             description = "Parte del hotel",
         )
-        
+
         val payment2 = EventPayment(
             id = "payment2",
             from = "Diana",
@@ -642,7 +642,7 @@ class GroupExpenseServiceTest {
             amount = 20.0,
             description = "Gasolina",
         )
-        
+
         val expenses = listOf(hotelExpense, dinnerExpense, gasExpense)
         val payments = listOf(payment1, payment2)
 
@@ -651,7 +651,7 @@ class GroupExpenseServiceTest {
 
         // Assert
         assertTrue(result.isNotEmpty())
-        
+
         // Verificar que las deudas estén balanceadas
         var totalDebts = 0.0
         result.forEach { (_, creditors) ->
@@ -885,4 +885,4 @@ class GroupExpenseServiceTest {
         }
     }
 // --- FIN DE TESTS FUSIONADOS DE GroupExpenseServiceIntegrationTest.kt ---
-} 
+}

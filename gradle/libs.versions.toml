@@ -1,20 +1,22 @@
 [versions]
-agp = "8.11.0"
+agp = "8.12.0"
 android-compileSdk = "35"
 android-minSdk = "24"
 android-targetSdk = "35"
 androidx-activityCompose = "1.10.1"
-compose-multiplatform = "1.9.0-alpha03"
+compose-multiplatform = "1.9.0-beta03"
 
-kotlin = "2.2.0"
+kotlin = "2.2.10"
 kotlinxSerializationJson = "1.9.0"
-kotlinxSerialization = "2.2.0"
+kotlinxSerialization = "2.2.10"
 
 koin = "4.1.0"
 koinComposeMultiplatform = "4.1.0"
 
+material3 = "1.9.0-alpha03"
 materialIconsCore = "1.7.3"
 
+mockative = "3.0.1"
 windowSizeClass = "1.8.2"
 composeIcons = "1.1.1"
 
@@ -36,6 +38,7 @@ core-splashscreen = "1.0.1"
 androidx-datastore = { module = "androidx.datastore:datastore", version.ref = "datastorePreferences" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }
+mockative = { module = "io.mockative:mockative", version.ref = "mockative" }
 
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 
@@ -44,6 +47,8 @@ koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose", versi
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
 koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koinComposeMultiplatform" }
 koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koinComposeMultiplatform" }
+koin-annotations = { module = "io.insert-koin:koin-annotations", version = "2.1.0" }
+koin-ksp-compiler = { module = "io.insert-koin:koin-ksp-compiler", version = "2.1.0" }
 
 material-icons-core = { module = "org.jetbrains.compose.material:material-icons-core", version.ref = "materialIconsCore" }
 composeIcons-fontAwesome = { module = "br.com.devsrsouza.compose.icons:font-awesome", version.ref = "composeIcons" }
@@ -59,6 +64,7 @@ kmpauth-firebase = { module = "io.github.mirzemehdi:kmpauth-firebase", version.r
 kmpauth-google = { module = "io.github.mirzemehdi:kmpauth-google", version.ref = "kmpauthGoogle" }
 kmpauth-uihelper = { module = "io.github.mirzemehdi:kmpauth-uihelper", version.ref = "kmpauthGoogle" }
 
+material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
 material3-window-size = { module = "org.jetbrains.compose.material3:material3-window-size-class", version.ref = "windowSizeClass" }
 voyager-navigator = { module = "cafe.adriel.voyager:voyager-navigator", version.ref = "voyager" }
 voyager-screenModel = { module = "cafe.adriel.voyager:voyager-screenmodel", version.ref = "voyager" }

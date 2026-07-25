@@ -3,7 +3,9 @@ package com.ragl.divide.domain.services
 import com.ragl.divide.data.models.Event
 import com.ragl.divide.data.models.EventExpense
 import com.ragl.divide.data.models.EventPayment
+import io.mockative.Mockable
 
+@Mockable
 interface GroupExpenseService {
     /**
      * Calcula las deudas basadas en gastos y pagos

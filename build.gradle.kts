@@ -8,6 +8,9 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform) apply false
     alias(libs.plugins.kotlinSerialization) apply false
     alias(libs.plugins.googleServices)
-    id("com.google.firebase.crashlytics") version "3.0.4" apply false
-    id("com.google.firebase.firebase-perf") version "1.4.2" apply false
+    id("com.google.firebase.crashlytics") version "3.0.6" apply false
+    id("com.google.firebase.firebase-perf") version "2.0.1" apply false
+    id("org.jetbrains.kotlinx.kover") version "0.9.1" apply false
+    id("com.google.devtools.ksp") version "2.0.21-1.0.28"
+    id("io.github.frankois944.spmForKmp") version "0.11.3" apply false
 }

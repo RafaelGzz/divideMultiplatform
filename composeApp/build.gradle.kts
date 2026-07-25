@@ -1,5 +1,6 @@
 @file:OptIn(ExperimentalComposeLibrary::class)
 
+import io.github.frankois944.spmForKmp.definition.product.ProductName
 import org.jetbrains.compose.ExperimentalComposeLibrary
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -15,6 +16,10 @@ plugins {
     alias(libs.plugins.googleServices)
     id("com.google.firebase.crashlytics")
     id("com.google.firebase.firebase-perf")
+    id("org.jetbrains.kotlinx.kover")
+    id("io.mockative") version "3.0.1"
+    id("com.google.devtools.ksp")
+    id("io.github.frankois944.spmForKmp")
 }
 
 val keystoreProperties = Properties().apply {
@@ -23,6 +28,17 @@ val keystoreProperties = Properties().apply {
         load(FileInputStream(file))
     }
 }
+
+val firebaseDeps =
+    listOf(
+        ProductName("FirebaseCore"),
+        ProductName("FirebaseAnalytics"),
+        ProductName("FirebaseCrashlytics"),
+        ProductName("FirebaseAuth"),
+        ProductName("FirebaseDatabase"),
+        ProductName("FirebasePerformance"),
+        ProductName("FirebaseStorage"),
+    )
 
 kotlin {
     androidTarget {
@@ -50,6 +66,11 @@ kotlin {
             isStatic = true
             freeCompilerArgs += listOf("-Xbinary=bundleId=com.ragl.divide")
         }
+        iosTarget.compilations{
+            val main by getting {
+                cinterops.create("cinterop")
+            }
+        }
     }
     
     sourceSets {
@@ -62,20 +83,27 @@ kotlin {
             implementation(libs.koin.androidx.compose)
 
             implementation(libs.core.splashscreen)
+
+            implementation("org.javassist:javassist:3.29.2-GA")
+            implementation("org.objenesis:objenesis:3.3")
+            implementation("org.jetbrains.kotlin:kotlin-reflect:${kotlin.coreLibrariesVersion}")
         }
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material)
             implementation(compose.material3)
+            implementation(libs.material3)
             implementation(libs.material3.window.size)
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
             implementation(libs.material.icons.core)
-            api(libs.koin.core)
+
+            implementation(libs.koin.core)
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
+            api(libs.koin.annotations)
 
             implementation(libs.firebase.auth)
             implementation(libs.firebase.database)
@@ -100,6 +128,8 @@ kotlin {
             api(libs.androidx.datastore.preferences)
 
             implementation(libs.landscapist.coil3)
+
+            implementation(libs.mockative)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -164,4 +194,33 @@ dependencies {
     debugImplementation(compose.uiTooling)
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
+}
+
+swiftPackageConfig{
+    val localDeps = firebaseDeps
+    create("cinterop"){
+        dependency {
+            linkerOpts = listOf("-ObjC")
+            remotePackageVersion(
+                // Repository URL
+                url = uri("https://github.com/firebase/firebase-ios-sdk.git"),
+                // Libraries from the package
+                products = {
+                    // Export to Kotlin for use in shared Kotlin code and use it in your swift code
+                    // the export doesn't work when gitlive is implemented, my guess is a bug with cinterop
+                    // because gitlive already use cinterop
+                    localDeps.forEach { add(it, exportToKotlin = false) }
+                },
+                // Package version
+                version = "11.6.0",
+            )
+            remotePackageVersion(
+                url = uri("https://github.com/google/GoogleSignIn-iOS"),
+                products = {
+                    add("GoogleSignIn")
+                },
+                version = "9.0.0"
+            )
+        }
+    }
 }

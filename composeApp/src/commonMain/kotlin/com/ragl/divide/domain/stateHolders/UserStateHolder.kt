@@ -8,6 +8,7 @@ import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.Payment
 import com.ragl.divide.data.models.User
 import com.ragl.divide.data.models.UserInfo
+import io.mockative.Mockable
 import kotlinx.coroutines.flow.StateFlow
 
 data class UserState(
@@ -19,6 +20,7 @@ data class UserState(
     val friendRequestsSent: Map<String, UserInfo> = emptyMap()
 )
 
+@Mockable
 interface UserStateHolder {
     val userState: StateFlow<UserState>
     fun refreshUser()
