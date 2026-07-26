@@ -41,10 +41,10 @@ jobs:
     - name: 📱 Create google-services.json
       run: |
         if [ -n "${{ secrets.GOOGLE_SERVICES_JSON }}" ]; then
-          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > composeApp/google-services.json
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > androidApp/google-services.json
         else
           # Crear archivo dummy para tests
-          cat > composeApp/google-services.json << 'EOF'
+          cat > androidApp/google-services.json << 'EOF'
         {
           "project_info": {
             "project_number": "123456789",
