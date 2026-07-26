@@ -12,7 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 
-class NotificationPermissionActivity : ComponentActivity() {
+class NotificationPermissionActivity : androidx.activity.ComponentActivity() {
     
     companion object {
         private const val PREFS_NAME = "notification_permissions"
@@ -29,24 +29,28 @@ class NotificationPermissionActivity : ComponentActivity() {
         }
     }
     
-    private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        if (!isGranted) {
-            // Si el permiso fue rechazado, verificar si fue rechazado permanentemente
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                if (!shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
-                    // El usuario marcó "No volver a preguntar" o rechazó permanentemente
-                    // Guardar flag para que el ViewModel pueda mostrar el diálogo apropiado
-                    savePermissionRejectedFlag()
+    private val requestPermissionLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted: Boolean ->
+            if (!isGranted) {
+                // Si el permiso fue rechazado, verificar si fue rechazado permanentemente
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    if (!shouldShowRequestPermissionRationale(
+                            Manifest.permission.POST_NOTIFICATIONS
+                        )
+                    ) {
+                        // El usuario marcó "No volver a preguntar" o rechazó permanentemente
+                        // Guardar flag para que el ViewModel pueda mostrar el diálogo apropiado
+                        savePermissionRejectedFlag()
+                    }
                 }
+            } else {
+                // Si el permiso fue concedido, limpiar cualquier flag anterior
+                clearPermissionRejectedFlag(this)
             }
-        } else {
-            // Si el permiso fue concedido, limpiar cualquier flag anterior
-            clearPermissionRejectedFlag(this)
+            finish()
         }
-        finish()
-    }
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

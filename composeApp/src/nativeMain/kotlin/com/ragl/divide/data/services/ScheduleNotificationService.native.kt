@@ -23,7 +23,7 @@ import platform.UserNotifications.UNNotificationTrigger
 import platform.UserNotifications.UNTimeIntervalNotificationTrigger
 import platform.UserNotifications.UNUserNotificationCenter
 
-actual class ScheduleNotificationServiceImpl: ScheduleNotificationService {
+actual open class ScheduleNotificationServiceImpl: ScheduleNotificationService {
     private val logTag = "ScheduleNotification"
     private val notificationCenter = UNUserNotificationCenter.currentNotificationCenter()
     

@@ -1,7 +1,7 @@
 package com.ragl.divide.presentation.utils
 
 import android.content.Context
-import com.ragl.divide.R
+import com.ragl.divide.composeapp.R
 import kotlin.random.Random
 
 actual class Strings(private val context: Context) {

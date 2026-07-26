@@ -32,12 +32,12 @@
         </activity>
 
         <activity
-            android:name=".data.services.NotificationPermissionActivity"
+            android:name="com.ragl.divide.data.services.NotificationPermissionActivity"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
             android:exported="false" />
 
-        <receiver android:name=".data.services.Notifications" android:enabled="true" />
-        <receiver android:name=".data.services.BootReminderNotificationsReceiver"
+        <receiver android:name="com.ragl.divide.data.services.Notifications" android:enabled="true" />
+        <receiver android:name="com.ragl.divide.data.services.BootReminderNotificationsReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter>

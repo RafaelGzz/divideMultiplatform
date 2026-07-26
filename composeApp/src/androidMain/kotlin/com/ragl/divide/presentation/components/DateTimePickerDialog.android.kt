@@ -42,7 +42,7 @@ actual fun DateTimePickerDialog(
         }
     }
     LaunchedEffect(Unit) {
-        logMessage(
+        com.ragl.divide.presentation.utils.logMessage(
             "DateTimePickerDialog",
             "Inicializado con tiempo: $initialTime (${initialCalendar.time})"
         )
@@ -98,7 +98,7 @@ actual fun DateTimePickerDialog(
                     }
 
                     val resultTimeMillis = localCalendar.timeInMillis
-                    logMessage(
+                    com.ragl.divide.presentation.utils.logMessage(
                         "DateTimePickerDialog",
                         "Fecha seleccionada: $resultTimeMillis (${localCalendar.time})"
                     )

@@ -1,32 +1,18 @@
-@file:OptIn(ExperimentalComposeLibrary::class)
-
 import io.github.frankois944.spmForKmp.definition.product.ProductName
-import org.jetbrains.compose.ExperimentalComposeLibrary
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import java.io.FileInputStream
-import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
-    alias(libs.plugins.googleServices)
-    id("com.google.firebase.crashlytics")
-    id("com.google.firebase.firebase-perf")
-    id("org.jetbrains.kotlinx.kover")
-    id("io.mockative") version "3.0.1"
-    id("com.google.devtools.ksp")
-    id("io.github.frankois944.spmForKmp")
+    alias(libs.plugins.androidKmpLibrary)
+    alias(libs.plugins.spmForKmp)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.mockative)
 }
 
-val keystoreProperties = Properties().apply {
-    val file = rootProject.file("keystore.properties")
-    if (file.exists()) {
-        load(FileInputStream(file))
-    }
+mockative {
+
 }
 
 val firebaseDeps =
@@ -41,23 +27,36 @@ val firebaseDeps =
     )
 
 kotlin {
-    androidTarget {
-        @OptIn(ExperimentalKotlinGradlePluginApi::class)
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
+    android {
+        namespace = "com.ragl.divide.composeapp"
+        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        minSdk = libs.versions.android.minSdk.get().toInt()
+        androidResources {
+            enable = true
         }
+        withHostTest { }
     }
 
     targets.configureEach {
         compilations.configureEach {
-            compileTaskProvider.get().compilerOptions{
+            compileTaskProvider.get().compilerOptions {
                 freeCompilerArgs.add("-Xexpect-actual-classes")
             }
         }
     }
+
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile>().configureEach {
+        if (name.startsWith("compileTestKotlin")) {
+            dependsOn(tasks.matching { it.name == "kspCommonMainKotlinMetadata" })
+        }
+    }
+
+    // TODO: Re-enable iOS tests once Mockative supports Kotlin 2.4.x or after migrating to Mokkery
+    tasks.matching { it.name.startsWith("compileTestKotlinIos") }.configureEach {
+        enabled = false
+    }
     
     listOf(
-        iosX64(),
         iosArm64(),
         iosSimulatorArm64()
     ).forEach { iosTarget ->
@@ -66,17 +65,13 @@ kotlin {
             isStatic = true
             freeCompilerArgs += listOf("-Xbinary=bundleId=com.ragl.divide")
         }
-        iosTarget.compilations{
-            val main by getting {
-                cinterops.create("cinterop")
-            }
-        }
     }
     
     sourceSets {
         
         androidMain.dependencies {
-            implementation(compose.preview)
+            implementation(project.dependencies.platform(libs.firebase.bom))
+            implementation(libs.compose.ui.tooling.preview)
             implementation(libs.androidx.activity.compose)
 
             implementation(libs.koin.android)
@@ -84,20 +79,20 @@ kotlin {
 
             implementation(libs.core.splashscreen)
 
-            implementation("org.javassist:javassist:3.29.2-GA")
-            implementation("org.objenesis:objenesis:3.3")
-            implementation("org.jetbrains.kotlin:kotlin-reflect:${kotlin.coreLibrariesVersion}")
+            implementation(libs.javassist)
+            implementation(libs.objenesis)
+            implementation(libs.kotlin.reflect)
         }
         commonMain.dependencies {
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material)
-            implementation(compose.material3)
+            implementation(libs.compose.runtime)
+            implementation(libs.compose.foundation)
+            implementation(libs.compose.material)
             implementation(libs.material3)
             implementation(libs.material3.window.size)
-            implementation(compose.ui)
-            implementation(compose.components.resources)
-            implementation(compose.components.uiToolingPreview)
+            implementation(libs.compose.ui)
+            implementation(libs.compose.components.resources)
+            implementation(libs.compose.components.uiToolingPreview)
+            implementation(compose.preview)
             implementation(libs.material.icons.core)
 
             implementation(libs.koin.core)
@@ -131,74 +126,42 @@ kotlin {
 
             implementation(libs.mockative)
         }
-        commonTest.dependencies {
-            implementation(libs.kotlin.test)
-            implementation(libs.assertk)
-            implementation(kotlin("test-annotations-common"))
-            implementation(compose.uiTest)
+        commonTest {
+            kotlin.srcDir("build/generated/ksp/metadata/commonTest/kotlin")
+            dependencies {
+                implementation(libs.kotlin.test)
+                implementation(libs.assertk)
+                implementation(libs.mockative)
+                implementation(kotlin("test-annotations-common"))
+                implementation(libs.compose.ui.test)
+            }
         }
-    }
-}
-
-android {
-    namespace = "com.ragl.divide"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-
-    defaultConfig {
-        applicationId = "com.ragl.divide"
-        minSdk = libs.versions.android.minSdk.get().toInt()
-        targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1114
-        versionName = "1.1.14"
-    }
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        val iosArm64Test by getting {
+            dependencies {
+                implementation(libs.mockative)
+            }
         }
-    }
-    signingConfigs {
-        create("release") {
-            // Solo configurar signing si las propiedades existen
-            if (keystoreProperties.containsKey("storeFile") && keystoreProperties["storeFile"] != null) {
-                storeFile = file(keystoreProperties["storeFile"] as String)
-                storePassword = keystoreProperties["storePassword"] as String
-                keyAlias = keystoreProperties["keyAlias"] as String
-                keyPassword = keystoreProperties["keyPassword"] as String
+        val iosSimulatorArm64Test by getting {
+            dependencies {
+                implementation(libs.mockative)
             }
         }
     }
-    buildTypes {
-        release {
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-            // Solo usar signingConfig si está configurado
-            if (keystoreProperties.containsKey("storeFile") && keystoreProperties["storeFile"] != null) {
-                signingConfig = signingConfigs.getByName("release")
-            }
-        }
-        debug {
-            isMinifyEnabled = false
-        }
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
 }
 
-dependencies {
-    debugImplementation(compose.uiTooling)
-    implementation(libs.firebase.analytics)
-    implementation(libs.firebase.crashlytics)
-}
+//dependencies {
+//    add("kspAndroid", "io.mockative:mockative-processor:${libs.versions.mockative.get()}")
+//    add("kspAndroidHostTest", "io.mockative:mockative-processor:${libs.versions.mockative.get()}")
+//    add("kspIosArm64", "io.mockative:mockative-processor:${libs.versions.mockative.get()}")
+//    add("kspIosArm64Test", "io.mockative:mockative-processor:${libs.versions.mockative.get()}")
+//    add("kspIosSimulatorArm64", "io.mockative:mockative-processor:${libs.versions.mockative.get()}")
+//    add("kspIosSimulatorArm64Test", "io.mockative:mockative-processor:${libs.versions.mockative.get()}")
+//}
 
-swiftPackageConfig{
+
+swiftPackageConfig {
     val localDeps = firebaseDeps
-    create("cinterop"){
+    create("cinterop") {
         dependency {
             linkerOpts = listOf("-ObjC")
             remotePackageVersion(
@@ -206,9 +169,6 @@ swiftPackageConfig{
                 url = uri("https://github.com/firebase/firebase-ios-sdk.git"),
                 // Libraries from the package
                 products = {
-                    // Export to Kotlin for use in shared Kotlin code and use it in your swift code
-                    // the export doesn't work when gitlive is implemented, my guess is a bug with cinterop
-                    // because gitlive already use cinterop
                     localDeps.forEach { add(it, exportToKotlin = false) }
                 },
                 // Package version

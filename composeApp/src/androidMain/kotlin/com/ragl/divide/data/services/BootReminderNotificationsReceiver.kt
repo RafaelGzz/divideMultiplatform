@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.ragl.divide.data.models.Frequency
+import com.ragl.divide.data.services.goAsync
 import com.ragl.divide.domain.repositories.UserRepository
 import com.ragl.divide.domain.services.ScheduleNotificationService
 import com.ragl.divide.presentation.utils.Strings
@@ -19,9 +20,9 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
-class BootReminderNotificationsReceiver : BroadcastReceiver(), KoinComponent {
+class BootReminderNotificationsReceiver : android.content.BroadcastReceiver(), KoinComponent {
     private val userRepository: UserRepository by inject()
-    private val strings: Strings by inject()
+    private val strings: com.ragl.divide.presentation.utils.Strings by inject()
     private val logTag = "BootReminderReceiver"
 
     @OptIn(ExperimentalTime::class)
@@ -29,14 +30,20 @@ class BootReminderNotificationsReceiver : BroadcastReceiver(), KoinComponent {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
             val scheduleNotificationService by inject<ScheduleNotificationService>()
 
-            logMessage(logTag, "Dispositivo reiniciado, reprogramando notificaciones")
+            com.ragl.divide.presentation.utils.logMessage(
+                logTag,
+                "Dispositivo reiniciado, reprogramando notificaciones"
+            )
             val currentUser = userRepository.getCurrentUser()
             if (currentUser == null) return@goAsync
             val user = userRepository.getUser(currentUser.uid)
             val expenses = user.expenses
 
             if (expenses.isEmpty()) {
-                logMessage(logTag, "No hay gastos para programar")
+                com.ragl.divide.presentation.utils.logMessage(
+                    logTag,
+                    "No hay gastos para programar"
+                )
                 return@goAsync
             }
 
@@ -57,13 +64,16 @@ class BootReminderNotificationsReceiver : BroadcastReceiver(), KoinComponent {
                                 expense.frequency,
                                 true
                             )
-                            logMessage(
+                            com.ragl.divide.presentation.utils.logMessage(
                                 logTag,
                                 "${expense.title} reprogramada cada ${expense.frequency} desde ${expense.startingDate}"
                             )
                         }
                     } catch (e: Exception) {
-                        logMessage(logTag, "Error al programar notificación: ${e.message}")
+                        com.ragl.divide.presentation.utils.logMessage(
+                            logTag,
+                            "Error al programar notificación: ${e.message}"
+                        )
                     }
                 }
             }

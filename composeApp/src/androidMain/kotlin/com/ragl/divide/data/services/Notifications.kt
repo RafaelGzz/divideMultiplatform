@@ -13,8 +13,7 @@ import android.media.RingtoneManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
-import com.ragl.divide.presentation.MainActivity
-import com.ragl.divide.R
+import com.ragl.divide.composeapp.R
 
 class Notifications : BroadcastReceiver() {
 
@@ -46,7 +45,7 @@ class Notifications : BroadcastReceiver() {
             return
         }
 
-        val activityIntent = Intent(context, MainActivity::class.java).apply {
+        val activityIntent = (context.packageManager.getLaunchIntentForPackage(context.packageName) ?: Intent()).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
         val activityPendingIntent = PendingIntent.getActivity(

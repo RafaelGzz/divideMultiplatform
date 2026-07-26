@@ -3,7 +3,7 @@ package com.ragl.divide.domain.usecases.payment
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.domain.repositories.UserRepository
 import com.ragl.divide.domain.stateHolders.UserStateHolder
-import io.mockative.any
+import io.mockative.Mockable
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -14,6 +14,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+@Mockable(UserRepository::class, UserStateHolder::class)
 class DeleteExpensePaymentUseCaseTest {
 
     private val mockUserRepository = mock(of<UserRepository>())
@@ -43,8 +44,8 @@ class DeleteExpensePaymentUseCaseTest {
 
         // Then
         assertTrue(result is DeleteExpensePaymentUseCase.Result.Success)
-        coVerify { mockUserRepository.saveExpense(any()) }
-        coVerify { mockUserStateHolder.saveExpense(any()) }
+        coVerify { mockUserRepository.saveExpense(expense) }
+        coVerify { mockUserStateHolder.saveExpense(expense) }
     }
 
     @Test
@@ -66,6 +67,6 @@ class DeleteExpensePaymentUseCaseTest {
         assertTrue(result is DeleteExpensePaymentUseCase.Result.Error)
         assertEquals(expectedException, result.exception)
 
-        coVerify { mockUserStateHolder.saveExpense(any()) }.wasNotInvoked()
+        coVerify { mockUserStateHolder.saveExpense(expense) }.wasNotInvoked()
     }
 }
