@@ -21,3 +21,4 @@ GoogleService-Info.plist
 keystore.properties
 github-secrets.txt
 service-account.json
+.swiftpm-locks/

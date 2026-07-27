@@ -2,7 +2,8 @@ package com.ragl.divide.domain
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.datetime.Clock
+import platform.Foundation.NSDate
+import platform.Foundation.timeIntervalSince1970
 
 class IOSPlatform : Platform {
     override val name: String = "iOS"
@@ -10,29 +11,30 @@ class IOSPlatform : Platform {
 
 actual fun getPlatform(): Platform = IOSPlatform()
 
-// Implementación específica de iOS para el manejo del ciclo de vida
-// Por simplicidad, usamos una implementación básica sin listeners de notificaciones
 class IOSAppLifecycleHandler : AppLifecycleHandler {
     private val _isAppInForeground = MutableStateFlow(true)
-    private var lastPauseTime: Long = 0
+    private var lastPauseTime: Long = 0L
     private val backgroundThreshold = 5 * 60 * 1000L // 5 minutos en milisegundos
-    
+
+    private fun currentEpochMillis(): Long {
+        return (NSDate().timeIntervalSince1970 * 1000).toLong()
+    }
+
     override fun onAppResume() {
-        val currentTime = Clock.System.now().toEpochMilliseconds()
+        val currentTime = currentEpochMillis()
         val wasInBackgroundLongTime = (currentTime - lastPauseTime) > backgroundThreshold
-        
+
         _isAppInForeground.value = true
-        
-        // Si estuvo en background por más del threshold, ejecutar callback
-        if (wasInBackgroundLongTime && lastPauseTime > 0) {
-            // Aquí se podría ejecutar lógica adicional si fuera necesario
+
+        if (wasInBackgroundLongTime && lastPauseTime > 0L) {
+            // Callback logic if needed
         }
     }
-    
+
     override fun onAppPause() {
-        lastPauseTime = Clock.System.now().toEpochMilliseconds()
+        lastPauseTime = currentEpochMillis()
         _isAppInForeground.value = false
     }
-    
+
     override val isAppInForeground: StateFlow<Boolean> = _isAppInForeground
 }

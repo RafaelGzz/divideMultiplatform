@@ -1,7 +1,6 @@
 package com.ragl.divide.domain.services
 
 import com.ragl.divide.data.models.Frequency
-
 interface ScheduleNotificationService {
     /**
      * Programa una notificación para una fecha específica

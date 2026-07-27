@@ -28,7 +28,11 @@ actual fun ImagePicker(
     ) { uri ->
         if (uri != null) {
             scope.launch {
-                val imageUrl = saveImageFromUri(context, uri)
+                val imageUrl =
+                    com.ragl.divide.presentation.components.saveImageFromUri(
+                        context,
+                        uri
+                    )
                 onImageSelected(imageUrl)
             }
         } else {
@@ -42,7 +46,11 @@ actual fun ImagePicker(
     ) { bitmap ->
         if (bitmap != null) {
             scope.launch {
-                val imageUrl = saveImageFromBitmap(context, bitmap)
+                val imageUrl =
+                    com.ragl.divide.presentation.components.saveImageFromBitmap(
+                        context,
+                        bitmap
+                    )
                 onImageSelected(imageUrl)
             }
         } else {

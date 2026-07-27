@@ -65,13 +65,13 @@ jobs:
         
     - name: 📱 Create google-services.json
       run: |
-        echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > composeApp/google-services.json
+        echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > androidApp/google-services.json
         
     - name: 📝 Update version if provided
       if: ${{ github.event.inputs.version_name != '' && github.event.inputs.version_code != '' }}
       run: |
-        sed -i "s/versionCode = [0-9]*/versionCode = ${{ github.event.inputs.version_code }}/" composeApp/build.gradle.kts
-        sed -i "s/versionName = \"[^\"]*\"/versionName = \"${{ github.event.inputs.version_name }}\"/" composeApp/build.gradle.kts
+        sed -i "s/app-versionCode = \"[0-9]*\"/app-versionCode = \"${{ github.event.inputs.version_code }}\"/" gradle/libs.versions.toml
+        sed -i "s/app-versionName = \"[^\"]*\"/app-versionName = \"${{ github.event.inputs.version_name }}\"/" gradle/libs.versions.toml
         
     - name: 🔑 Grant execute permission for gradlew
       run: chmod +x gradlew
@@ -84,7 +84,7 @@ jobs:
     - name: 📦 Build release bundle
       run: |
         echo "Building release bundle (includes release compilation)..."
-        ./gradlew bundleRelease --stacktrace
+        ./gradlew :androidApp:bundleRelease --stacktrace
       
     - name: 🎯 Determine release track
       id: track
@@ -100,7 +100,7 @@ jobs:
       with:
         serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
         packageName: com.ragl.divide
-        releaseFiles: composeApp/build/outputs/bundle/release/composeApp-release.aab
+        releaseFiles: androidApp/build/outputs/bundle/release/androidApp-release.aab
         track: ${{ steps.track.outputs.track }}
         status: completed
         
@@ -108,7 +108,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: release-bundle-${{ github.run_number }}
-        path: composeApp/build/outputs/bundle/release/composeApp-release.aab
+        path: androidApp/build/outputs/bundle/release/androidApp-release.aab
         retention-days: 30
         
     - name: 🎉 Deployment success notification

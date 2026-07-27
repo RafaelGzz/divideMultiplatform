@@ -19,7 +19,7 @@ import com.ragl.divide.presentation.utils.logMessage
 import java.util.Calendar
 import java.util.TimeZone
 
-actual class ScheduleNotificationServiceImpl(
+actual open class ScheduleNotificationServiceImpl(
     private val context: Context
 ): ScheduleNotificationService {
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -43,7 +43,7 @@ actual class ScheduleNotificationServiceImpl(
 
     actual override fun wasNotificationPermissionRejectedPermanently(): Boolean =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            NotificationPermissionActivity.wasPermissionRejectedPermanently(context)
+            com.ragl.divide.data.services.NotificationPermissionActivity.wasPermissionRejectedPermanently(context)
         } else {
             false
         }
@@ -51,7 +51,7 @@ actual class ScheduleNotificationServiceImpl(
     actual override fun requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             // Verificar si el permiso fue rechazado permanentemente
-            if (NotificationPermissionActivity.wasPermissionRejectedPermanently(context)) {
+            if (com.ragl.divide.data.services.NotificationPermissionActivity.wasPermissionRejectedPermanently(context)) {
                 // Si fue rechazado permanentemente, abrir configuración directamente
                 val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -60,7 +60,7 @@ actual class ScheduleNotificationServiceImpl(
                 context.startActivity(intent)
             } else {
                 // Si no fue rechazado permanentemente, mostrar el diálogo
-                val intent = Intent(context, NotificationPermissionActivity::class.java).apply {
+                val intent = Intent(context, com.ragl.divide.data.services.NotificationPermissionActivity::class.java).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 context.startActivity(intent)
@@ -86,11 +86,11 @@ actual class ScheduleNotificationServiceImpl(
         frequency: Frequency,
         useSound: Boolean
     ) {
-        val intent = Intent(context, Notifications::class.java).apply {
-            putExtra(Notifications.TITLE_EXTRA, title)
-            putExtra(Notifications.CONTENT_EXTRA, message)
-            putExtra(Notifications.NOTIFICATION_ID_EXTRA, id)
-            putExtra(Notifications.USE_SOUND_EXTRA, useSound)
+        val intent = Intent(context, com.ragl.divide.data.services.Notifications::class.java).apply {
+            putExtra(com.ragl.divide.data.services.Notifications.TITLE_EXTRA, title)
+            putExtra(com.ragl.divide.data.services.Notifications.CONTENT_EXTRA, message)
+            putExtra(com.ragl.divide.data.services.Notifications.NOTIFICATION_ID_EXTRA, id)
+            putExtra(com.ragl.divide.data.services.Notifications.USE_SOUND_EXTRA, useSound)
         }
 
         val pendingIntent = PendingIntent.getBroadcast(
@@ -109,11 +109,25 @@ actual class ScheduleNotificationServiceImpl(
             calendar.timeInMillis = now
             calendar.add(Calendar.MINUTE, 1)
             finalStartingDateMillis = calendar.timeInMillis
-            logMessage(logTag, "¡Aviso! Fecha en pasado, ajustada a: ${formatDate(finalStartingDateMillis)}")
+            com.ragl.divide.presentation.utils.logMessage(
+                logTag,
+                "¡Aviso! Fecha en pasado, ajustada a: ${
+                    com.ragl.divide.presentation.utils.formatDate(
+                        finalStartingDateMillis
+                    )
+                }"
+            )
         }
         
         // Log básico sin tanta verbosidad
-        logMessage(logTag, "Programando notificación $id para: ${formatDate(finalStartingDateMillis)}")
+        com.ragl.divide.presentation.utils.logMessage(
+            logTag,
+            "Programando notificación $id para: ${
+                com.ragl.divide.presentation.utils.formatDate(
+                    finalStartingDateMillis
+                )
+            }"
+        )
 
         val canScheduleExact = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             alarmManager.canScheduleExactAlarms()
@@ -134,16 +148,22 @@ actual class ScheduleNotificationServiceImpl(
                     pendingIntent
                 )
             }
-            logMessage(logTag, "Notificación $id programada correctamente")
+            com.ragl.divide.presentation.utils.logMessage(
+                logTag,
+                "Notificación $id programada correctamente"
+            )
         } else {
-            logMessage(logTag, "No se pudo programar la notificación $id (permiso denegado)")
+            com.ragl.divide.presentation.utils.logMessage(
+                logTag,
+                "No se pudo programar la notificación $id (permiso denegado)"
+            )
         }
         
         //enableBootReceiver()
     }
 
     private fun enableBootReceiver() {
-        val receiver = ComponentName(context, BootReminderNotificationsReceiver::class.java)
+        val receiver = ComponentName(context, com.ragl.divide.data.services.BootReminderNotificationsReceiver::class.java)
         val componentState = context.packageManager.getComponentEnabledSetting(receiver)
         
         if (componentState != PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
@@ -156,7 +176,7 @@ actual class ScheduleNotificationServiceImpl(
     }
 
     actual override fun cancelNotification(id: Int) {
-        val intent = Intent(context, Notifications::class.java)
+        val intent = Intent(context, com.ragl.divide.data.services.Notifications::class.java)
 
         // Es importante recrear el PendingIntent exactamente igual que cuando se creó
         val pendingIntent = PendingIntent.getBroadcast(
@@ -170,7 +190,10 @@ actual class ScheduleNotificationServiceImpl(
         pendingIntent?.let { existingIntent ->
             alarmManager.cancel(existingIntent)
             existingIntent.cancel() // Importante liberar el PendingIntent
-            logMessage(logTag, "Notificación $id cancelada")
+            com.ragl.divide.presentation.utils.logMessage(
+                logTag,
+                "Notificación $id cancelada"
+            )
         }
     }
 
@@ -179,9 +202,15 @@ actual class ScheduleNotificationServiceImpl(
             // Cancelar todas las notificaciones mostradas
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
             notificationManager.cancelAll()
-            logMessage(logTag, "Todas las notificaciones mostradas canceladas")
+            com.ragl.divide.presentation.utils.logMessage(
+                logTag,
+                "Todas las notificaciones mostradas canceladas"
+            )
         } catch (e: Exception) {
-            logMessage(logTag, "Error al cancelar todas las notificaciones: $e")
+            com.ragl.divide.presentation.utils.logMessage(
+                logTag,
+                "Error al cancelar todas las notificaciones: $e"
+            )
         }
     }
 }

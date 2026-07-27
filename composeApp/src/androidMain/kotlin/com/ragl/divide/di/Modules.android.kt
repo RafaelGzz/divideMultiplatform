@@ -15,18 +15,18 @@ import org.koin.dsl.module
 
 actual val platformModule: Module = module {
     single {
-        createDataStore(context = get())
+        com.ragl.divide.data.createDataStore(context = get())
     }.bind<DataStore<Preferences>>()
 
     single{
-        ScheduleNotificationServiceImpl(context = get())
+        com.ragl.divide.data.services.ScheduleNotificationServiceImpl(context = get())
     }.bind<ScheduleNotificationService>()
 
     single{
-        Strings(context = get())
-    }.bind<Strings>()
+        com.ragl.divide.presentation.utils.Strings(context = get())
+    }.bind<com.ragl.divide.presentation.utils.Strings>()
 
     single<AppLifecycleHandler> {
-        AndroidAppLifecycleHandler(get<Application>())
+        com.ragl.divide.domain.AndroidAppLifecycleHandler(get<Application>())
     }
 }

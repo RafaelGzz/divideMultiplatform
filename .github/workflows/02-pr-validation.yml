@@ -41,10 +41,10 @@ jobs:
     - name: 📱 Create google-services.json
       run: |
         if [ -n "${{ secrets.GOOGLE_SERVICES_JSON }}" ]; then
-          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > composeApp/google-services.json
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > androidApp/google-services.json
         else
           # Crear archivo dummy para tests
-          cat > composeApp/google-services.json << 'EOF'
+          cat > androidApp/google-services.json << 'EOF'
         {
           "project_info": {
             "project_number": "123456789",
@@ -81,9 +81,9 @@ jobs:
       
     - name: 📋 Check version increment
       run: |
-        # Obtener versiones del branch actual (development)
-        CURRENT_VERSION_CODE=$(grep -E "versionCode\s*=\s*[0-9]+" composeApp/build.gradle.kts | sed -E 's/.*versionCode\s*=\s*([0-9]+).*/\1/' | head -1)
-        CURRENT_VERSION_NAME=$(grep -E "versionName\s*=\s*\"[^\"]*\"" composeApp/build.gradle.kts | sed -E 's/.*versionName\s*=\s*"([^"]*)".*/\1/' | head -1)
+        # Obtener versiones del branch actual (development) desde libs.versions.toml
+        CURRENT_VERSION_CODE=$(grep -E 'app-versionCode\s*=\s*"[0-9]+"' gradle/libs.versions.toml | sed -E 's/.*app-versionCode\s*=\s*"([0-9]+)".*/\1/' | head -1)
+        CURRENT_VERSION_NAME=$(grep -E 'app-versionName\s*=\s*"[^"]*"' gradle/libs.versions.toml | sed -E 's/.*app-versionName\s*=\s*"([^"]*)".*/\1/' | head -1)
         
         # Verificar que se encontraron las versiones
         if [ -z "$CURRENT_VERSION_CODE" ] || [ -z "$CURRENT_VERSION_NAME" ]; then
@@ -93,10 +93,18 @@ jobs:
           exit 1
         fi
         
-        # Obtener versiones del master
+        # Obtener versiones del master (intentar libs.versions.toml primero, luego build.gradle.kts como fallback)
         git fetch origin master
-        MASTER_VERSION_CODE=$(git show origin/master:composeApp/build.gradle.kts | grep -E "versionCode\s*=\s*[0-9]+" | sed -E 's/.*versionCode\s*=\s*([0-9]+).*/\1/' | head -1)
-        MASTER_VERSION_NAME=$(git show origin/master:composeApp/build.gradle.kts | grep -E "versionName\s*=\s*\"[^\"]*\"" | sed -E 's/.*versionName\s*=\s*"([^"]*)".*/\1/' | head -1)
+        MASTER_VERSION_CODE=$(git show origin/master:gradle/libs.versions.toml 2>/dev/null | grep -E 'app-versionCode\s*=\s*"[0-9]+"' | sed -E 's/.*app-versionCode\s*=\s*"([0-9]+)".*/\1/' | head -1)
+        MASTER_VERSION_NAME=$(git show origin/master:gradle/libs.versions.toml 2>/dev/null | grep -E 'app-versionName\s*=\s*"[^"]*"' | sed -E 's/.*app-versionName\s*=\s*"([^"]*)".*/\1/' | head -1)
+        
+        # Fallback: buscar en composeApp/build.gradle.kts (formato anterior)
+        if [ -z "$MASTER_VERSION_CODE" ]; then
+          MASTER_VERSION_CODE=$(git show origin/master:composeApp/build.gradle.kts 2>/dev/null | grep -E "versionCode\s*=\s*[0-9]+" | sed -E 's/.*versionCode\s*=\s*([0-9]+).*/\1/' | head -1)
+        fi
+        if [ -z "$MASTER_VERSION_NAME" ]; then
+          MASTER_VERSION_NAME=$(git show origin/master:composeApp/build.gradle.kts 2>/dev/null | grep -E 'versionName\s*=\s*"[^"]*"' | sed -E 's/.*versionName\s*=\s*"([^"]*)".*/\1/' | head -1)
+        fi
         
         # Verificar que se encontraron las versiones del master
         if [ -z "$MASTER_VERSION_CODE" ] || [ -z "$MASTER_VERSION_NAME" ]; then

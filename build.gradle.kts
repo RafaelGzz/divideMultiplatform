@@ -7,7 +7,10 @@ plugins {
     alias(libs.plugins.composeCompiler) apply false
     alias(libs.plugins.kotlinMultiplatform) apply false
     alias(libs.plugins.kotlinSerialization) apply false
-    alias(libs.plugins.googleServices)
-    id("com.google.firebase.crashlytics") version "3.0.4" apply false
-    id("com.google.firebase.firebase-perf") version "1.4.2" apply false
+    alias(libs.plugins.googleServices) apply false
+    alias(libs.plugins.crashlytics) apply false
+    alias(libs.plugins.firebasePerf) apply false
+    alias(libs.plugins.kover) apply false
+    alias(libs.plugins.spmForKmp) apply false
+    alias(libs.plugins.androidKmpLibrary) apply false
 }

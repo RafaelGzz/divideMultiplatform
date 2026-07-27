@@ -1,47 +1,46 @@
-@file:OptIn(ExperimentalComposeLibrary::class)
-
-import org.jetbrains.compose.ExperimentalComposeLibrary
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import java.io.FileInputStream
-import java.util.Properties
+import io.github.frankois944.spmForKmp.definition.product.ProductName
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
-    alias(libs.plugins.googleServices)
-    id("com.google.firebase.crashlytics")
-    id("com.google.firebase.firebase-perf")
+    alias(libs.plugins.androidKmpLibrary)
+    alias(libs.plugins.spmForKmp)
 }
 
-val keystoreProperties = Properties().apply {
-    val file = rootProject.file("keystore.properties")
-    if (file.exists()) {
-        load(FileInputStream(file))
-    }
-}
+val firebaseDeps =
+    listOf(
+        ProductName("FirebaseCore"),
+        ProductName("FirebaseAnalytics"),
+        ProductName("FirebaseCrashlytics"),
+        ProductName("FirebaseAuth"),
+        ProductName("FirebaseDatabase"),
+        ProductName("FirebasePerformance"),
+        ProductName("FirebaseStorage"),
+    )
 
 kotlin {
-    androidTarget {
-        @OptIn(ExperimentalKotlinGradlePluginApi::class)
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
+    jvmToolchain(21)
+    android {
+        namespace = "com.ragl.divide.composeapp"
+        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        minSdk = libs.versions.android.minSdk.get().toInt()
+        androidResources {
+            enable = true
         }
+        withHostTest { }
     }
 
     targets.configureEach {
         compilations.configureEach {
-            compileTaskProvider.get().compilerOptions{
+            compileTaskProvider.get().compilerOptions {
                 freeCompilerArgs.add("-Xexpect-actual-classes")
             }
         }
     }
     
     listOf(
-        iosX64(),
         iosArm64(),
         iosSimulatorArm64()
     ).forEach { iosTarget ->
@@ -55,27 +54,35 @@ kotlin {
     sourceSets {
         
         androidMain.dependencies {
-            implementation(compose.preview)
+            implementation(project.dependencies.platform(libs.firebase.bom))
+            implementation(libs.compose.ui.tooling.preview)
             implementation(libs.androidx.activity.compose)
 
             implementation(libs.koin.android)
             implementation(libs.koin.androidx.compose)
 
             implementation(libs.core.splashscreen)
+
+            implementation(libs.javassist)
+            implementation(libs.objenesis)
+            implementation(libs.kotlin.reflect)
         }
         commonMain.dependencies {
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material)
-            implementation(compose.material3)
+            implementation(libs.compose.runtime)
+            implementation(libs.compose.foundation)
+            implementation(libs.compose.material)
+            implementation(libs.material3)
             implementation(libs.material3.window.size)
-            implementation(compose.ui)
-            implementation(compose.components.resources)
-            implementation(compose.components.uiToolingPreview)
+            implementation(libs.compose.ui)
+            implementation(libs.compose.components.resources)
+            implementation(libs.compose.components.uiToolingPreview)
+            implementation(compose.preview)
             implementation(libs.material.icons.core)
-            api(libs.koin.core)
+
+            implementation(libs.koin.core)
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
+            api(libs.koin.annotations)
 
             implementation(libs.firebase.auth)
             implementation(libs.firebase.database)
@@ -100,68 +107,41 @@ kotlin {
             api(libs.androidx.datastore.preferences)
 
             implementation(libs.landscapist.coil3)
+
         }
-        commonTest.dependencies {
-            implementation(libs.kotlin.test)
-            implementation(libs.assertk)
-            implementation(kotlin("test-annotations-common"))
-            implementation(compose.uiTest)
+        commonTest {
+            dependencies {
+                implementation(libs.kotlin.test)
+                implementation(libs.assertk)
+                implementation(kotlin("test-annotations-common"))
+                implementation(libs.compose.ui.test)
+            }
         }
     }
 }
 
-android {
-    namespace = "com.ragl.divide"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-
-    defaultConfig {
-        applicationId = "com.ragl.divide"
-        minSdk = libs.versions.android.minSdk.get().toInt()
-        targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1114
-        versionName = "1.1.14"
-    }
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
-    }
-    signingConfigs {
-        create("release") {
-            // Solo configurar signing si las propiedades existen
-            if (keystoreProperties.containsKey("storeFile") && keystoreProperties["storeFile"] != null) {
-                storeFile = file(keystoreProperties["storeFile"] as String)
-                storePassword = keystoreProperties["storePassword"] as String
-                keyAlias = keystoreProperties["keyAlias"] as String
-                keyPassword = keystoreProperties["keyPassword"] as String
-            }
-        }
-    }
-    buildTypes {
-        release {
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+swiftPackageConfig {
+    val localDeps = firebaseDeps
+    create("cinterop") {
+        dependency {
+            linkerOpts = listOf("-ObjC")
+            remotePackageVersion(
+                // Repository URL
+                url = uri("https://github.com/firebase/firebase-ios-sdk.git"),
+                // Libraries from the package
+                products = {
+                    localDeps.forEach { add(it, exportToKotlin = false) }
+                },
+                // Package version
+                version = "11.8.0",
             )
-            // Solo usar signingConfig si está configurado
-            if (keystoreProperties.containsKey("storeFile") && keystoreProperties["storeFile"] != null) {
-                signingConfig = signingConfigs.getByName("release")
-            }
-        }
-        debug {
-            isMinifyEnabled = false
+            remotePackageVersion(
+                url = uri("https://github.com/google/GoogleSignIn-iOS"),
+                products = {
+                    add("GoogleSignIn")
+                },
+                version = "9.1.0"
+            )
         }
     }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-}
-
-dependencies {
-    debugImplementation(compose.uiTooling)
-    implementation(libs.firebase.analytics)
-    implementation(libs.firebase.crashlytics)
 }
