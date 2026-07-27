@@ -5,12 +5,11 @@ import com.ragl.divide.domain.repositories.FriendsRepository
 import com.ragl.divide.domain.repositories.GroupRepository
 import com.ragl.divide.domain.stateHolders.UserStateHolder
 import dev.gitlive.firebase.storage.File
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.of
+import com.ragl.divide.testing.FakeFriendsRepository
+import com.ragl.divide.testing.FakeGroupRepository
+import com.ragl.divide.testing.FakeUserStateHolder
+import com.ragl.divide.testing.assertCalled
+import com.ragl.divide.testing.assertNotCalled
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -19,9 +18,9 @@ import kotlin.test.assertTrue
 
 class SaveGroupUseCaseTest {
 
-    private val mockGroupRepository = mock(of<GroupRepository>())
-    private val mockFriendsRepository = mock(of<FriendsRepository>())
-    private val mockUserStateHolder = mock(of<UserStateHolder>())
+    private val mockGroupRepository = FakeGroupRepository()
+    private val mockFriendsRepository = FakeFriendsRepository()
+    private val mockUserStateHolder = FakeUserStateHolder()
     private lateinit var useCase: SaveGroupUseCase
 
     @BeforeTest
@@ -36,9 +35,9 @@ class SaveGroupUseCaseTest {
         val photo: File? = null
         val savedGroup = group.copy()
 
-        coEvery { mockGroupRepository.saveGroup(group, photo) } returns savedGroup
-        every { mockUserStateHolder.saveGroup(savedGroup) } returns Unit
-        every { mockUserStateHolder.getGroupMembers("group123") } returns listOf()
+        mockGroupRepository.onSaveGroup = { _, _ -> savedGroup }
+        mockUserStateHolder.onSaveGroup = { }
+        mockUserStateHolder.onGetGroupMembers = { emptyList() }
 
         // When
         val result = useCase(group, photo)
@@ -47,8 +46,8 @@ class SaveGroupUseCaseTest {
 
         // Then
         assertTrue(result is SaveGroupUseCase.Result.Success)
-        coVerify { mockGroupRepository.saveGroup(group, photo) }
-        coVerify { mockUserStateHolder.saveGroup(savedGroup) }
+        assertCalled(mockGroupRepository, "saveGroup", group, photo)
+        assertCalled(mockUserStateHolder, "saveGroup", savedGroup)
     }
 
     @Test
@@ -58,7 +57,7 @@ class SaveGroupUseCaseTest {
         val photo: File? = null
         val expectedException = Exception("Database error")
 
-        coEvery { mockGroupRepository.saveGroup(group, photo) } throws expectedException
+        mockGroupRepository.onSaveGroup = { _, _ -> throw expectedException }
 
         // When
         val result = useCase(group, photo)
@@ -66,6 +65,6 @@ class SaveGroupUseCaseTest {
         // Then
         assertTrue(result is SaveGroupUseCase.Result.Error)
         assertEquals(expectedException, result.exception)
-        coVerify { mockUserStateHolder.saveGroup(any()) }.wasNotInvoked()
+        assertNotCalled(mockUserStateHolder, "saveGroup")
     }
 }

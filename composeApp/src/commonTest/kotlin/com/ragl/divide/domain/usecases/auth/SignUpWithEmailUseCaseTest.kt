@@ -3,14 +3,10 @@ package com.ragl.divide.domain.usecases.auth
 import com.ragl.divide.data.models.User
 import com.ragl.divide.domain.repositories.UserRepository
 import com.ragl.divide.domain.services.AnalyticsService
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.of
-import io.mockative.verify
+import com.ragl.divide.testing.FakeAnalyticsService
+import com.ragl.divide.testing.FakeUserRepository
+import com.ragl.divide.testing.assertCalled
+import com.ragl.divide.testing.assertNotCalled
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -19,8 +15,8 @@ import kotlin.test.assertTrue
 
 class SignUpWithEmailUseCaseTest {
 
-    private val mockUserRepository = mock(of<UserRepository>())
-    private val mockAnalyticsService = mock(of<AnalyticsService>())
+    private val mockUserRepository = FakeUserRepository()
+    private val mockAnalyticsService = FakeAnalyticsService()
     private lateinit var useCase: SignUpWithEmailUseCase
 
     @BeforeTest
@@ -40,22 +36,18 @@ class SignUpWithEmailUseCaseTest {
             name = name
         )
         
-        coEvery { mockUserRepository.signUpWithEmailAndPassword(email, password, name) } returns expectedUser
-        every { mockAnalyticsService.logEvent(any(), any()) } returns Unit
-        coEvery { mockUserRepository.signOut() } returns Unit
+        mockUserRepository.onSignUpWithEmailAndPassword = { _, _, _ -> expectedUser }
+        mockAnalyticsService.onLogEvent = { _, _ -> }
+        mockUserRepository.onSignOut = {}
 
         // When
         val result = useCase(email, password, name)
 
         // Then
         assertTrue(result is SignUpWithEmailUseCase.Result.Success)
-        verify {
-            mockAnalyticsService.logEvent(
-                eq("sign_up"),
-                any()
-            )
-        }
-        coVerify { mockUserRepository.signOut() }
+        check(mockAnalyticsService.callCount("logEvent") == 1)
+        assertEquals("sign_up", mockAnalyticsService.invocations.last().arguments[0])
+        assertCalled(mockUserRepository, "signOut")
     }
 
     @Test
@@ -65,7 +57,7 @@ class SignUpWithEmailUseCaseTest {
         val password = "password123"
         val name = "Test User"
         
-        coEvery { mockUserRepository.signUpWithEmailAndPassword(email, password, name) } returns null
+        mockUserRepository.onSignUpWithEmailAndPassword = { _, _, _ -> null }
 
         // When
         val result = useCase(email, password, name)
@@ -73,7 +65,7 @@ class SignUpWithEmailUseCaseTest {
         // Then
         assertTrue(result is SignUpWithEmailUseCase.Result.Error)
         assertEquals("Failed to sign up", result.exception.message)
-        verify{ mockAnalyticsService.logEvent(any(), any()) }.wasNotInvoked()
+        assertNotCalled(mockAnalyticsService, "logEvent")
     }
 
     @Test
@@ -84,8 +76,8 @@ class SignUpWithEmailUseCaseTest {
         val name = "Test User"
         val expectedException = Exception("Network error")
         
-        coEvery { mockUserRepository.signUpWithEmailAndPassword(email, password, name) } throws expectedException
-        every { mockAnalyticsService.logError(any(), any()) } returns Unit
+        mockUserRepository.onSignUpWithEmailAndPassword = { _, _, _ -> throw expectedException }
+        mockAnalyticsService.onLogError = { _, _ -> }
 
         // When
         val result = useCase(email, password, name)
@@ -93,6 +85,7 @@ class SignUpWithEmailUseCaseTest {
         // Then
         assertTrue(result is SignUpWithEmailUseCase.Result.Error)
         assertEquals(expectedException, result.exception)
-        verify { mockAnalyticsService.logError(any(), eq("Error en registro con email")) }
+        check(mockAnalyticsService.callCount("logError") == 1)
+        assertEquals("Error en registro con email", mockAnalyticsService.invocations.last().arguments[1])
     }
 }

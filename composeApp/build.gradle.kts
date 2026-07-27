@@ -7,12 +7,6 @@ plugins {
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.androidKmpLibrary)
     alias(libs.plugins.spmForKmp)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.mockative)
-}
-
-mockative {
-
 }
 
 val firebaseDeps =
@@ -27,6 +21,7 @@ val firebaseDeps =
     )
 
 kotlin {
+    jvmToolchain(21)
     android {
         namespace = "com.ragl.divide.composeapp"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -43,17 +38,6 @@ kotlin {
                 freeCompilerArgs.add("-Xexpect-actual-classes")
             }
         }
-    }
-
-    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile>().configureEach {
-        if (name.startsWith("compileTestKotlin")) {
-            dependsOn(tasks.matching { it.name == "kspCommonMainKotlinMetadata" })
-        }
-    }
-
-    // TODO: Re-enable iOS tests once Mockative supports Kotlin 2.4.x or after migrating to Mokkery
-    tasks.matching { it.name.startsWith("compileTestKotlinIos") }.configureEach {
-        enabled = false
     }
     
     listOf(
@@ -124,40 +108,17 @@ kotlin {
 
             implementation(libs.landscapist.coil3)
 
-            implementation(libs.mockative)
         }
         commonTest {
-            kotlin.srcDir("build/generated/ksp/metadata/commonTest/kotlin")
             dependencies {
                 implementation(libs.kotlin.test)
                 implementation(libs.assertk)
-                implementation(libs.mockative)
                 implementation(kotlin("test-annotations-common"))
                 implementation(libs.compose.ui.test)
             }
         }
-        val iosArm64Test by getting {
-            dependencies {
-                implementation(libs.mockative)
-            }
-        }
-        val iosSimulatorArm64Test by getting {
-            dependencies {
-                implementation(libs.mockative)
-            }
-        }
     }
 }
-
-//dependencies {
-//    add("kspAndroid", "io.mockative:mockative-processor:${libs.versions.mockative.get()}")
-//    add("kspAndroidHostTest", "io.mockative:mockative-processor:${libs.versions.mockative.get()}")
-//    add("kspIosArm64", "io.mockative:mockative-processor:${libs.versions.mockative.get()}")
-//    add("kspIosArm64Test", "io.mockative:mockative-processor:${libs.versions.mockative.get()}")
-//    add("kspIosSimulatorArm64", "io.mockative:mockative-processor:${libs.versions.mockative.get()}")
-//    add("kspIosSimulatorArm64Test", "io.mockative:mockative-processor:${libs.versions.mockative.get()}")
-//}
-
 
 swiftPackageConfig {
     val localDeps = firebaseDeps
@@ -172,14 +133,14 @@ swiftPackageConfig {
                     localDeps.forEach { add(it, exportToKotlin = false) }
                 },
                 // Package version
-                version = "11.6.0",
+                version = "11.8.0",
             )
             remotePackageVersion(
                 url = uri("https://github.com/google/GoogleSignIn-iOS"),
                 products = {
                     add("GoogleSignIn")
                 },
-                version = "9.0.0"
+                version = "9.1.0"
             )
         }
     }

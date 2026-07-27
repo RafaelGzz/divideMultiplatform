@@ -38,7 +38,7 @@ firebase = "2.5.0"
 firebaseBom = "34.16.0"
 firebasePerf = "2.0.2"
 crashlytics = "3.0.7"
-kmpauthGoogle = "2.4.0-alpha02"
+kmpauthGoogle = "3.0.0-alpha04"
 
 # Storage & Media
 datastorePreferences = "1.2.1"
@@ -49,12 +49,10 @@ javassist = "3.29.2-GA"
 objenesis = "3.5"
 
 # Quality & Tooling
-ksp = "2.3.10"
 kover = "0.9.9"
 spmForKmp = "1.9.4"
 
 # Testing
-mockative = "3.3.2"
 assertk = "0.28.1"
 junit = "4.13.2"
 junitVersion = "1.3.0"
@@ -109,7 +107,6 @@ koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose", versi
 koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koinComposeMultiplatform" }
 koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koinComposeMultiplatform" }
 koin-annotations = { module = "io.insert-koin:koin-annotations", version = "4.2.2" }
-koin-ksp-compiler = { module = "io.insert-koin:koin-ksp-compiler", version = "2.3.1" }
 
 # Firebase & Authentication
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
@@ -131,8 +128,6 @@ landscapist-coil3 = { module = "com.github.skydoves:landscapist-coil3", version.
 # Testing
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 assertk = { module = "com.willowtreeapps.assertk:assertk", version.ref = "assertk" }
-mockative = { module = "io.mockative:mockative", version.ref = "mockative" }
-mockative-processor = { module = "io.mockative:mockative-processor", version.ref = "mockative" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -155,7 +150,5 @@ crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "crashlyti
 firebasePerf = { id = "com.google.firebase.firebase-perf", version.ref = "firebasePerf" }
 
 # Quality, Tooling & Native
-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 spmForKmp = { id = "io.github.frankois944.spmForKmp", version.ref = "spmForKmp" }
-mockative = { id = "io.mockative", version.ref = "mockative" }

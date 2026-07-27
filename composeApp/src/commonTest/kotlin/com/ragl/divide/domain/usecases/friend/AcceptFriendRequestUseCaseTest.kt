@@ -1,10 +1,8 @@
 package com.ragl.divide.domain.usecases.friend
 
 import com.ragl.divide.domain.repositories.FriendsRepository
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.of
+import com.ragl.divide.testing.FakeFriendsRepository
+import com.ragl.divide.testing.assertCalled
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -13,7 +11,7 @@ import kotlin.test.assertTrue
 
 class AcceptFriendRequestUseCaseTest {
 
-    private val mockFriendsRepository = mock(of<FriendsRepository>())
+    private val mockFriendsRepository = FakeFriendsRepository()
     private lateinit var useCase: AcceptFriendRequestUseCase
 
     @BeforeTest
@@ -25,7 +23,7 @@ class AcceptFriendRequestUseCaseTest {
     fun `should return success when friend request is accepted successfully`() = runTest {
         // Given
         val friendId = "friend123"
-        coEvery { mockFriendsRepository.acceptFriendRequest(friendId) } returns true
+        mockFriendsRepository.onAcceptFriendRequest = { true }
 
         // When
         val result = useCase(friendId)
@@ -33,7 +31,7 @@ class AcceptFriendRequestUseCaseTest {
         // Then
         assertTrue(result is AcceptFriendRequestUseCase.Result.Success)
         assertEquals(true, result.accepted)
-        coVerify { mockFriendsRepository.acceptFriendRequest(friendId) }
+        assertCalled(mockFriendsRepository, "acceptFriendRequest", friendId)
     }
 
     @Test
@@ -41,7 +39,7 @@ class AcceptFriendRequestUseCaseTest {
         // Given
         val friendId = "friend123"
         val expectedException = Exception("Network error")
-        coEvery { mockFriendsRepository.acceptFriendRequest(friendId) } throws expectedException
+        mockFriendsRepository.onAcceptFriendRequest = { throw expectedException }
 
         // When
         val result = useCase(friendId)
@@ -49,6 +47,6 @@ class AcceptFriendRequestUseCaseTest {
         // Then
         assertTrue(result is AcceptFriendRequestUseCase.Result.Error)
         assertEquals(expectedException, result.exception)
-        coVerify { mockFriendsRepository.acceptFriendRequest(friendId) }
+        assertCalled(mockFriendsRepository, "acceptFriendRequest", friendId)
     }
 } 

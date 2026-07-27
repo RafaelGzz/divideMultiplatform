@@ -1,10 +1,8 @@
 package com.ragl.divide.domain.usecases.friend
 
 import com.ragl.divide.domain.repositories.FriendsRepository
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.of
+import com.ragl.divide.testing.FakeFriendsRepository
+import com.ragl.divide.testing.assertCalled
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -13,7 +11,7 @@ import kotlin.test.assertTrue
 
 class SendFriendRequestUseCaseTest {
 
-    private val mockFriendsRepository = mock(of<FriendsRepository>())
+    private val mockFriendsRepository = FakeFriendsRepository()
     private lateinit var useCase: SendFriendRequestUseCase
 
     @BeforeTest
@@ -25,7 +23,7 @@ class SendFriendRequestUseCaseTest {
     fun `should return success when friend request is sent successfully`() = runTest {
         // Given
         val friendId = "friend123"
-        coEvery { mockFriendsRepository.sendFriendRequest(friendId) } returns true
+        mockFriendsRepository.onSendFriendRequest = { true }
 
         // When
         val result = useCase(friendId)
@@ -33,7 +31,7 @@ class SendFriendRequestUseCaseTest {
         // Then
         assertTrue(result is SendFriendRequestUseCase.Result.Success)
         assertEquals(true, result.sent)
-        coVerify { mockFriendsRepository.sendFriendRequest(friendId) }
+        assertCalled(mockFriendsRepository, "sendFriendRequest", friendId)
     }
 
     @Test
@@ -41,7 +39,7 @@ class SendFriendRequestUseCaseTest {
         // Given
         val friendId = "friend123"
         val expectedException = Exception("Network error")
-        coEvery { mockFriendsRepository.sendFriendRequest(friendId) } throws expectedException
+        mockFriendsRepository.onSendFriendRequest = { throw expectedException }
 
         // When
         val result = useCase(friendId)
@@ -49,6 +47,6 @@ class SendFriendRequestUseCaseTest {
         // Then
         assertTrue(result is SendFriendRequestUseCase.Result.Error)
         assertEquals(expectedException, result.exception)
-        coVerify { mockFriendsRepository.sendFriendRequest(friendId) }
+        assertCalled(mockFriendsRepository, "sendFriendRequest", friendId)
     }
 } 

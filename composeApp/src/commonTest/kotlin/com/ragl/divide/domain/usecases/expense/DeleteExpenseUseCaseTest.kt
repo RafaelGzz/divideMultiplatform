@@ -2,11 +2,10 @@ package com.ragl.divide.domain.usecases.expense
 
 import com.ragl.divide.domain.repositories.UserRepository
 import com.ragl.divide.domain.stateHolders.UserStateHolder
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.of
+import com.ragl.divide.testing.FakeUserRepository
+import com.ragl.divide.testing.FakeUserStateHolder
+import com.ragl.divide.testing.assertCalled
+import com.ragl.divide.testing.assertNotCalled
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -15,8 +14,8 @@ import kotlin.test.assertTrue
 
 class DeleteExpenseUseCaseTest {
 
-    private val mockUserRepository = mock(of<UserRepository>())
-    private val mockUserStateHolder = mock(of<UserStateHolder>())
+    private val mockUserRepository = FakeUserRepository()
+    private val mockUserStateHolder = FakeUserStateHolder()
     private lateinit var useCase: DeleteExpenseUseCase
 
     @BeforeTest
@@ -29,16 +28,16 @@ class DeleteExpenseUseCaseTest {
         // Given
         val expenseId = "expense123"
 
-        coEvery { mockUserRepository.deleteExpense(expenseId) } returns Unit
-        coEvery { mockUserStateHolder.removeExpense(expenseId) } returns Unit
+        mockUserRepository.onDeleteExpense = { }
+        mockUserStateHolder.onRemoveExpense = { }
 
         // When
         val result = useCase(expenseId)
 
         // Then
         assertTrue(result is DeleteExpenseUseCase.Result.Success)
-        coVerify { mockUserRepository.deleteExpense(expenseId) }
-        coVerify { mockUserStateHolder.removeExpense(expenseId) }
+        assertCalled(mockUserRepository, "deleteExpense", expenseId)
+        assertCalled(mockUserStateHolder, "removeExpense", expenseId)
     }
 
     @Test
@@ -47,7 +46,7 @@ class DeleteExpenseUseCaseTest {
         val expenseId = "expense123"
         val expectedException = Exception("Database error")
 
-        coEvery { mockUserRepository.deleteExpense(expenseId) } throws expectedException
+        mockUserRepository.onDeleteExpense = { throw expectedException }
 
         // When
         val result = useCase(expenseId)
@@ -55,6 +54,6 @@ class DeleteExpenseUseCaseTest {
         // Then
         assertTrue(result is DeleteExpenseUseCase.Result.Error)
         assertEquals(expectedException, (result as DeleteExpenseUseCase.Result.Error).exception)
-        coVerify { mockUserStateHolder.removeExpense(any()) }.wasNotInvoked()
+        assertNotCalled(mockUserStateHolder, "removeExpense")
     }
 }

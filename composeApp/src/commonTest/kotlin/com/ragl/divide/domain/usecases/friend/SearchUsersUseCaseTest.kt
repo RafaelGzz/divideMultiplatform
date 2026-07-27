@@ -2,10 +2,8 @@ package com.ragl.divide.domain.usecases.friend
 
 import com.ragl.divide.data.models.UserInfo
 import com.ragl.divide.domain.repositories.FriendsRepository
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.of
+import com.ragl.divide.testing.FakeFriendsRepository
+import com.ragl.divide.testing.assertCalled
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -14,7 +12,7 @@ import kotlin.test.assertTrue
 
 class SearchUsersUseCaseTest {
 
-    private val mockFriendsRepository = mock(of<FriendsRepository>())
+    private val mockFriendsRepository = FakeFriendsRepository()
     private lateinit var useCase: SearchUsersUseCase
 
     @BeforeTest
@@ -31,7 +29,7 @@ class SearchUsersUseCaseTest {
             "user2" to UserInfo(uuid = "user2", name = "User Two")
         )
 
-        coEvery { mockFriendsRepository.searchUsers("user", existing) } returns expectedUsers
+        mockFriendsRepository.onSearchUsers = { _, _ -> expectedUsers }
 
         // When
         val result = useCase("user", existing)
@@ -39,7 +37,7 @@ class SearchUsersUseCaseTest {
         // Then
         assertTrue(result is SearchUsersUseCase.Result.Success)
         assertEquals(expectedUsers, result.users)
-        coVerify { mockFriendsRepository.searchUsers("user", existing) }
+        assertCalled(mockFriendsRepository, "searchUsers", "user", existing)
     }
 
     @Test
@@ -48,7 +46,7 @@ class SearchUsersUseCaseTest {
         val existing = listOf(UserInfo(uuid = "existing1", name="Existing User"))
         val expectedException = Exception("Database error")
 
-        coEvery { mockFriendsRepository.searchUsers("user", existing) } throws expectedException
+        mockFriendsRepository.onSearchUsers = { _, _ -> throw expectedException }
 
         // When
         val result = useCase("user", existing)

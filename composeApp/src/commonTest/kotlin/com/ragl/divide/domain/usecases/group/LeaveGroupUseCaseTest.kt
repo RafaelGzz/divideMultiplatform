@@ -2,11 +2,10 @@ package com.ragl.divide.domain.usecases.group
 
 import com.ragl.divide.domain.repositories.GroupRepository
 import com.ragl.divide.domain.stateHolders.UserStateHolder
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.of
+import com.ragl.divide.testing.FakeGroupRepository
+import com.ragl.divide.testing.FakeUserStateHolder
+import com.ragl.divide.testing.assertCalled
+import com.ragl.divide.testing.assertNotCalled
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -15,8 +14,8 @@ import kotlin.test.assertTrue
 
 class LeaveGroupUseCaseTest {
 
-    private val mockGroupRepository = mock(of<GroupRepository>())
-    private val mockUserStateHolder = mock(of<UserStateHolder>())
+    private val mockGroupRepository = FakeGroupRepository()
+    private val mockUserStateHolder = FakeUserStateHolder()
     private lateinit var useCase: LeaveGroupUseCase
 
     @BeforeTest
@@ -29,16 +28,16 @@ class LeaveGroupUseCaseTest {
         // Given
         val groupId = "group123"
 
-        coEvery { mockGroupRepository.leaveGroup(groupId) } returns Unit
-        coEvery { mockUserStateHolder.deleteGroup(groupId) } returns Unit
+        mockGroupRepository.onLeaveGroup = { }
+        mockUserStateHolder.onDeleteGroup = { }
 
         // When
         val result = useCase(groupId)
 
         // Then
         assertTrue(result is LeaveGroupUseCase.Result.Success)
-        coVerify { mockGroupRepository.leaveGroup(groupId) }
-        coVerify { mockUserStateHolder.deleteGroup(groupId) }
+        assertCalled(mockGroupRepository, "leaveGroup", groupId)
+        assertCalled(mockUserStateHolder, "deleteGroup", groupId)
     }
 
     @Test
@@ -47,7 +46,7 @@ class LeaveGroupUseCaseTest {
         val groupId = "group123"
         val expectedException = Exception("Database error")
 
-        coEvery { mockGroupRepository.leaveGroup(groupId) } throws expectedException
+        mockGroupRepository.onLeaveGroup = { throw expectedException }
 
         // When
         val result = useCase(groupId)
@@ -55,6 +54,6 @@ class LeaveGroupUseCaseTest {
         // Then
         assertTrue(result is LeaveGroupUseCase.Result.Error)
         assertEquals(expectedException, result.exception)
-        coVerify { mockUserStateHolder.deleteGroup(any()) }.wasNotInvoked()
+        assertNotCalled(mockUserStateHolder, "deleteGroup")
     }
 }

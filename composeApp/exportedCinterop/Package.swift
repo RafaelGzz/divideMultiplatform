@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
   name: "exportedCinterop",
-  platforms: [.iOS("12.0"), .macOS("10.13"), .tvOS("12.0"), .watchOS("4.0")],
+  platforms: [.iOS("16.0"), .macOS("10.13"), .tvOS("12.0"), .watchOS("4.0")],
   products: [
     .library(
       name: "exportedCinterop",
@@ -11,8 +11,8 @@ let package = Package(
       targets: ["exportedCinterop"])
   ],
   dependencies: [
-    .package(url: "https://github.com/firebase/firebase-ios-sdk.git", exact: "11.6.0"),
-    .package(url: "https://github.com/google/GoogleSignIn-iOS", exact: "9.0.0"),
+    .package(url: "https://github.com/firebase/firebase-ios-sdk.git", exact: "11.8.0"),
+    .package(url: "https://github.com/google/GoogleSignIn-iOS", exact: "9.1.0"),
   ],
   targets: [
     .target(

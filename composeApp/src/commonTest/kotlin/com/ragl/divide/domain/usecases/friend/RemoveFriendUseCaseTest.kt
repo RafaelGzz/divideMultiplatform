@@ -1,10 +1,8 @@
 package com.ragl.divide.domain.usecases.friend
 
 import com.ragl.divide.domain.repositories.FriendsRepository
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.of
+import com.ragl.divide.testing.FakeFriendsRepository
+import com.ragl.divide.testing.assertCalled
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -13,7 +11,7 @@ import kotlin.test.assertTrue
 
 class RemoveFriendUseCaseTest {
 
-    private val mockFriendsRepository = mock(of<FriendsRepository>())
+    private val mockFriendsRepository = FakeFriendsRepository()
     private lateinit var useCase: RemoveFriendUseCase
 
     @BeforeTest
@@ -26,14 +24,14 @@ class RemoveFriendUseCaseTest {
         // Given
         val userId = "user123"
 
-        coEvery { mockFriendsRepository.removeFriend( userId) } returns true
+        mockFriendsRepository.onRemoveFriend = { true }
 
         // When
         val result = useCase( userId)
 
         // Then
         assertTrue(result is RemoveFriendUseCase.Result.Success)
-        coVerify { mockFriendsRepository.removeFriend( userId) }
+        assertCalled(mockFriendsRepository, "removeFriend", userId)
     }
 
     @Test
@@ -42,7 +40,7 @@ class RemoveFriendUseCaseTest {
         val userId = "user123"
         val expectedException = Exception("Database error")
 
-        coEvery { mockFriendsRepository.removeFriend( userId) } throws expectedException
+        mockFriendsRepository.onRemoveFriend = { throw expectedException }
 
         // When
         val result = useCase( userId)

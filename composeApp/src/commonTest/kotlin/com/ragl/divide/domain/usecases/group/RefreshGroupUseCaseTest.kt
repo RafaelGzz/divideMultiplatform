@@ -3,11 +3,10 @@ package com.ragl.divide.domain.usecases.group
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.domain.repositories.GroupRepository
 import com.ragl.divide.domain.stateHolders.UserStateHolder
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.of
+import com.ragl.divide.testing.FakeGroupRepository
+import com.ragl.divide.testing.FakeUserStateHolder
+import com.ragl.divide.testing.assertCalled
+import com.ragl.divide.testing.assertNotCalled
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -15,8 +14,8 @@ import kotlin.test.assertTrue
 
 class RefreshGroupUseCaseTest {
 
-    private val groupRepository = mock(of<GroupRepository>())
-    private val userStateHolder = mock(of<UserStateHolder>())
+    private val groupRepository = FakeGroupRepository()
+    private val userStateHolder = FakeUserStateHolder()
     private val useCase = RefreshGroupUseCase(groupRepository, userStateHolder)
 
     @Test
@@ -24,8 +23,8 @@ class RefreshGroupUseCaseTest {
         // Given
         val groupId = "group123"
         val expectedGroup = Group(id = groupId, name = "Test Group")
-        coEvery { groupRepository.getGroup(groupId) } returns expectedGroup
-        coEvery { userStateHolder.updateGroupInState(groupId, expectedGroup) } returns Unit
+        groupRepository.onGetGroup = { expectedGroup }
+        userStateHolder.onUpdateGroupInState = { _, _ -> }
 
         // When
         val result = useCase(groupId)
@@ -33,8 +32,8 @@ class RefreshGroupUseCaseTest {
         // Then
         assertTrue(result is RefreshGroupUseCase.Result.Success)
         assertEquals(expectedGroup, result.group)
-        coVerify { groupRepository.getGroup(groupId) }
-        coVerify { userStateHolder.updateGroupInState(groupId, expectedGroup) }
+        assertCalled(groupRepository, "getGroup", groupId)
+        assertCalled(userStateHolder, "updateGroupInState", groupId, expectedGroup)
     }
 
     @Test
@@ -42,7 +41,7 @@ class RefreshGroupUseCaseTest {
         // Given
         val groupId = "group123"
         val expectedException = Exception("Database error")
-        coEvery { groupRepository.getGroup(groupId) } throws expectedException
+        groupRepository.onGetGroup = { throw expectedException }
 
         // When
         val result = useCase(groupId)
@@ -50,6 +49,6 @@ class RefreshGroupUseCaseTest {
         // Then
         assertTrue(result is RefreshGroupUseCase.Result.Error)
         assertEquals(expectedException, result.exception)
-        coVerify { userStateHolder.updateGroupInState(any(), any()) }.wasNotInvoked()
+        assertNotCalled(userStateHolder, "updateGroupInState")
     }
 }

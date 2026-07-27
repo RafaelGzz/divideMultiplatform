@@ -6,9 +6,6 @@ import com.ragl.divide.data.models.EventPayment
 import com.ragl.divide.data.models.Group
 import com.ragl.divide.data.models.User
 import dev.gitlive.firebase.storage.File
-import io.mockative.Mockable
-
-@Mockable
 interface GroupRepository {
     suspend fun getGroups(groupIds: Map<String, String>): Map<String, Group>
     suspend fun getGroup(id: String): Group

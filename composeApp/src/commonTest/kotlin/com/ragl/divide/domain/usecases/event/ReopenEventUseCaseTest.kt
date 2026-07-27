@@ -2,11 +2,10 @@ package com.ragl.divide.domain.usecases.event
 
 import com.ragl.divide.domain.repositories.GroupRepository
 import com.ragl.divide.domain.stateHolders.UserStateHolder
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.of
+import com.ragl.divide.testing.FakeGroupRepository
+import com.ragl.divide.testing.FakeUserStateHolder
+import com.ragl.divide.testing.assertCalled
+import com.ragl.divide.testing.assertNotCalled
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -15,8 +14,8 @@ import kotlin.test.assertTrue
 
 class ReopenEventUseCaseTest {
 
-    private val mockGroupRepository = mock(of<GroupRepository>())
-    private val mockUserStateHolder = mock(of<UserStateHolder>())
+    private val mockGroupRepository = FakeGroupRepository()
+    private val mockUserStateHolder = FakeUserStateHolder()
     private lateinit var useCase: ReopenEventUseCase
 
     @BeforeTest
@@ -30,16 +29,16 @@ class ReopenEventUseCaseTest {
         val groupId = "group123"
         val eventId = "event123"
 
-        coEvery { mockGroupRepository.reopenEvent(groupId, eventId) } returns Unit
-        coEvery { mockUserStateHolder.reopenEvent(groupId, eventId) } returns Unit
+        mockGroupRepository.onReopenEvent = { _, _ -> }
+        mockUserStateHolder.onReopenEvent = { _, _ -> }
 
         // When
         val result = useCase(groupId, eventId)
 
         // Then
         assertTrue(result is ReopenEventUseCase.Result.Success)
-        coVerify { mockGroupRepository.reopenEvent(groupId, eventId) }
-        coVerify { mockUserStateHolder.reopenEvent(groupId, eventId) }
+        assertCalled(mockGroupRepository, "reopenEvent", groupId, eventId)
+        assertCalled(mockUserStateHolder, "reopenEvent", groupId, eventId)
     }
 
     @Test
@@ -49,7 +48,7 @@ class ReopenEventUseCaseTest {
         val eventId = "event123"
         val expectedException = Exception("Database error")
 
-        coEvery { mockGroupRepository.reopenEvent(groupId, eventId) } throws expectedException
+        mockGroupRepository.onReopenEvent = { _, _ -> throw expectedException }
 
         // When
         val result = useCase(groupId, eventId)
@@ -57,6 +56,6 @@ class ReopenEventUseCaseTest {
         // Then
         assertTrue(result is ReopenEventUseCase.Result.Error)
         assertEquals(expectedException, (result as ReopenEventUseCase.Result.Error).exception)
-        coVerify { mockUserStateHolder.reopenEvent(any(), any()) }.wasNotInvoked()
+        assertNotCalled(mockUserStateHolder, "reopenEvent")
     }
 }

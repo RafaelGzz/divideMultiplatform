@@ -1,11 +1,10 @@
 package com.ragl.divide.domain.usecases.group
 import com.ragl.divide.domain.repositories.GroupRepository
 import com.ragl.divide.domain.stateHolders.UserStateHolder
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.of
+import com.ragl.divide.testing.FakeGroupRepository
+import com.ragl.divide.testing.FakeUserStateHolder
+import com.ragl.divide.testing.assertCalled
+import com.ragl.divide.testing.assertNotCalled
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -14,8 +13,8 @@ import kotlin.test.assertTrue
 
 class DeleteGroupUseCaseTest {
 
-    private val mockGroupRepository = mock(of<GroupRepository>())
-    private val mockUserStateHolder = mock(of<UserStateHolder>())
+    private val mockGroupRepository = FakeGroupRepository()
+    private val mockUserStateHolder = FakeUserStateHolder()
     private lateinit var useCase: DeleteGroupUseCase
 
     @BeforeTest
@@ -29,16 +28,16 @@ class DeleteGroupUseCaseTest {
         val groupId = "group123"
         val groupImage = "image.jpg"
 
-        coEvery { mockGroupRepository.deleteGroup(groupId, groupImage) } returns Unit
-        coEvery { mockUserStateHolder.deleteGroup(groupId) } returns Unit
+        mockGroupRepository.onDeleteGroup = { _, _ -> }
+        mockUserStateHolder.onDeleteGroup = { }
 
         // When
         val result = useCase(groupId, groupImage)
 
         // Then
         assertTrue(result is DeleteGroupUseCase.Result.Success)
-        coVerify { mockGroupRepository.deleteGroup(groupId, groupImage) }
-        coVerify { mockUserStateHolder.deleteGroup(groupId) }
+        assertCalled(mockGroupRepository, "deleteGroup", groupId, groupImage)
+        assertCalled(mockUserStateHolder, "deleteGroup", groupId)
     }
 
     @Test
@@ -48,7 +47,7 @@ class DeleteGroupUseCaseTest {
         val groupImage = "image.jpg"
         val expectedException = Exception("Database error")
 
-        coEvery { mockGroupRepository.deleteGroup(groupId, groupImage) } throws expectedException
+        mockGroupRepository.onDeleteGroup = { _, _ -> throw expectedException }
 
         // When
         val result = useCase(groupId, groupImage)
@@ -56,7 +55,7 @@ class DeleteGroupUseCaseTest {
         // Then
         assertTrue(result is DeleteGroupUseCase.Result.Error)
         assertEquals(expectedException, result.exception)
-        coVerify { mockUserStateHolder.deleteGroup(any()) }.wasNotInvoked()
+        assertNotCalled(mockUserStateHolder, "deleteGroup")
 
     }
 }

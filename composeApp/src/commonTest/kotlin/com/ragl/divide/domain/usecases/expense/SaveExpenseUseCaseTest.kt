@@ -3,11 +3,10 @@ package com.ragl.divide.domain.usecases.expense
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.domain.repositories.UserRepository
 import com.ragl.divide.domain.stateHolders.UserStateHolder
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.of
+import com.ragl.divide.testing.FakeUserRepository
+import com.ragl.divide.testing.FakeUserStateHolder
+import com.ragl.divide.testing.assertCalled
+import com.ragl.divide.testing.assertNotCalled
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -16,8 +15,8 @@ import kotlin.test.assertTrue
 
 class SaveExpenseUseCaseTest {
 
-    private val mockUserRepository = mock(of<UserRepository>())
-    private val mockUserStateHolder = mock(of<UserStateHolder>())
+    private val mockUserRepository = FakeUserRepository()
+    private val mockUserStateHolder = FakeUserStateHolder()
     private lateinit var useCase: SaveExpenseUseCase
 
     @BeforeTest
@@ -35,8 +34,8 @@ class SaveExpenseUseCaseTest {
         )
         val savedExpense = expense.copy(id = "saved_expense_id")
 
-        coEvery { mockUserRepository.saveExpense(expense) } returns savedExpense
-        coEvery { mockUserStateHolder.saveExpense(savedExpense) } returns Unit
+        mockUserRepository.onSaveExpense = { savedExpense }
+        mockUserStateHolder.onSaveExpense = { }
 
         // When
         val result = useCase(expense)
@@ -44,8 +43,8 @@ class SaveExpenseUseCaseTest {
         // Then
         assertTrue(result is SaveExpenseUseCase.Result.Success)
         assertEquals(savedExpense, result.expense)
-        coVerify { mockUserRepository.saveExpense(expense) }
-        coVerify { mockUserStateHolder.saveExpense(savedExpense) }
+        assertCalled(mockUserRepository, "saveExpense", expense)
+        assertCalled(mockUserStateHolder, "saveExpense", savedExpense)
     }
 
     @Test
@@ -58,7 +57,7 @@ class SaveExpenseUseCaseTest {
         )
         val expectedException = Exception("Database error")
 
-        coEvery { mockUserRepository.saveExpense(expense) } throws expectedException
+        mockUserRepository.onSaveExpense = { throw expectedException }
 
         // When
         val result = useCase(expense)
@@ -66,6 +65,6 @@ class SaveExpenseUseCaseTest {
         // Then
         assertTrue(result is SaveExpenseUseCase.Result.Error)
         assertEquals(expectedException, result.exception)
-        coVerify { mockUserStateHolder.saveExpense(any()) }.wasNotInvoked()
+        assertNotCalled(mockUserStateHolder, "saveExpense")
     }
 }

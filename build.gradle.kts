@@ -11,8 +11,6 @@ plugins {
     alias(libs.plugins.crashlytics) apply false
     alias(libs.plugins.firebasePerf) apply false
     alias(libs.plugins.kover) apply false
-    alias(libs.plugins.ksp) apply false
     alias(libs.plugins.spmForKmp) apply false
-    alias(libs.plugins.mockative) apply false
     alias(libs.plugins.androidKmpLibrary) apply false
 }

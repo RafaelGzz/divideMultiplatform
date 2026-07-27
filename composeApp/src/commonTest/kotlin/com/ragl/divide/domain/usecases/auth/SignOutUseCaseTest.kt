@@ -2,12 +2,9 @@ package com.ragl.divide.domain.usecases.auth
 
 import com.ragl.divide.domain.repositories.UserRepository
 import com.ragl.divide.domain.services.ScheduleNotificationService
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.of
-import io.mockative.verify
+import com.ragl.divide.testing.FakeScheduleNotificationService
+import com.ragl.divide.testing.FakeUserRepository
+import com.ragl.divide.testing.assertCalled
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -16,8 +13,8 @@ import kotlin.test.assertTrue
 
 class SignOutUseCaseTest {
 
-    private val mockUserRepository = mock(of<UserRepository>())
-    private val mockScheduleNotificationService = mock(of<ScheduleNotificationService>())
+    private val mockUserRepository = FakeUserRepository()
+    private val mockScheduleNotificationService = FakeScheduleNotificationService()
     private lateinit var useCase: SignOutUseCase
 
     @BeforeTest
@@ -28,25 +25,25 @@ class SignOutUseCaseTest {
     @Test
     fun `should return success when signout is successful`() = runTest {
         // Given
-        coEvery { mockUserRepository.signOut() } returns Unit
-        every { mockScheduleNotificationService.cancelAllNotifications() } returns Unit
-        every { mockUserRepository.getCurrentUser() } returns null
+        mockUserRepository.onSignOut = {}
+        mockScheduleNotificationService.onCancelAllNotifications = {}
+        mockUserRepository.onGetCurrentUser = { null }
 
         // When
         val result = useCase()
 
         // Then
         assertTrue(result is SignOutUseCase.Result.Success)
-        verify { mockScheduleNotificationService.cancelAllNotifications() }
-        coVerify { mockUserRepository.signOut() }
+        assertCalled(mockScheduleNotificationService, "cancelAllNotifications")
+        assertCalled(mockUserRepository, "signOut")
     }
 
     @Test
     fun `should return error when repository throws exception`() = runTest {
         // Given
         val expectedException = Exception("Network error")
-        coEvery { mockUserRepository.signOut() } throws expectedException
-        coEvery { mockScheduleNotificationService.cancelAllNotifications() } returns Unit
+        mockUserRepository.onSignOut = { throw expectedException }
+        mockScheduleNotificationService.onCancelAllNotifications = {}
 
         // When
         val result = useCase()
@@ -54,6 +51,6 @@ class SignOutUseCaseTest {
         // Then
         assertTrue(result is SignOutUseCase.Result.Error)
         assertEquals(expectedException, result.exception)
-        coVerify { mockScheduleNotificationService.cancelAllNotifications() }
+        assertCalled(mockScheduleNotificationService, "cancelAllNotifications")
     }
 }

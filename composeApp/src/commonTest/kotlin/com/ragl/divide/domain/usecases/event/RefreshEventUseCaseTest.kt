@@ -3,11 +3,10 @@ package com.ragl.divide.domain.usecases.event
 import com.ragl.divide.data.models.Event
 import com.ragl.divide.domain.repositories.GroupRepository
 import com.ragl.divide.domain.stateHolders.UserStateHolder
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.of
+import com.ragl.divide.testing.FakeGroupRepository
+import com.ragl.divide.testing.FakeUserStateHolder
+import com.ragl.divide.testing.assertCalled
+import com.ragl.divide.testing.assertNotCalled
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -16,8 +15,8 @@ import kotlin.test.assertTrue
 
 class RefreshEventUseCaseTest {
 
-    private val mockGroupRepository = mock(of<GroupRepository>())
-    private val mockUserStateHolder = mock(of<UserStateHolder>())
+    private val mockGroupRepository = FakeGroupRepository()
+    private val mockUserStateHolder = FakeUserStateHolder()
     private lateinit var useCase: RefreshEventUseCase
 
     @BeforeTest
@@ -32,8 +31,8 @@ class RefreshEventUseCaseTest {
         val eventId = "event123"
         val expectedEvent = Event(id = eventId, title = "Test Event")
 
-        coEvery { mockGroupRepository.getEvent(groupId, eventId) } returns expectedEvent
-        coEvery { mockUserStateHolder.updateEventInState(groupId, eventId, expectedEvent) } returns Unit
+        mockGroupRepository.onGetEvent = { _, _ -> expectedEvent }
+        mockUserStateHolder.onUpdateEventInState = { _, _, _ -> }
 
         // When
         val result = useCase(groupId, eventId)
@@ -41,8 +40,8 @@ class RefreshEventUseCaseTest {
         // Then
         assertTrue(result is RefreshEventUseCase.Result.Success)
         assertEquals(expectedEvent, (result as RefreshEventUseCase.Result.Success).event)
-        coVerify { mockGroupRepository.getEvent(groupId, eventId) }
-        coVerify { mockUserStateHolder.updateEventInState(groupId, eventId, expectedEvent) }
+        assertCalled(mockGroupRepository, "getEvent", groupId, eventId)
+        assertCalled(mockUserStateHolder, "updateEventInState", groupId, eventId, expectedEvent)
     }
 
     @Test
@@ -52,7 +51,7 @@ class RefreshEventUseCaseTest {
         val eventId = "event123"
         val expectedException = Exception("Database error")
 
-        coEvery { mockGroupRepository.getEvent(groupId, eventId) } throws expectedException
+        mockGroupRepository.onGetEvent = { _, _ -> throw expectedException }
 
         // When
         val result = useCase(groupId, eventId)
@@ -60,6 +59,6 @@ class RefreshEventUseCaseTest {
         // Then
         assertTrue(result is RefreshEventUseCase.Result.Error)
         assertEquals(expectedException, (result as RefreshEventUseCase.Result.Error).exception)
-        coVerify { mockUserStateHolder.updateEventInState(any(), any(), any()) }.wasNotInvoked()
+        assertNotCalled(mockUserStateHolder, "updateEventInState")
     }
 }

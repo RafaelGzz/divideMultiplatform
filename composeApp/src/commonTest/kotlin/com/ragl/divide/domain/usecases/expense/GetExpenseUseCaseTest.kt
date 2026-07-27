@@ -2,10 +2,8 @@ package com.ragl.divide.domain.usecases.expense
 
 import com.ragl.divide.data.models.Expense
 import com.ragl.divide.domain.repositories.UserRepository
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.of
+import com.ragl.divide.testing.FakeUserRepository
+import com.ragl.divide.testing.assertCalled
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -14,7 +12,7 @@ import kotlin.test.assertTrue
 
 class GetExpenseUseCaseTest {
 
-    private val mockUserRepository = mock(of<UserRepository>())
+    private val mockUserRepository = FakeUserRepository()
     private lateinit var useCase: GetExpenseUseCase
 
     @BeforeTest
@@ -32,7 +30,7 @@ class GetExpenseUseCaseTest {
             amount = 100.0
         )
 
-        coEvery { mockUserRepository.getExpense(expenseId) } returns expectedExpense
+        mockUserRepository.onGetExpense = { expectedExpense }
 
         // When
         val result = useCase(expenseId)
@@ -40,7 +38,7 @@ class GetExpenseUseCaseTest {
         // Then
         assertTrue(result is GetExpenseUseCase.Result.Success)
         assertEquals(expectedExpense, result.expense)
-        coVerify { mockUserRepository.getExpense(expenseId) }
+        assertCalled(mockUserRepository, "getExpense", expenseId)
     }
 
     @Test
@@ -49,7 +47,7 @@ class GetExpenseUseCaseTest {
         val expenseId = "expense123"
         val expectedException = Exception("Database error")
 
-        coEvery { mockUserRepository.getExpense(expenseId) } throws expectedException
+        mockUserRepository.onGetExpense = { throw expectedException }
 
         // When
         val result = useCase(expenseId)

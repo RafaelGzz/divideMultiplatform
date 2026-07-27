@@ -3,11 +3,10 @@ package com.ragl.divide.domain.usecases.eventPayment
 import com.ragl.divide.data.models.EventPayment
 import com.ragl.divide.domain.repositories.GroupRepository
 import com.ragl.divide.domain.stateHolders.UserStateHolder
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.of
+import com.ragl.divide.testing.FakeGroupRepository
+import com.ragl.divide.testing.FakeUserStateHolder
+import com.ragl.divide.testing.assertCalled
+import com.ragl.divide.testing.assertNotCalled
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -16,8 +15,8 @@ import kotlin.test.assertTrue
 
 class SaveEventPaymentUseCaseTest {
 
-    private val mockGroupRepository = mock(of<GroupRepository>())
-    private val mockUserStateHolder = mock(of<UserStateHolder>())
+    private val mockGroupRepository = FakeGroupRepository()
+    private val mockUserStateHolder = FakeUserStateHolder()
     private lateinit var useCase: SaveEventPaymentUseCase
 
     @BeforeTest
@@ -36,8 +35,8 @@ class SaveEventPaymentUseCaseTest {
         )
         val savedEventPayment = eventPayment.copy(id = "saved_payment_id")
 
-        coEvery { mockGroupRepository.saveEventPayment(groupId, eventPayment) } returns savedEventPayment
-        coEvery { mockUserStateHolder.saveEventPayment(groupId, savedEventPayment) } returns Unit
+        mockGroupRepository.onSaveEventPayment = { _, _ -> savedEventPayment }
+        mockUserStateHolder.onSaveEventPayment = { _, _ -> }
 
         // When
         val result = useCase(groupId, eventPayment)
@@ -45,8 +44,8 @@ class SaveEventPaymentUseCaseTest {
         // Then
         assertTrue(result is SaveEventPaymentUseCase.Result.Success)
         assertEquals(savedEventPayment, (result as SaveEventPaymentUseCase.Result.Success).payment)
-        coVerify { mockGroupRepository.saveEventPayment(groupId, eventPayment) }
-        coVerify { mockUserStateHolder.saveEventPayment(groupId, savedEventPayment) }
+        assertCalled(mockGroupRepository, "saveEventPayment", groupId, eventPayment)
+        assertCalled(mockUserStateHolder, "saveEventPayment", groupId, savedEventPayment)
     }
 
     @Test
@@ -60,7 +59,7 @@ class SaveEventPaymentUseCaseTest {
         )
         val expectedException = Exception("Database error")
 
-        coEvery { mockGroupRepository.saveEventPayment(groupId, eventPayment) } throws expectedException
+        mockGroupRepository.onSaveEventPayment = { _, _ -> throw expectedException }
 
         // When
         val result = useCase(groupId, eventPayment)
@@ -68,6 +67,6 @@ class SaveEventPaymentUseCaseTest {
         // Then
         assertTrue(result is SaveEventPaymentUseCase.Result.Error)
         assertEquals(expectedException, (result as SaveEventPaymentUseCase.Result.Error).exception)
-        coVerify { mockUserStateHolder.saveEventPayment(any(), any()) }.wasNotInvoked()
+        assertNotCalled(mockUserStateHolder, "saveEventPayment")
     }
 }

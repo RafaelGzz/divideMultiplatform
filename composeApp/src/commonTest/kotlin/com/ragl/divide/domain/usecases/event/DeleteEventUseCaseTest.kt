@@ -2,11 +2,10 @@ package com.ragl.divide.domain.usecases.event
 
 import com.ragl.divide.domain.repositories.GroupRepository
 import com.ragl.divide.domain.stateHolders.UserStateHolder
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.of
+import com.ragl.divide.testing.FakeGroupRepository
+import com.ragl.divide.testing.FakeUserStateHolder
+import com.ragl.divide.testing.assertCalled
+import com.ragl.divide.testing.assertNotCalled
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -15,8 +14,8 @@ import kotlin.test.assertTrue
 
 class DeleteEventUseCaseTest {
 
-    private val mockGroupRepository = mock(of<GroupRepository>())
-    private val mockUserStateHolder = mock(of<UserStateHolder>())
+    private val mockGroupRepository = FakeGroupRepository()
+    private val mockUserStateHolder = FakeUserStateHolder()
     private lateinit var useCase: DeleteEventUseCase
 
     @BeforeTest
@@ -30,16 +29,16 @@ class DeleteEventUseCaseTest {
         val groupId = "group123"
         val eventId = "event123"
 
-        coEvery { mockGroupRepository.deleteEvent(groupId, eventId) } returns Unit
-        coEvery { mockUserStateHolder.deleteEvent(groupId, eventId) } returns Unit
+        mockGroupRepository.onDeleteEvent = { _, _ -> }
+        mockUserStateHolder.onDeleteEvent = { _, _ -> }
 
         // When
         val result = useCase(groupId, eventId)
 
         // Then
         assertTrue(result is DeleteEventUseCase.Result.Success)
-        coVerify { mockGroupRepository.deleteEvent(groupId, eventId) }
-        coVerify { mockUserStateHolder.deleteEvent(groupId, eventId) }
+        assertCalled(mockGroupRepository, "deleteEvent", groupId, eventId)
+        assertCalled(mockUserStateHolder, "deleteEvent", groupId, eventId)
     }
 
     @Test
@@ -49,7 +48,7 @@ class DeleteEventUseCaseTest {
         val eventId = "event123"
         val expectedException = Exception("Database error")
 
-        coEvery { mockGroupRepository.deleteEvent(groupId, eventId) } throws expectedException
+        mockGroupRepository.onDeleteEvent = { _, _ -> throw expectedException }
 
         // When
         val result = useCase(groupId, eventId)
@@ -57,6 +56,6 @@ class DeleteEventUseCaseTest {
         // Then
         assertTrue(result is DeleteEventUseCase.Result.Error)
         assertEquals(expectedException, (result as DeleteEventUseCase.Result.Error).exception)
-        coVerify { mockUserStateHolder.deleteEvent(any(), any()) }.wasNotInvoked()
+        assertNotCalled(mockUserStateHolder, "deleteEvent")
     }
 }
